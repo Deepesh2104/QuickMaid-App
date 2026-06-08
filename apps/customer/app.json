@@ -7,12 +7,10 @@
     "icon": "./assets/icon.png",
     "scheme": "quickmaid",
     "userInterfaceStyle": "light",
-
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "in.quickmaid.customer"
     },
-
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#0D9488",
@@ -23,12 +21,10 @@
       "package": "in.quickmaid.customer",
       "predictiveBackGestureEnabled": false
     },
-
     "web": {
       "favicon": "./assets/favicon.png",
       "bundler": "metro"
     },
-
     "plugins": [
       "expo-router",
       "expo-font",
@@ -39,9 +35,9 @@
           "image": "./assets/splash-icon.png",
           "imageWidth": 200
         }
-      ]
+      ],
+      "expo-image"
     ],
-
     "experiments": {
       "typedRoutes": true
     }
