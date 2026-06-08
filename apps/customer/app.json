@@ -7,16 +7,12 @@
     "icon": "./assets/icon.png",
     "scheme": "quickmaid",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#0D9488"
-    },
+
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "in.quickmaid.customer"
     },
+
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#0D9488",
@@ -27,10 +23,12 @@
       "package": "in.quickmaid.customer",
       "predictiveBackGestureEnabled": false
     },
+
     "web": {
       "favicon": "./assets/favicon.png",
       "bundler": "metro"
     },
+
     "plugins": [
       "expo-router",
       "expo-font",
@@ -41,14 +39,9 @@
           "image": "./assets/splash-icon.png",
           "imageWidth": 200
         }
-      ],
-      [
-        "expo-location",
-        {
-          "locationWhenInUsePermission": "QuickMaid uses your location to show nearby slots and track your maid."
-        }
       ]
     ],
+
     "experiments": {
       "typedRoutes": true
     }
