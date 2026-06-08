@@ -12,6 +12,31 @@ export interface DemoBooking {
   price: string;
   status: BookingStatus;
   address: string;
+  bookingRef?: string;
+  duration?: string;
+  maidId?: string;
+  maidRating?: number;
+  maidJobs?: number;
+  completionOtp?: string;
+  maidAssignedAt?: string;
+  otpVerifiedAt?: string;
+  completedAt?: string;
+  visitDate?: string;
+  slotId?: string;
+  slotLabel?: string;
+  rescheduledAt?: string;
+  amountPaid?: number;
+  walletUsed?: number;
+  paymentLabel?: string;
+  cancelledAt?: string;
+  cancelReason?: string;
+  refundAmount?: number;
+  refundStatus?: 'processing' | 'completed';
+  refundTxnId?: string;
+  reviewRating?: number;
+  reviewText?: string;
+  reviewTags?: string[];
+  reviewedAt?: string;
 }
 
 export const DEMO_BOOKINGS: DemoBooking[] = [
@@ -25,6 +50,13 @@ export const DEMO_BOOKINGS: DemoBooking[] = [
     price: '₹499',
     status: 'upcoming',
     address: 'Sector 5, Shankar Nagar, Raipur',
+    bookingRef: 'QM-8JUN-499',
+    duration: '3–4 hrs',
+    maidId: 'm_sunita',
+    maidRating: 4.92,
+    maidJobs: 1284,
+    completionOtp: '482916',
+    maidAssignedAt: new Date().toISOString(),
   },
   {
     id: 'b2',
@@ -36,6 +68,8 @@ export const DEMO_BOOKINGS: DemoBooking[] = [
     price: '₹149',
     status: 'completed',
     address: 'Sector 5, Shankar Nagar, Raipur',
+    bookingRef: 'QM-27MAY-149',
+    duration: '2 hrs',
   },
   {
     id: 'b3',
@@ -47,6 +81,21 @@ export const DEMO_BOOKINGS: DemoBooking[] = [
     price: '₹299',
     status: 'completed',
     address: 'Sector 5, Shankar Nagar, Raipur',
+    bookingRef: 'QM-15MAY-299',
+    duration: '1.5 hrs',
+  },
+  {
+    id: 'b4',
+    service: 'Bathroom deep',
+    icon: 'water-outline',
+    date: 'Thu, 2 May',
+    time: '9:00 AM',
+    maid: 'Meena T.',
+    price: '₹199',
+    status: 'cancelled',
+    address: 'Sector 5, Shankar Nagar, Raipur',
+    bookingRef: 'QM-02MAY-199',
+    duration: '1 hr',
   },
 ];
 
@@ -58,7 +107,7 @@ export const PLANS = [
     period: '/month',
     visits: '12 visits',
     savings: 'Save 20%',
-    features: ['Same maid every visit', 'Priority slots', 'Free rescheduling', '24/7 support'],
+    features: ['Same maid every visit', 'Priority slots', 'Free rescheduling', 'Member pricing'],
     popular: true,
   },
   {
@@ -83,6 +132,14 @@ export const PLANS = [
   },
 ];
 
+export const SUPPORT_CONTACT = {
+  phone: '+91 77100 22440',
+  email: 'support@quickmaid.in',
+  whatsapp: '+91 77100 22440',
+  hours: '7 AM – 10 PM daily',
+  replyTime: 'Typical reply under 5 minutes',
+};
+
 export const FAQ_ITEMS = [
   {
     q: 'How are maids verified?',
@@ -95,5 +152,20 @@ export const FAQ_ITEMS = [
   {
     q: 'What payment methods are accepted?',
     a: 'UPI, debit/credit cards, and pay-after-service for verified customers.',
+  },
+];
+
+export const PLUS_FAQ_ITEMS = [
+  {
+    q: 'Can I pause or cancel my plan?',
+    a: 'Yes — pause anytime from the Plus tab. Unused visits roll over for 30 days. Cancel before your next billing date with no penalty.',
+  },
+  {
+    q: 'Do I get the same maid every visit?',
+    a: 'Plus members get priority matching with the same verified pro when available. Flex 6 lets you pick from your favourites.',
+  },
+  {
+    q: 'What if I need more visits in a month?',
+    a: 'Add extra visits at member pricing (20% off). Or upgrade from Flex 6 to Plus anytime — we prorate the difference.',
   },
 ];

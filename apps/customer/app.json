@@ -9,7 +9,29 @@
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "in.quickmaid.customer"
+      "bundleIdentifier": "in.quickmaid.customer",
+      "infoPlist": {
+        "LSApplicationQueriesSchemes": [
+          "upi",
+          "tez",
+          "gpay",
+          "googlepay",
+          "phonepe",
+          "paytmmp",
+          "paytm",
+          "bhim",
+          "amazonpay",
+          "amazonpayin",
+          "credpay",
+          "cred",
+          "mobikwik",
+          "navipay",
+          "navi",
+          "jupiter",
+          "jupitermoney",
+          "supermoney"
+        ]
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -19,7 +41,47 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "package": "in.quickmaid.customer",
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "queries": [
+        {
+          "intent": {
+            "action": "android.intent.action.VIEW",
+            "data": {
+              "scheme": "upi"
+            }
+          }
+        },
+        {
+          "package": "com.google.android.apps.nbu.paisa.user"
+        },
+        {
+          "package": "com.phonepe.app"
+        },
+        {
+          "package": "net.one97.paytm"
+        },
+        {
+          "package": "in.org.npci.upiapp"
+        },
+        {
+          "package": "in.amazon.mShop.android.shopping"
+        },
+        {
+          "package": "com.dreamplug.androidapp"
+        },
+        {
+          "package": "com.mobikwik_new"
+        },
+        {
+          "package": "com.naviapp"
+        },
+        {
+          "package": "money.jupiter"
+        },
+        {
+          "package": "com.supermoney"
+        }
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png",
@@ -31,12 +93,13 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#0D9488",
+          "backgroundColor": "#010F0E",
           "image": "./assets/splash-icon.png",
-          "imageWidth": 200
+          "imageWidth": 180
         }
       ],
-      "expo-image"
+      "expo-image",
+      "expo-sharing"
     ],
     "experiments": {
       "typedRoutes": true

@@ -14,20 +14,19 @@ import { fonts } from '@/theme/fonts';
 
 import { colors } from '@/theme/colors';
 
-import { layout, radius, shadow, spacing } from '@/theme/spacing';
+import { layout, radius, spacing } from '@/theme/spacing';
 
 
 
 const QUICK = [
-
   { label: 'Deep clean', icon: 'home-outline' as const },
-
   { label: 'Regular', icon: 'sparkles-outline' as const },
-
   { label: 'Kitchen', icon: 'restaurant-outline' as const },
-
   { label: 'Bathroom', icon: 'water-outline' as const },
-
+  { label: 'Packages', icon: 'cube-outline' as const },
+  { label: 'Sofa', icon: 'bed-outline' as const },
+  { label: 'AC', icon: 'snow-outline' as const },
+  { label: 'Outdoor', icon: 'sunny-outline' as const },
 ];
 
 
@@ -38,123 +37,114 @@ interface HomeSearchBarProps {
 
   onQuickTag: (tag: string) => void;
 
+  onOpenFilter?: () => void;
+
 }
 
 
 
-export function HomeSearchBar({ control, onQuickTag }: HomeSearchBarProps) {
+export function HomeSearchBar({ control, onQuickTag, onOpenFilter }: HomeSearchBarProps) {
 
   return (
 
     <View style={styles.wrap}>
 
-      <View style={styles.card}>
+      <View style={styles.pill}>
 
-        <View style={styles.bar}>
+        <Ionicons name="search" size={18} color={colors.primary} />
 
-          <View style={styles.searchIcon}>
+        <Controller
 
-            <Ionicons name="search" size={18} color={colors.primary} />
+          control={control}
 
-          </View>
+          name="query"
 
-          <Controller
+          render={({ field: { onChange, onBlur, value } }) => (
 
-            control={control}
+            <TextInput
 
-            name="query"
+              style={styles.input}
 
-            render={({ field: { onChange, onBlur, value } }) => (
+              placeholder="What needs cleaning today?"
 
-              <TextInput
+              placeholderTextColor={colors.mutedLight}
 
-                style={styles.input}
+              value={value}
 
-                placeholder="Search services, rooms, offers..."
+              onChangeText={onChange}
 
-                placeholderTextColor={colors.placeholder}
+              onBlur={onBlur}
 
-                value={value}
+              returnKeyType="search"
 
-                onChangeText={onChange}
+              accessibilityLabel="Search cleaning services"
 
-                onBlur={onBlur}
+            />
 
-                returnKeyType="search"
+          )}
 
-                accessibilityLabel="Search cleaning services"
+        />
 
-              />
+        <Pressable
 
-            )}
+          style={styles.filter}
 
-          />
+          onPress={() => {
+            Haptics.selectionAsync();
+            onOpenFilter?.();
+          }}
+
+          accessibilityRole="button"
+
+          accessibilityLabel="Filter services"
+
+        >
+
+          <Ionicons name="options-outline" size={15} color={colors.primary} />
+
+        </Pressable>
+
+      </View>
+
+
+
+      <ScrollView
+
+        horizontal
+
+        showsHorizontalScrollIndicator={false}
+
+        contentContainerStyle={styles.tagsRow}
+
+      >
+
+        {QUICK.map((item) => (
 
           <Pressable
 
-            style={styles.filter}
+            key={item.label}
 
-            onPress={() => Haptics.selectionAsync()}
+            style={styles.tag}
 
-            accessibilityRole="button"
+            onPress={() => {
 
-            accessibilityLabel="Filter services"
+              Haptics.selectionAsync();
+
+              onQuickTag(item.label);
+
+            }}
 
           >
 
-            <Ionicons name="options-outline" size={16} color={colors.primary} />
+            <Ionicons name={item.icon} size={12} color={colors.primary} />
+
+            <Text style={styles.tagText}>{item.label}</Text>
 
           </Pressable>
 
-        </View>
+        ))}
 
-
-
-        <View style={styles.tagsBlock}>
-
-          <Text style={styles.tagsLabel}>Trending searches</Text>
-
-          <ScrollView
-
-            horizontal
-
-            showsHorizontalScrollIndicator={false}
-
-            contentContainerStyle={styles.tagsRow}
-
-          >
-
-            {QUICK.map((item) => (
-
-              <Pressable
-
-                key={item.label}
-
-                style={styles.tag}
-
-                onPress={() => {
-
-                  Haptics.selectionAsync();
-
-                  onQuickTag(item.label);
-
-                }}
-
-              >
-
-                <Ionicons name={item.icon} size={13} color={colors.primary} />
-
-                <Text style={styles.tagText}>{item.label}</Text>
-
-              </Pressable>
-
-            ))}
-
-          </ScrollView>
-
-        </View>
-
-      </View>
+      </ScrollView>
 
     </View>
 
@@ -168,29 +158,17 @@ const styles = StyleSheet.create({
 
   wrap: {
 
-    marginTop: -24,
-
-    marginHorizontal: layout.pad,
+    marginTop: -20,
 
     marginBottom: spacing.xxl,
 
     zIndex: 30,
 
-  },
-
-  card: {
-
-    backgroundColor: colors.bg,
-
-    borderRadius: radius.xl,
-
-    overflow: 'hidden',
-
-    ...shadow.sm,
+    gap: spacing.md,
 
   },
 
-  bar: {
+  pill: {
 
     flexDirection: 'row',
 
@@ -198,25 +176,21 @@ const styles = StyleSheet.create({
 
     gap: spacing.sm,
 
-    paddingHorizontal: spacing.md,
+    marginHorizontal: layout.pad,
 
-    paddingVertical: spacing.sm,
+    backgroundColor: colors.bg,
 
-  },
+    borderRadius: radius.pill,
 
-  searchIcon: {
+    paddingLeft: spacing.lg,
 
-    width: 36,
+    paddingRight: spacing.sm,
 
-    height: 36,
+    paddingVertical: 6,
 
-    borderRadius: radius.md,
+    borderWidth: StyleSheet.hairlineWidth,
 
-    backgroundColor: colors.primaryLight,
-
-    alignItems: 'center',
-
-    justifyContent: 'center',
+    borderColor: 'rgba(15,20,25,0.08)',
 
   },
 
@@ -226,27 +200,25 @@ const styles = StyleSheet.create({
 
     minWidth: 0,
 
-    fontFamily: fonts.medium,
+    fontFamily: fonts.semiBold,
 
     fontSize: 15,
 
     color: colors.ink,
 
-    paddingVertical: 10,
-
-    paddingHorizontal: 4,
+    paddingVertical: 12,
 
   },
 
   filter: {
 
-    width: 36,
+    width: 38,
 
-    height: 36,
+    height: 38,
 
-    borderRadius: radius.md,
+    borderRadius: radius.pill,
 
-    backgroundColor: colors.bgSubtle,
+    backgroundColor: colors.primaryLight,
 
     alignItems: 'center',
 
@@ -254,37 +226,11 @@ const styles = StyleSheet.create({
 
   },
 
-  tagsBlock: {
-
-    paddingHorizontal: spacing.md,
-
-    paddingBottom: spacing.md,
-
-    paddingTop: spacing.sm,
-
-    backgroundColor: colors.bgSubtle,
-
-    gap: spacing.sm,
-
-  },
-
-  tagsLabel: {
-
-    fontFamily: fonts.semiBold,
-
-    fontSize: 12,
-
-    color: colors.muted,
-
-    letterSpacing: 0.2,
-
-  },
-
   tagsRow: {
 
-    gap: spacing.sm,
+    paddingHorizontal: layout.pad,
 
-    paddingRight: spacing.sm,
+    gap: spacing.sm,
 
   },
 
@@ -294,7 +240,7 @@ const styles = StyleSheet.create({
 
     alignItems: 'center',
 
-    gap: 6,
+    gap: 5,
 
     backgroundColor: colors.bg,
 
@@ -303,6 +249,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
 
     paddingVertical: 9,
+
+    borderWidth: StyleSheet.hairlineWidth,
+
+    borderColor: 'rgba(15,20,25,0.07)',
 
   },
 

@@ -5,6 +5,15 @@ export const STORAGE_KEYS = {
   authComplete: '@qm/auth_complete',
   userProfile: '@qm/user_profile',
   registeredUsers: '@qm/registered_users',
+  profileAccount: '@qm/profile_account',
+  checkoutDraft: '@qm/checkout_draft',
+  userBookings: '@qm/user_bookings',
+  paymentHistory: '@qm/payment_history',
+  bookingOverrides: '@qm/booking_overrides',
+  pendingVisitComplete: '@qm/pending_visit_complete',
+  notificationsInbox: '@qm/notifications_inbox',
+  notificationsRead: '@qm/notifications_read',
+  plusLastSubscription: '@qm/plus_last_subscription',
 } as const;
 
 export interface UserProfile {
@@ -15,4 +24,8 @@ export interface UserProfile {
   gender?: string;
   homeType?: string;
   locality?: string;
+  /** Raipur service zone — maps to admin CRM `zone` */
+  zone?: string;
+  /** Local URI from image picker — maps to `avatar_url` in API */
+  avatarUri?: string;
 }

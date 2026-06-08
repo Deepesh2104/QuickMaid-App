@@ -4,7 +4,9 @@ import * as Haptics from 'expo-haptics';
 
 import { LinearGradient } from 'expo-linear-gradient';
 
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+
+import { Pressable, ScrollView, StyleSheet, Text, View, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 
 import Animated, {
 
@@ -19,6 +21,8 @@ import Animated, {
 
 
 import type { ServiceItem } from '@/constants/services';
+import { useStartBooking } from '@/features/checkout/hooks/useStartBooking';
+import { useOpenServiceDetail } from '@/features/service/hooks/useOpenServiceDetail';
 
 import { FEATURED_SERVICES } from '@/constants/services';
 
@@ -26,11 +30,13 @@ import { getServiceImages } from '../constants/unsplash.images';
 
 import { HomePhoto } from './HomePhoto';
 
+import { HomeSectionHeader } from './HomeSectionHeader';
+
 import { fonts } from '@/theme/fonts';
 
 import { colors } from '@/theme/colors';
 
-import { layout, radius, shadow, spacing } from '@/theme/spacing';
+import { layout, radius, spacing } from '@/theme/spacing';
 
 
 
@@ -38,9 +44,11 @@ const AnimatedPress = Animated.createAnimatedComponent(Pressable);
 
 
 
-const CARD_W = layout.screenWidth * 0.78;
+const CARD_W = layout.screenWidth * 0.82;
 
-const CARD_H = 212;
+const CARD_H = 240;
+
+const SNAP = CARD_W + spacing.md;
 
 
 
@@ -57,7 +65,8 @@ const BADGES = [
 
 
 function FeaturedCard({ service, index }: { service: ServiceItem; index: number }) {
-
+  const { bookService } = useStartBooking();
+  const openDetail = useOpenServiceDetail();
   const scale = useSharedValue(1);
 
   const anim = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
@@ -84,37 +93,29 @@ function FeaturedCard({ service, index }: { service: ServiceItem; index: number 
 
       }}
 
-      onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
+      onPress={() => openDetail(service.id)}
 
       accessibilityRole="button"
 
-      accessibilityLabel={`Book ${service.name}, ${service.price}`}
+      accessibilityLabel={`View ${service.name}, ${service.price}`}
 
     >
 
-      <HomePhoto
-
-        uri={getServiceImages(service.id)}
-
-        style={styles.photo}
-
-        overlay="none"
-
-        tint={service.tint}
-
-      />
-
-
+      <HomePhoto uri={getServiceImages(service.id)} style={styles.photo} overlay="none" tint={service.tint} />
 
       <LinearGradient
 
-        colors={['transparent', 'rgba(0,0,0,0.15)', 'rgba(0,0,0,0.72)']}
+        colors={['transparent', 'rgba(0,0,0,0.25)', 'rgba(0,0,0,0.82)']}
 
         locations={[0.35, 0.62, 1]}
 
         style={StyleSheet.absoluteFill}
 
       />
+
+
+
+      <Text style={styles.watermark}>{String(index + 1).padStart(2, '0')}</Text>
 
 
 
@@ -128,55 +129,57 @@ function FeaturedCard({ service, index }: { service: ServiceItem; index: number 
 
 
 
-      <View style={styles.ratingPill}>
+      <View style={styles.glassFooter}>
 
-        <Ionicons name="star" size={11} color={colors.star} />
+        <View style={styles.footerInner}>
 
-        <Text style={styles.ratingText}>{service.rating}</Text>
+          <View style={styles.copy}>
 
-        <Text style={styles.reviewsText}>({service.reviews})</Text>
+            <Text style={styles.name} numberOfLines={1}>
 
-      </View>
+              {service.name}
 
+            </Text>
 
+            <View style={styles.metaRow}>
 
-      <View style={styles.footer}>
+              <View style={styles.metaItem}>
 
-        <View style={styles.copy}>
+                <Ionicons name="star" size={11} color={colors.star} />
 
-          <Text style={styles.name} numberOfLines={1}>
+                <Text style={styles.metaText}>{service.rating}</Text>
 
-            {service.name}
+              </View>
 
-          </Text>
+              <Text style={styles.metaDot}>·</Text>
 
-          <View style={styles.meta}>
+              <Text style={styles.metaText}>{service.duration}</Text>
 
-            <Ionicons name="time-outline" size={12} color="rgba(255,255,255,0.85)" />
+              <Text style={styles.metaDot}>·</Text>
 
-            <Text style={styles.metaText}>{service.duration}</Text>
+              <Text style={styles.metaText}>{service.reviews} booked</Text>
 
-            <Text style={styles.metaDot}>·</Text>
-
-            <Ionicons name="location-outline" size={12} color="rgba(255,255,255,0.85)" />
-
-            <Text style={styles.metaText}>{service.location}</Text>
+            </View>
 
           </View>
 
-        </View>
+          <View style={styles.priceCol}>
 
+            <Text style={styles.price}>{service.price}</Text>
 
-
-        <View style={styles.priceCol}>
-
-          <Text style={styles.price}>{service.price}</Text>
-
-          <View style={styles.bookBtn}>
-
-            <Text style={styles.bookText}>Book</Text>
-
-            <Ionicons name="arrow-forward" size={12} color={colors.white} />
+            <Pressable
+              style={styles.bookBtn}
+              onPress={(e) => {
+                e.stopPropagation?.();
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                bookService(service);
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={`Book ${service.name}`}
+            >
+              <Text style={styles.bookText}>Book</Text>
+              <Ionicons name="arrow-forward" size={11} color={colors.white} />
+            </Pressable>
 
           </View>
 
@@ -196,55 +199,52 @@ interface HomeFeaturedRailProps {
 
   city: string;
 
+  onSeeAll?: () => void;
+
 }
 
 
 
-export function HomeFeaturedRail({ city }: HomeFeaturedRailProps) {
+export function HomeFeaturedRail({ city, onSeeAll }: HomeFeaturedRailProps) {
+
+  const [active, setActive] = useState(0);
+
+
+
+  const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+
+    const x = e.nativeEvent.contentOffset.x;
+
+    const idx = Math.round(x / SNAP);
+
+    setActive(Math.min(Math.max(idx, 0), FEATURED_SERVICES.length - 1));
+
+  };
+
+
 
   return (
 
     <View style={styles.block}>
 
-      <View style={styles.head}>
+      <HomeSectionHeader
 
-        <View style={styles.headLeft}>
+        eyebrow="Curated for you"
 
-          <View style={styles.headIcon}>
+        title="Popular near you"
 
-            <Ionicons name="flame" size={16} color={colors.primary} />
+        subtitle={`${city}'s favourites this week`}
 
-          </View>
+        icon="flame"
 
-          <View>
+        actionLabel="See all"
 
-            <Text style={styles.title}>Popular near you</Text>
+        onAction={() => {
+          Haptics.selectionAsync();
+          onSeeAll?.();
+        }}
 
-            <Text style={styles.sub}>Top picks in {city} this week</Text>
-
-          </View>
-
-        </View>
-
-        <Pressable
-
-          style={styles.seeAll}
-
-          onPress={() => Haptics.selectionAsync()}
-
-          accessibilityRole="button"
-
-          accessibilityLabel="See all popular services"
-
-        >
-
-          <Text style={styles.link}>See all</Text>
-
-          <Ionicons name="chevron-forward" size={14} color={colors.primary} />
-
-        </Pressable>
-
-      </View>
+      />
 
 
 
@@ -256,7 +256,11 @@ export function HomeFeaturedRail({ city }: HomeFeaturedRailProps) {
 
         decelerationRate="fast"
 
-        snapToInterval={CARD_W + spacing.md}
+        snapToInterval={SNAP}
+
+        onScroll={onScroll}
+
+        scrollEventThrottle={16}
 
         contentContainerStyle={styles.row}
 
@@ -270,6 +274,18 @@ export function HomeFeaturedRail({ city }: HomeFeaturedRailProps) {
 
       </ScrollView>
 
+
+
+      <View style={styles.dots}>
+
+        {FEATURED_SERVICES.map((s, i) => (
+
+          <View key={s.id} style={[styles.dot, i === active && styles.dotOn]} />
+
+        ))}
+
+      </View>
+
     </View>
 
   );
@@ -280,89 +296,7 @@ export function HomeFeaturedRail({ city }: HomeFeaturedRailProps) {
 
 const styles = StyleSheet.create({
 
-  block: { marginBottom: spacing.xxl, marginTop: spacing.sm },
-
-  head: {
-
-    flexDirection: 'row',
-
-    justifyContent: 'space-between',
-
-    alignItems: 'center',
-
-    paddingHorizontal: layout.pad,
-
-    marginBottom: spacing.lg,
-
-  },
-
-  headLeft: {
-
-    flexDirection: 'row',
-
-    alignItems: 'center',
-
-    gap: spacing.md,
-
-    flex: 1,
-
-    minWidth: 0,
-
-  },
-
-  headIcon: {
-
-    width: 40,
-
-    height: 40,
-
-    borderRadius: radius.md,
-
-    backgroundColor: colors.primaryLight,
-
-    alignItems: 'center',
-
-    justifyContent: 'center',
-
-  },
-
-  title: {
-
-    fontFamily: fonts.extraBold,
-
-    fontSize: 20,
-
-    color: colors.ink,
-
-    letterSpacing: -0.4,
-
-  },
-
-  sub: {
-
-    fontFamily: fonts.regular,
-
-    fontSize: 13,
-
-    color: colors.muted,
-
-    marginTop: 2,
-
-  },
-
-  seeAll: {
-
-    flexDirection: 'row',
-
-    alignItems: 'center',
-
-    gap: 2,
-
-    paddingLeft: spacing.sm,
-
-  },
-
-  link: { fontFamily: fonts.semiBold, fontSize: 13, color: colors.primary },
+  block: { marginBottom: spacing.section },
 
   row: {
 
@@ -371,8 +305,6 @@ const styles = StyleSheet.create({
     gap: spacing.md,
 
     paddingRight: layout.pad + spacing.md,
-
-    paddingVertical: 4,
 
   },
 
@@ -388,13 +320,25 @@ const styles = StyleSheet.create({
 
     backgroundColor: colors.bgSubtle,
 
-    ...shadow.sm,
-
   },
 
-  photo: {
+  photo: { ...StyleSheet.absoluteFill },
 
-    ...StyleSheet.absoluteFill,
+  watermark: {
+
+    position: 'absolute',
+
+    top: spacing.lg,
+
+    right: spacing.lg,
+
+    fontFamily: fonts.extraBold,
+
+    fontSize: 52,
+
+    color: 'rgba(255,255,255,0.1)',
+
+    letterSpacing: -2,
 
   },
 
@@ -430,79 +374,49 @@ const styles = StyleSheet.create({
 
   },
 
-  ratingPill: {
+  glassFooter: {
 
     position: 'absolute',
 
-    top: spacing.md,
+    left: spacing.sm,
 
-    right: spacing.md,
+    right: spacing.sm,
+
+    bottom: spacing.sm,
+
+    borderRadius: radius.xl,
+
+    overflow: 'hidden',
+
+    backgroundColor: 'rgba(255,255,255,0.14)',
+
+    borderWidth: 1,
+
+    borderColor: 'rgba(255,255,255,0.2)',
+
+  },
+
+  footerInner: {
 
     flexDirection: 'row',
 
     alignItems: 'center',
 
-    gap: 3,
-
-    backgroundColor: 'rgba(255,255,255,0.94)',
-
-    borderRadius: radius.pill,
-
-    paddingHorizontal: 9,
-
-    paddingVertical: 5,
-
-  },
-
-  ratingText: {
-
-    fontFamily: fonts.bold,
-
-    fontSize: 11,
-
-    color: colors.ink,
-
-  },
-
-  reviewsText: {
-
-    fontFamily: fonts.medium,
-
-    fontSize: 10,
-
-    color: colors.muted,
-
-  },
-
-  footer: {
-
-    position: 'absolute',
-
-    left: 0,
-
-    right: 0,
-
-    bottom: 0,
-
-    flexDirection: 'row',
-
-    alignItems: 'flex-end',
-
     justifyContent: 'space-between',
 
-    padding: spacing.lg,
+    padding: spacing.md,
 
     gap: spacing.md,
 
   },
 
-  copy: { flex: 1, minWidth: 0, gap: 6 },
+  copy: { flex: 1, minWidth: 0, gap: 4 },
 
   name: {
 
     fontFamily: fonts.extraBold,
 
-    fontSize: 18,
+    fontSize: 17,
 
     color: colors.white,
 
@@ -510,45 +424,23 @@ const styles = StyleSheet.create({
 
   },
 
-  meta: {
+  metaRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 4 },
 
-    flexDirection: 'row',
-
-    alignItems: 'center',
-
-    gap: 4,
-
-    flexWrap: 'wrap',
-
-  },
+  metaItem: { flexDirection: 'row', alignItems: 'center', gap: 3 },
 
   metaText: {
 
     fontFamily: fonts.medium,
 
-    fontSize: 12,
+    fontSize: 11,
 
-    color: 'rgba(255,255,255,0.9)',
-
-  },
-
-  metaDot: {
-
-    fontFamily: fonts.regular,
-
-    fontSize: 12,
-
-    color: 'rgba(255,255,255,0.5)',
+    color: 'rgba(255,255,255,0.88)',
 
   },
 
-  priceCol: {
+  metaDot: { color: 'rgba(255,255,255,0.45)', fontSize: 11 },
 
-    alignItems: 'flex-end',
-
-    gap: 8,
-
-  },
+  priceCol: { alignItems: 'flex-end', gap: 6 },
 
   price: {
 
@@ -558,7 +450,7 @@ const styles = StyleSheet.create({
 
     color: colors.white,
 
-    letterSpacing: -0.4,
+    letterSpacing: -0.3,
 
   },
 
@@ -574,9 +466,9 @@ const styles = StyleSheet.create({
 
     borderRadius: radius.pill,
 
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
 
-    paddingVertical: 8,
+    paddingVertical: 7,
 
   },
 
@@ -584,9 +476,41 @@ const styles = StyleSheet.create({
 
     fontFamily: fonts.bold,
 
-    fontSize: 12,
+    fontSize: 11,
 
     color: colors.white,
+
+  },
+
+  dots: {
+
+    flexDirection: 'row',
+
+    justifyContent: 'center',
+
+    gap: 6,
+
+    marginTop: spacing.md,
+
+  },
+
+  dot: {
+
+    width: 6,
+
+    height: 6,
+
+    borderRadius: 3,
+
+    backgroundColor: colors.bgMuted,
+
+  },
+
+  dotOn: {
+
+    width: 18,
+
+    backgroundColor: colors.primary,
 
   },
 
