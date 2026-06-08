@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { fonts } from '../../theme/fonts';
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, TextInput, TextInputProps, View } from 'react-native';
 
@@ -91,7 +92,7 @@ const styles = StyleSheet.create({
   label: {
     ...type.bodySm,
     color: colors.inkSecondary,
-    fontWeight: '600',
+    fontFamily: fonts.semiBold,
     marginBottom: spacing.sm,
   },
   field: {
@@ -120,7 +121,7 @@ const styles = StyleSheet.create({
   prefix: {
     ...type.body,
     color: colors.ink,
-    fontWeight: '600',
+    fontFamily: fonts.semiBold,
     marginRight: spacing.sm,
   },
   input: {
@@ -137,5 +138,5 @@ const styles = StyleSheet.create({
     gap: 5,
     marginTop: spacing.sm,
   },
-  error: { ...type.caption, color: colors.error, fontWeight: '500' },
+  error: { ...type.caption, color: colors.error, fontFamily: fonts.medium },
 });

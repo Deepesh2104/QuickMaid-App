@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { fonts } from '../../src/theme/fonts';
 import { useRouter } from 'expo-router';
 import { ReactNode, useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
@@ -191,7 +192,7 @@ const styles = StyleSheet.create({
   cityText: {
     ...type.bodySm,
     color: colors.primaryDark,
-    fontWeight: '600',
+    fontFamily: fonts.semiBold,
   },
   progressCard: {
     backgroundColor: colors.bgSubtle,
@@ -210,12 +211,12 @@ const styles = StyleSheet.create({
   progressLabel: {
     ...type.bodySm,
     color: colors.inkSecondary,
-    fontWeight: '600',
+    fontFamily: fonts.semiBold,
   },
   progressPct: {
     ...type.bodySm,
     color: colors.primary,
-    fontWeight: '700',
+    fontFamily: fonts.bold,
   },
   progressTrack: {
     height: 5,
@@ -234,7 +235,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     ...type.bodySm,
     color: colors.muted,
-    fontWeight: '600',
+    fontFamily: fonts.semiBold,
     letterSpacing: 0.4,
     textTransform: 'uppercase',
     marginBottom: spacing.md,

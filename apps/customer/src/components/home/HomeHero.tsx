@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { fonts } from '../../theme/fonts';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -122,7 +123,7 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.65)',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-    fontWeight: '600',
+    fontFamily: fonts.semiBold,
   },
   cityRow: {
     flexDirection: 'row',
@@ -132,12 +133,12 @@ const styles = StyleSheet.create({
   city: {
     ...type.body,
     color: colors.white,
-    fontWeight: '700',
+    fontFamily: fonts.bold,
   },
   locality: {
     ...type.bodySm,
     color: 'rgba(255,255,255,0.8)',
-    fontWeight: '500',
+    fontFamily: fonts.medium,
     flexShrink: 1,
   },
   bellBtn: {
@@ -163,7 +164,7 @@ const styles = StyleSheet.create({
   },
   greeting: {
     fontSize: 30,
-    fontWeight: '700',
+    fontFamily: fonts.bold,
     color: colors.white,
     letterSpacing: -0.8,
     lineHeight: 36,

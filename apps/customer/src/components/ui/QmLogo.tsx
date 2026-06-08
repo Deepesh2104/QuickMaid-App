@@ -1,6 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { colors } from '../../theme/colors';
+import { fonts } from '../../theme/fonts';
 import { radius } from '../../theme/spacing';
 
 interface QmLogoProps {
@@ -53,7 +54,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.28)',
   },
-  mark: { color: colors.white, fontWeight: '800' },
-  text: { fontWeight: '700', letterSpacing: -0.5, lineHeight: 26 },
-  sub: { fontSize: 11, fontWeight: '500', letterSpacing: 0.2, marginTop: -2 },
+  mark: { fontFamily: fonts.extraBold, color: colors.white },
+  text: { fontFamily: fonts.bold, letterSpacing: -0.5, lineHeight: 26 },
+  sub: { fontFamily: fonts.medium, fontSize: 11, letterSpacing: 0.2, marginTop: -2 },
 });

@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { fonts } from '../../theme/fonts';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { colors } from '../../theme/colors';
@@ -65,7 +66,7 @@ const styles = StyleSheet.create({
   },
   title: {
     ...type.caption,
-    fontWeight: '700',
+    fontFamily: fonts.bold,
     color: colors.ink,
     marginBottom: 2,
   },

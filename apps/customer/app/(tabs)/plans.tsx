@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { fonts } from '../../src/theme/fonts';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -130,7 +131,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     marginBottom: spacing.lg,
   },
-  savingsText: { ...type.caption, color: colors.success, fontWeight: '700' },
+  savingsText: { ...type.caption, color: colors.success, fontFamily: fonts.bold },
   features: { gap: spacing.sm, marginBottom: spacing.xl },
   featureRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   featureText: { ...type.bodySm, color: colors.inkSecondary },

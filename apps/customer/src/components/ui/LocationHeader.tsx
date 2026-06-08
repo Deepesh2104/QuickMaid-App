@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { fonts } from '../../theme/fonts';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors } from '../../theme/colors';
@@ -45,6 +46,6 @@ const styles = StyleSheet.create({
   },
   text: { flex: 1 },
   cityRow: { flexDirection: 'row', alignItems: 'center', gap: 2 },
-  city: { ...type.bodySm, fontWeight: '700', color: colors.ink },
+  city: { ...type.bodySm, fontFamily: fonts.bold, color: colors.ink },
   address: { ...type.caption, color: colors.muted, marginTop: 1 },
 });

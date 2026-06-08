@@ -1,4 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient';
+import { fonts } from '../../theme/fonts';
 import { ReactNode } from 'react';
 import {
   Dimensions,
@@ -167,7 +168,7 @@ const authStyles = StyleSheet.create({
   demoText: {
     ...type.caption,
     color: colors.primaryDark,
-    fontWeight: '500',
+    fontFamily: fonts.medium,
   },
 });
 
@@ -208,7 +209,7 @@ const styles = StyleSheet.create({
   stepText: {
     ...type.caption,
     color: 'rgba(255,255,255,0.9)',
-    fontWeight: '600',
+    fontFamily: fonts.semiBold,
   },
   heroTitle: {
     ...type.hero,

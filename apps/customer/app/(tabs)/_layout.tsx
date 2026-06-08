@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { fonts } from '../../src/theme/fonts';
 import { Tabs } from 'expo-router';
 import { Platform, StyleSheet } from 'react-native';
 
@@ -80,7 +81,7 @@ const styles = StyleSheet.create({
   },
   tabLabel: {
     fontSize: 11,
-    fontWeight: '600',
+    fontFamily: fonts.semiBold,
     marginTop: 2,
   },
 });

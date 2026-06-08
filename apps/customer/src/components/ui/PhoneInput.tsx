@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { colors } from '../../theme/colors';
+import { fonts } from '../../theme/fonts';
 import { radius, shadow, spacing } from '../../theme/spacing';
 import { type } from '../../theme/typography';
 
@@ -115,13 +116,14 @@ const styles = StyleSheet.create({
   flag: { fontSize: 16 },
   code: {
     ...type.body,
-    fontWeight: '700',
+    fontFamily: fonts.bold,
     color: colors.ink,
   },
   input: {
     flex: 1,
+    minWidth: 0,
+    fontFamily: fonts.semiBold,
     fontSize: 20,
-    fontWeight: '600',
     color: colors.ink,
     letterSpacing: 0.5,
     paddingVertical: 14,
@@ -143,7 +145,7 @@ const styles = StyleSheet.create({
   },
   error: {
     ...type.caption,
+    fontFamily: fonts.medium,
     color: colors.error,
-    fontWeight: '500',
   },
 });

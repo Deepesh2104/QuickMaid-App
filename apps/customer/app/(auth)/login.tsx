@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { fonts } from '../../src/theme/fonts';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
@@ -193,7 +194,7 @@ const styles = StyleSheet.create({
   stepText: {
     ...type.caption,
     color: 'rgba(255,255,255,0.9)',
-    fontWeight: '600',
+    fontFamily: fonts.semiBold,
   },
   heroTitle: {
     ...type.hero,
@@ -220,7 +221,7 @@ const styles = StyleSheet.create({
   cityText: {
     ...type.bodySm,
     color: colors.white,
-    fontWeight: '600',
+    fontFamily: fonts.semiBold,
   },
   heroDecor: {
     position: 'absolute',
@@ -295,7 +296,7 @@ const styles = StyleSheet.create({
   trustText: {
     ...type.caption,
     color: colors.inkSecondary,
-    fontWeight: '500',
+    fontFamily: fonts.medium,
   },
   demoPill: {
     flexDirection: 'row',
@@ -310,7 +311,7 @@ const styles = StyleSheet.create({
   demoText: {
     ...type.caption,
     color: colors.primaryDark,
-    fontWeight: '500',
+    fontFamily: fonts.medium,
     flex: 1,
   },
   footer: {
@@ -329,6 +330,6 @@ const styles = StyleSheet.create({
   },
   legalLink: {
     color: colors.primary,
-    fontWeight: '600',
+    fontFamily: fonts.semiBold,
   },
 });

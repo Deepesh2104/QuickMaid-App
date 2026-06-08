@@ -1,72 +1,64 @@
 import { useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useRef } from 'react';
-import { Animated, StyleSheet, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Animated } from 'react-native';
 
-import { QmLogo } from '../src/components/ui/QmLogo';
+import {
+  AppSplashScreen,
+  SPLASH_DELAY_MS,
+  SPLASH_EXIT_MS,
+} from '../src/components/splash/AppSplashScreen';
 import { getInitialRoute } from '../src/lib/storage';
-import { colors } from '../src/theme/colors';
-import { layout, spacing } from '../src/theme/spacing';
-import { type } from '../src/theme/typography';
 
-SplashScreen.preventAutoHideAsync();
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function SplashRoute() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
-  const opacity = useRef(new Animated.Value(0)).current;
-  const slide = useRef(new Animated.Value(16)).current;
+  const fadeOut = useRef(new Animated.Value(1)).current;
+  const navigated = useRef(false);
 
   useEffect(() => {
-    Animated.parallel([
-      Animated.timing(opacity, { toValue: 1, duration: 700, useNativeDriver: true }),
-      Animated.timing(slide, { toValue: 0, duration: 700, useNativeDriver: true }),
-    ]).start();
+    let cancelled = false;
 
     const boot = async () => {
-      await new Promise((r) => setTimeout(r, 2000));
-      const route = await getInitialRoute();
+      await new Promise<void>((resolve) => {
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+      });
+
+      if (cancelled) return;
+
       await SplashScreen.hideAsync();
-      router.replace(route);
+
+      const visibleAt = Date.now();
+      const route = await getInitialRoute();
+
+      const elapsed = Date.now() - visibleAt;
+      const waitMore = Math.max(0, SPLASH_DELAY_MS - elapsed);
+      await new Promise((r) => setTimeout(r, waitMore));
+
+      if (cancelled || navigated.current) return;
+
+      Animated.timing(fadeOut, {
+        toValue: 0,
+        duration: SPLASH_EXIT_MS,
+        useNativeDriver: true,
+      }).start(({ finished }) => {
+        if (!finished || navigated.current) return;
+        navigated.current = true;
+        router.replace(route);
+      });
     };
+
     boot();
-  }, [opacity, slide, router]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [fadeOut, router]);
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-      <Animated.View style={[styles.center, { opacity, transform: [{ translateY: slide }] }]}>
-        <QmLogo size="lg" />
-        <Text style={styles.tagline}>Trusted cleaning for Raipur homes</Text>
-      </Animated.View>
-      <Text style={styles.footer}>v1.0 · Demo</Text>
-    </View>
+    <Animated.View style={{ flex: 1, opacity: fadeOut }}>
+      <AppSplashScreen />
+    </Animated.View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.bg,
-    paddingHorizontal: layout.pad,
-  },
-  center: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xl,
-  },
-  tagline: {
-    ...type.body,
-    color: colors.muted,
-    textAlign: 'center',
-    maxWidth: 240,
-    lineHeight: 24,
-  },
-  footer: {
-    ...type.caption,
-    color: colors.mutedLight,
-    textAlign: 'center',
-    paddingBottom: spacing.xxxl,
-  },
-});

@@ -1,4 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { fonts } from '../../theme/fonts';
 
 import { colors } from '../../theme/colors';
 import { radius, spacing } from '../../theme/spacing';
@@ -57,12 +58,12 @@ const styles = StyleSheet.create({
   label: {
     ...type.bodySm,
     color: colors.inkSecondary,
-    fontWeight: '600',
+    fontFamily: fonts.semiBold,
   },
   optional: {
     ...type.caption,
     color: colors.mutedLight,
-    fontWeight: '500',
+    fontFamily: fonts.medium,
   },
   row: {
     flexDirection: 'row',
@@ -84,11 +85,11 @@ const styles = StyleSheet.create({
   chipText: {
     ...type.bodySm,
     color: colors.inkSecondary,
-    fontWeight: '500',
+    fontFamily: fonts.medium,
   },
   chipTextOn: {
     color: colors.primaryDark,
-    fontWeight: '600',
+    fontFamily: fonts.semiBold,
   },
   hint: {
     ...type.caption,

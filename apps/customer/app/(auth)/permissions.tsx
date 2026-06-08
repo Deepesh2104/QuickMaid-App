@@ -1,4 +1,5 @@
 import * as Location from 'expo-location';
+import { fonts } from '../../src/theme/fonts';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
@@ -111,7 +112,7 @@ const styles = StyleSheet.create({
   readyText: {
     ...type.bodySm,
     color: colors.white,
-    fontWeight: '600',
+    fontFamily: fonts.semiBold,
   },
   permCard: {
     flexDirection: 'row',
@@ -135,7 +136,7 @@ const styles = StyleSheet.create({
   permText: { flex: 1 },
   permTitle: {
     ...type.bodySm,
-    fontWeight: '600',
+    fontFamily: fonts.semiBold,
     color: colors.ink,
   },
   permDesc: {

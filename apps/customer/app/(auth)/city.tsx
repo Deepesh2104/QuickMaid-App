@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { fonts } from '../../src/theme/fonts';
 import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -99,7 +100,7 @@ const styles = StyleSheet.create({
   liveText: {
     ...type.bodySm,
     color: colors.white,
-    fontWeight: '600',
+    fontFamily: fonts.semiBold,
   },
   search: {
     marginBottom: spacing.lg,
@@ -125,7 +126,7 @@ const styles = StyleSheet.create({
   cityLeft: { flex: 1 },
   cityName: {
     ...type.body,
-    fontWeight: '600',
+    fontFamily: fonts.semiBold,
     color: colors.ink,
   },
   cityNameOn: { color: colors.primaryDark },

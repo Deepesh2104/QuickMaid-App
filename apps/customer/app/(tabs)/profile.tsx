@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { fonts } from '../../src/theme/fonts';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -257,7 +258,7 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     borderColor: colors.primaryLight,
   },
-  avatarText: { ...type.h2, color: colors.white, fontWeight: '800' },
+  avatarText: { ...type.h2, color: colors.white, fontFamily: fonts.extraBold },
   profileInfo: { flex: 1 },
   name: { ...type.h2, color: colors.ink },
   phone: { ...type.bodySm, color: colors.muted, marginTop: 2 },
@@ -288,7 +289,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
-  cityText: { ...type.caption, color: colors.primaryDark, fontWeight: '600' },
+  cityText: { ...type.caption, color: colors.primaryDark, fontFamily: fonts.semiBold },
   editBtn: {
     width: 40,
     height: 40,
@@ -332,7 +333,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   menuBorder: { borderBottomWidth: 1, borderBottomColor: colors.divider },
-  menuLabel: { ...type.body, color: colors.ink, flex: 1, fontWeight: '500' },
+  menuLabel: { ...type.body, color: colors.ink, flex: 1, fontFamily: fonts.medium },
   logout: { marginBottom: spacing.lg },
   version: { ...type.caption, color: colors.mutedLight, textAlign: 'center' },
 });

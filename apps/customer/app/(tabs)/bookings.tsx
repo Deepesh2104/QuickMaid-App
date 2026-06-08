@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { fonts } from '../../src/theme/fonts';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -87,8 +88,8 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   tabOn: { backgroundColor: colors.primary, borderColor: colors.primary },
-  tabText: { ...type.bodySm, color: colors.muted, fontWeight: '500' },
-  tabTextOn: { color: colors.white, fontWeight: '600' },
+  tabText: { ...type.bodySm, color: colors.muted, fontFamily: fonts.medium },
+  tabTextOn: { color: colors.white, fontFamily: fonts.semiBold },
   card: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
@@ -106,7 +107,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   cardInfo: { flex: 1 },
-  service: { ...type.body, fontWeight: '600', color: colors.ink },
+  service: { ...type.body, fontFamily: fonts.semiBold, color: colors.ink },
   meta: { ...type.caption, color: colors.muted, marginTop: 2 },
   badge: { borderRadius: radius.sm, paddingHorizontal: 8, paddingVertical: 4 },
   badgeUp: { backgroundColor: colors.primaryLight },
@@ -114,7 +115,7 @@ const styles = StyleSheet.create({
   badgeText: { ...type.overline, fontSize: 9, color: colors.primaryDark },
   divider: { height: 1, backgroundColor: colors.divider, marginVertical: spacing.md },
   cardBottom: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
-  maid: { ...type.bodySm, fontWeight: '500', color: colors.inkSecondary },
+  maid: { ...type.bodySm, fontFamily: fonts.medium, color: colors.inkSecondary },
   addrRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4, maxWidth: 200 },
   address: { ...type.caption, color: colors.muted, flex: 1 },
   price: { ...type.h3, color: colors.primary },

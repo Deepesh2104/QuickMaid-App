@@ -1,4 +1,5 @@
 import * as Haptics from 'expo-haptics';
+import { fonts } from '../../theme/fonts';
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -162,7 +163,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: radius.lg,
     fontSize: 24,
-    fontWeight: '700',
+    fontFamily: fonts.bold,
     color: colors.ink,
     ...Platform.select({
       ios: { fontVariant: ['tabular-nums'] },
@@ -190,7 +191,7 @@ const styles = StyleSheet.create({
   counter: {
     ...type.caption,
     color: colors.muted,
-    fontWeight: '500',
+    fontFamily: fonts.medium,
   },
   errorRow: {
     flexDirection: 'row',
@@ -200,6 +201,6 @@ const styles = StyleSheet.create({
   error: {
     ...type.caption,
     color: colors.error,
-    fontWeight: '500',
+    fontFamily: fonts.medium,
   },
 });

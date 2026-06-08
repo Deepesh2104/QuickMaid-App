@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { fonts } from '../../theme/fonts';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors } from '../../theme/colors';
@@ -50,11 +51,11 @@ const styles = StyleSheet.create({
   },
   label: {
     ...type.bodySm,
-    fontWeight: '600',
+    fontFamily: fonts.semiBold,
     color: colors.inkSecondary,
   },
   labelActive: {
     color: colors.white,
-    fontWeight: '700',
+    fontFamily: fonts.bold,
   },
 });

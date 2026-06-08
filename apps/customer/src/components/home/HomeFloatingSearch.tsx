@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { fonts } from '../../theme/fonts';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors } from '../../theme/colors';
@@ -76,6 +77,6 @@ const styles = StyleSheet.create({
   tagText: {
     ...type.caption,
     color: colors.inkSecondary,
-    fontWeight: '600',
+    fontFamily: fonts.semiBold,
   },
 });

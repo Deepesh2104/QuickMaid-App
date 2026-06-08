@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { fonts } from '../../src/theme/fonts';
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -222,7 +223,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     ...type.h2,
     color: colors.ink,
-    fontWeight: '800',
+    fontFamily: fonts.extraBold,
     letterSpacing: -0.4,
   },
   sectionSub: {
@@ -259,7 +260,7 @@ const styles = StyleSheet.create({
   rebookText: { flex: 1 },
   rebookTitle: {
     ...type.bodySm,
-    fontWeight: '700',
+    fontFamily: fonts.bold,
     color: colors.ink,
   },
   rebookSub: {
@@ -276,7 +277,7 @@ const styles = StyleSheet.create({
   rebookBtnText: {
     ...type.caption,
     color: colors.white,
-    fontWeight: '700',
+    fontFamily: fonts.bold,
   },
   statsStrip: {
     flexDirection: 'row',
@@ -299,14 +300,14 @@ const styles = StyleSheet.create({
   },
   statValue: {
     ...type.bodySm,
-    fontWeight: '800',
+    fontFamily: fonts.extraBold,
     color: colors.ink,
   },
   statLabel: {
     ...type.caption,
     fontSize: 10,
     color: colors.muted,
-    fontWeight: '600',
+    fontFamily: fonts.semiBold,
   },
   chipsScroll: {
     marginBottom: spacing.xl,
@@ -335,7 +336,7 @@ const styles = StyleSheet.create({
   plusText: { flex: 1 },
   plusTitle: {
     ...type.bodySm,
-    fontWeight: '700',
+    fontFamily: fonts.bold,
     color: colors.ink,
   },
   plusSub: {

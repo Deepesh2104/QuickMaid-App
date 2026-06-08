@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { fonts } from '../../src/theme/fonts';
 import { useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
 import {
@@ -117,7 +118,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: layout.pad,
     marginBottom: spacing.lg,
   },
-  skip: { ...type.bodySm, color: colors.muted, fontWeight: '600' },
+  skip: { ...type.bodySm, color: colors.muted, fontFamily: fonts.semiBold },
   list: { flexGrow: 0 },
   slide: { paddingHorizontal: layout.pad },
   visual: {

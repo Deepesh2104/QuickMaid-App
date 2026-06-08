@@ -1,4 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { fonts } from '../../theme/fonts';
 
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
@@ -35,7 +36,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   text: { flex: 1 },
-  title: { ...type.h3, color: colors.ink, fontWeight: '700' },
+  title: { ...type.h3, color: colors.ink, fontFamily: fonts.bold },
   subtitle: { ...type.bodySm, color: colors.muted, marginTop: 2 },
-  action: { ...type.bodySm, color: colors.primary, fontWeight: '600' },
+  action: { ...type.bodySm, color: colors.primary, fontFamily: fonts.semiBold },
 });

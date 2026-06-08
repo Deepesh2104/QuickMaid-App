@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { fonts } from '../../theme/fonts';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors } from '../../theme/colors';
@@ -42,7 +43,7 @@ const styles = StyleSheet.create({
   label: {
     ...type.caption,
     color: colors.ink,
-    fontWeight: '600',
+    fontFamily: fonts.semiBold,
     textAlign: 'center',
     lineHeight: 14,
   },

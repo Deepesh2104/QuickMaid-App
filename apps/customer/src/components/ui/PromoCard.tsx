@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { fonts } from '../../theme/fonts';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -120,7 +121,7 @@ const styles = StyleSheet.create({
   code: {
     ...type.bodySm,
     color: colors.white,
-    fontWeight: '700',
+    fontFamily: fonts.bold,
     letterSpacing: 0.5,
   },
   ctaRow: {
@@ -131,7 +132,7 @@ const styles = StyleSheet.create({
   cta: {
     ...type.bodySm,
     color: colors.white,
-    fontWeight: '600',
+    fontFamily: fonts.semiBold,
   },
   deco: {
     width: 90,

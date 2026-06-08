@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { fonts } from '../../theme/fonts';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors } from '../../theme/colors';
@@ -81,7 +82,7 @@ const styles = StyleSheet.create({
   info: { flex: 1 },
   name: {
     ...type.bodySm,
-    fontWeight: '700',
+    fontFamily: fonts.bold,
     color: colors.ink,
     marginBottom: 2,
   },
@@ -97,7 +98,7 @@ const styles = StyleSheet.create({
   },
   rating: {
     ...type.caption,
-    fontWeight: '700',
+    fontFamily: fonts.bold,
     color: colors.ink,
   },
   reviews: {
@@ -119,7 +120,7 @@ const styles = StyleSheet.create({
   },
   price: {
     ...type.bodySm,
-    fontWeight: '800',
+    fontFamily: fonts.extraBold,
     color: colors.ink,
   },
 });

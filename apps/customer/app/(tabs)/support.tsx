@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { fonts } from '../../src/theme/fonts';
 import { useState } from 'react';
 import {
   KeyboardAvoidingView,
@@ -137,7 +138,7 @@ const styles = StyleSheet.create({
   },
   statusDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.success },
   statusText: { flex: 1 },
-  statusTitle: { ...type.bodySm, fontWeight: '700', color: colors.success },
+  statusTitle: { ...type.bodySm, fontFamily: fonts.bold, color: colors.success },
   statusSub: { ...type.caption, color: colors.muted },
   sectionTitle: { ...type.h3, color: colors.ink, marginBottom: spacing.md },
   topicGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.xxl },
@@ -157,7 +158,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  topicLabel: { ...type.bodySm, fontWeight: '600', color: colors.inkSecondary },
+  topicLabel: { ...type.bodySm, fontFamily: fonts.semiBold, color: colors.inkSecondary },
   chatCard: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
@@ -185,7 +186,7 @@ const styles = StyleSheet.create({
     ...shadow.sm,
   },
   faqHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  faqQ: { ...type.bodySm, fontWeight: '600', color: colors.ink, flex: 1, marginRight: 8 },
+  faqQ: { ...type.bodySm, fontFamily: fonts.semiBold, color: colors.ink, flex: 1, marginRight: 8 },
   faqA: { ...type.bodySm, color: colors.muted, marginTop: spacing.sm, lineHeight: 20 },
   contactRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.lg },
   chip: {
@@ -197,5 +198,5 @@ const styles = StyleSheet.create({
     gap: 4,
     ...shadow.sm,
   },
-  chipLabel: { ...type.caption, fontWeight: '600', color: colors.inkSecondary },
+  chipLabel: { ...type.caption, fontFamily: fonts.semiBold, color: colors.inkSecondary },
 });
