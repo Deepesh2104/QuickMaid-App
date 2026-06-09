@@ -14,6 +14,11 @@ export async function getPaymentHistory(): Promise<PaymentRecord[]> {
   }
 }
 
+export async function getPaymentById(id: string): Promise<PaymentRecord | undefined> {
+  const history = await getPaymentHistory();
+  return history.find((r) => r.id === id || r.paymentId === id || r.orderId === id);
+}
+
 export async function addPaymentRecord(record: PaymentRecord): Promise<void> {
   const existing = await getPaymentHistory();
   await AsyncStorage.setItem(STORAGE_KEYS.paymentHistory, JSON.stringify([record, ...existing].slice(0, 50)));

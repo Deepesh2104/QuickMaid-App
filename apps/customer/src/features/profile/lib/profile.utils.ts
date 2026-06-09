@@ -1,5 +1,29 @@
 import type { SavedAddress } from '../types/profile.types';
 
+const STANDARD_LABELS = new Set(['Home', 'Office', 'Other']);
+
+export function getAddressDisplayLabel(addr: Pick<SavedAddress, 'label' | 'labelNote'>): string {
+  if (addr.label === 'Other' && addr.labelNote?.trim()) return addr.labelNote.trim();
+  return addr.label;
+}
+
+export function getAddressLabelIcon(label: string): 'home' | 'business' | 'location' {
+  if (label === 'Home') return 'home';
+  if (label === 'Office') return 'business';
+  return 'location';
+}
+
+export function getAddressLabelIonicon(
+  label: string,
+  variant: 'outline' | 'filled' = 'outline',
+): 'home' | 'business' | 'location' | 'home-outline' | 'business-outline' | 'location-outline' {
+  const base = getAddressLabelIcon(label);
+  if (variant === 'filled') return base;
+  if (base === 'home') return 'home-outline';
+  if (base === 'business') return 'business-outline';
+  return 'location-outline';
+}
+
 export function formatAddressLine(addr: Partial<SavedAddress>): string {
   const parts = [
     addr.flatNo,
@@ -17,7 +41,10 @@ export function normalizeAddress(raw: Partial<SavedAddress> & { id: string }): S
   const street = raw.street?.trim() || raw.line?.trim() || '';
   const base = {
     id: raw.id,
-    label: raw.label ?? 'Home',
+    label: STANDARD_LABELS.has(raw.label ?? '') ? (raw.label ?? 'Home') : 'Other',
+    labelNote:
+      raw.labelNote?.trim() ||
+      (raw.label && !STANDARD_LABELS.has(raw.label) ? raw.label.trim() : undefined),
     flatNo: raw.flatNo?.trim() || undefined,
     building: raw.building?.trim() || undefined,
     street,
@@ -28,6 +55,8 @@ export function normalizeAddress(raw: Partial<SavedAddress> & { id: string }): S
     gateCode: raw.gateCode?.trim() || undefined,
     contactPhone: raw.contactPhone?.trim() || undefined,
     isDefault: raw.isDefault ?? false,
+    latitude: raw.latitude,
+    longitude: raw.longitude,
   };
   return {
     ...base,

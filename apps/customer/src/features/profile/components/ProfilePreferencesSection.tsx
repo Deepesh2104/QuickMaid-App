@@ -3,18 +3,12 @@ import * as Haptics from 'expo-haptics';
 import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 
 import { HomeSectionHeader } from '@/features/home/components/HomeSectionHeader';
+import { useTranslation } from '@/i18n/LanguageProvider';
 import { fonts } from '@/theme/fonts';
 import { colors } from '@/theme/colors';
 import { layout, radius, spacing } from '@/theme/spacing';
 
 import type { NotificationPrefs } from '../types/profile.types';
-
-const PREFS: { id: keyof NotificationPrefs; icon: 'calendar-outline' | 'pricetag-outline' | 'person-outline' | 'chatbox-outline'; label: string; sub: string }[] = [
-  { id: 'booking', icon: 'calendar-outline', label: 'Booking updates', sub: 'Confirmations & reminders' },
-  { id: 'offers', icon: 'pricetag-outline', label: 'Offers & deals', sub: 'Member discounts & promos' },
-  { id: 'pro', icon: 'person-outline', label: 'Pro arrival alerts', sub: 'Live tracking notifications' },
-  { id: 'sms', icon: 'chatbox-outline', label: 'SMS updates', sub: 'OTP & visit summaries' },
-];
 
 interface ProfilePreferencesSectionProps {
   prefs: NotificationPrefs;
@@ -24,14 +18,36 @@ interface ProfilePreferencesSectionProps {
 }
 
 export function ProfilePreferencesSection({ prefs, language, onPrefChange, onEditLanguage }: ProfilePreferencesSectionProps) {
+  const { t } = useTranslation();
+
+  const PREFS: {
+    id: keyof NotificationPrefs;
+    icon: 'calendar-outline' | 'pricetag-outline' | 'person-outline' | 'chatbox-outline';
+    labelKey: string;
+    subKey: string;
+  }[] = [
+    { id: 'booking', icon: 'calendar-outline', labelKey: 'profile.prefBooking', subKey: 'profile.prefBookingSub' },
+    { id: 'offers', icon: 'pricetag-outline', labelKey: 'profile.prefOffers', subKey: 'profile.prefOffersSub' },
+    { id: 'pro', icon: 'person-outline', labelKey: 'profile.prefPro', subKey: 'profile.prefProSub' },
+    { id: 'sms', icon: 'chatbox-outline', labelKey: 'profile.prefSms', subKey: 'profile.prefSmsSub' },
+  ];
+
   const flip = async (id: keyof NotificationPrefs, val: boolean) => {
     Haptics.selectionAsync();
     await onPrefChange({ ...prefs, [id]: val });
   };
 
+  const langLabel = language === 'en' ? t('profile.languageEnglish') : t('profile.languageHindi');
+
   return (
     <View style={styles.block}>
-      <HomeSectionHeader eyebrow="Preferences" title="Notifications" subtitle="Saved automatically" icon="notifications-outline" compact />
+      <HomeSectionHeader
+        eyebrow={t('profile.preferencesEyebrow')}
+        title={t('profile.notificationsTitle')}
+        subtitle={t('profile.notificationsSub')}
+        icon="notifications-outline"
+        compact
+      />
 
       <View style={styles.card}>
         {PREFS.map((p, i) => (
@@ -40,8 +56,8 @@ export function ProfilePreferencesSection({ prefs, language, onPrefChange, onEdi
               <Ionicons name={p.icon} size={18} color={colors.primaryDark} />
             </View>
             <View style={styles.rowCopy}>
-              <Text style={styles.rowLabel}>{p.label}</Text>
-              <Text style={styles.rowSub}>{p.sub}</Text>
+              <Text style={styles.rowLabel}>{t(p.labelKey)}</Text>
+              <Text style={styles.rowSub}>{t(p.subKey)}</Text>
             </View>
             <Switch
               value={prefs[p.id]}
@@ -58,8 +74,8 @@ export function ProfilePreferencesSection({ prefs, language, onPrefChange, onEdi
           <Ionicons name="language-outline" size={18} color={colors.primaryDark} />
         </View>
         <View style={styles.rowCopy}>
-          <Text style={styles.rowLabel}>Language</Text>
-          <Text style={styles.rowSub}>{language === 'en' ? 'English' : 'हिंदी'} · Tap to change</Text>
+          <Text style={styles.rowLabel}>{t('profile.language')}</Text>
+          <Text style={styles.rowSub}>{t('profile.languageTap', { lang: langLabel })}</Text>
         </View>
         <View style={styles.langBadge}>
           <Text style={styles.langText}>{language.toUpperCase()}</Text>

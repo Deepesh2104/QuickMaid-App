@@ -1,10 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View, type ViewStyle } from 'react-native';
 
 import type { UserProfile } from '@/constants/app';
 import { RAIPUR_ZONES } from '@/constants/customer.zones';
+import { HomePhoto } from '@/features/home/components/HomePhoto';
+import { HOME_IMAGES } from '@/features/home/constants/unsplash.images';
 import { fonts } from '@/theme/fonts';
 import { colors } from '@/theme/colors';
 import { layout, radius, spacing } from '@/theme/spacing';
@@ -23,6 +25,8 @@ interface ProfileHeaderProps {
   onEditProfile: () => void;
   onChangePhoto: () => void;
 }
+
+const fill: ViewStyle = StyleSheet.absoluteFill;
 
 export function ProfileHeader({
   paddingTop,
@@ -44,15 +48,20 @@ export function ProfileHeader({
 
   const zone = RAIPUR_ZONES.find((z) => z.value === profile?.zone)?.label;
   const complete = completionPercent >= 100;
+  const firstName = profile?.name?.split(' ')[0];
 
   return (
     <View style={styles.wrap}>
-      <LinearGradient colors={['#084F4A', '#0B6E67', '#0F1419']} locations={[0, 0.45, 1]} style={StyleSheet.absoluteFill} />
-      <View style={styles.orbA} pointerEvents="none" />
-      <View style={styles.orbB} pointerEvents="none" />
-      <View style={styles.orbC} pointerEvents="none" />
+      <HomePhoto uri={HOME_IMAGES.profileHero} style={styles.photo} overlay="none" />
+      <LinearGradient
+        colors={['rgba(8,79,74,0.42)', 'rgba(11,110,103,0.55)', 'rgba(15,20,25,0.92)', '#0F1419']}
+        locations={[0, 0.32, 0.68, 1]}
+        style={fill}
+      />
+      <View style={styles.glowA} pointerEvents="none" />
+      <View style={styles.glowB} pointerEvents="none" />
 
-      <View style={[styles.content, { paddingTop: paddingTop + spacing.md }]}>
+      <View style={[styles.content, { paddingTop: paddingTop + spacing.sm }]}>
         <View style={styles.topRow}>
           <View style={styles.brandPill}>
             <Ionicons name="shield-checkmark" size={12} color="#6EE7B7" />
@@ -71,7 +80,7 @@ export function ProfileHeader({
           </Pressable>
         </View>
 
-        <View style={styles.heroRow}>
+        <View style={styles.identity}>
           <ProfileAvatar
             name={profile?.name}
             uri={profile?.avatarUri}
@@ -79,26 +88,34 @@ export function ProfileHeader({
             showCamera
             complete={complete}
             percent={completionPercent}
+            style={styles.avatar}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               onChangePhoto();
             }}
           />
 
-          <View style={styles.heroCopy}>
-            <Text style={styles.name} numberOfLines={2}>{profile?.name ?? 'Your profile'}</Text>
-            <Text style={styles.phone}>+91 {profile?.phone ?? '—'}</Text>
-            <Text style={styles.zone}>{zone ?? profile?.city ?? 'Raipur'} · QuickMaid</Text>
+          <Text style={styles.name} numberOfLines={2}>
+            {profile?.name ?? 'Your profile'}
+          </Text>
+          {firstName ? (
+            <Text style={styles.greeting}>Welcome back, {firstName}</Text>
+          ) : null}
+          <Text style={styles.phone}>+91 {profile?.phone ?? '—'}</Text>
+          <Text style={styles.zone}>{zone ?? profile?.city ?? 'Raipur'} · QuickMaid member</Text>
 
-            <View style={styles.memberRow}>
-              <View style={[styles.memberBadge, isPlusMember && styles.memberBadgePlus]}>
-                <Ionicons name={isPlusMember ? 'diamond' : 'leaf'} size={11} color={isPlusMember ? '#FCD34D' : '#6EE7B7'} />
-                <Text style={[styles.memberText, isPlusMember && styles.memberTextPlus]}>
-                  {isPlusMember ? 'Plus Member' : 'Free plan'}
-                </Text>
-              </View>
-              <Text style={styles.since}>Since {memberSince}</Text>
+          <View style={styles.memberRow}>
+            <View style={[styles.memberBadge, isPlusMember && styles.memberBadgePlus]}>
+              <Ionicons
+                name={isPlusMember ? 'diamond' : 'leaf'}
+                size={11}
+                color={isPlusMember ? '#FCD34D' : '#6EE7B7'}
+              />
+              <Text style={[styles.memberText, isPlusMember && styles.memberTextPlus]}>
+                {isPlusMember ? 'Plus Member' : 'Free plan'}
+              </Text>
             </View>
+            <Text style={styles.since}>Since {memberSince}</Text>
           </View>
         </View>
 
@@ -108,8 +125,12 @@ export function ProfileHeader({
               <View style={styles.statIcon}>
                 <Ionicons name={s.icon} size={14} color="#6EE7B7" />
               </View>
-              <Text style={styles.statValue}>{s.value}</Text>
-              <Text style={styles.statLabel}>{s.label}</Text>
+              <Text style={styles.statValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
+                {s.value}
+              </Text>
+              <Text style={styles.statLabel} numberOfLines={1}>
+                {s.label}
+              </Text>
             </View>
           ))}
         </View>
@@ -120,41 +141,34 @@ export function ProfileHeader({
 
 const styles = StyleSheet.create({
   wrap: {
-    minHeight: 268,
+    minHeight: 318,
     overflow: 'hidden',
     backgroundColor: '#0F1419',
   },
-  orbA: {
+  photo: { ...fill },
+  glowA: {
     position: 'absolute',
-    top: -30,
-    right: -20,
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    backgroundColor: 'rgba(110,231,183,0.12)',
-  },
-  orbB: {
-    position: 'absolute',
-    bottom: 40,
-    left: -40,
+    top: 48,
+    right: -24,
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: 'rgba(110,231,183,0.14)',
   },
-  orbC: {
+  glowB: {
     position: 'absolute',
-    top: 80,
-    right: 60,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: 'rgba(252,211,77,0.1)',
+    bottom: 72,
+    left: -36,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: 'rgba(252,211,77,0.08)',
   },
   content: {
     paddingHorizontal: layout.pad,
-    paddingBottom: spacing.xxl + 6,
+    paddingBottom: spacing.xxl + 8,
     gap: spacing.lg,
+    zIndex: 2,
   },
   topRow: {
     flexDirection: 'row',
@@ -165,12 +179,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: 'rgba(255,255,255,0.12)',
     borderRadius: radius.pill,
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderWidth: 1,
-    borderColor: 'rgba(110,231,183,0.2)',
+    borderColor: 'rgba(110,231,183,0.28)',
   },
   brandText: {
     fontFamily: fonts.semiBold,
@@ -181,90 +195,105 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: radius.pill,
-    backgroundColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: 'rgba(255,255,255,0.14)',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.14)',
+    borderColor: 'rgba(255,255,255,0.2)',
   },
-  heroRow: {
-    flexDirection: 'row',
+  identity: {
     alignItems: 'center',
-    gap: spacing.lg,
+    gap: 4,
   },
-  heroCopy: {
-    flex: 1,
-    gap: 3,
+  avatar: {
+    alignSelf: 'center',
+    marginBottom: spacing.xs,
   },
   name: {
     fontFamily: fonts.extraBold,
-    fontSize: 22,
+    fontSize: 24,
     color: colors.white,
-    letterSpacing: -0.5,
-    lineHeight: 26,
+    letterSpacing: -0.6,
+    lineHeight: 28,
+    textAlign: 'center',
+  },
+  greeting: {
+    fontFamily: fonts.medium,
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.72)',
+    textAlign: 'center',
   },
   phone: {
     fontFamily: fonts.semiBold,
     fontSize: 14,
-    color: 'rgba(255,255,255,0.88)',
+    color: 'rgba(255,255,255,0.9)',
+    textAlign: 'center',
   },
   zone: {
     fontFamily: fonts.medium,
     fontSize: 12,
     color: 'rgba(255,255,255,0.55)',
+    textAlign: 'center',
   },
   memberRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: spacing.sm,
-    marginTop: 4,
+    marginTop: spacing.xs,
     flexWrap: 'wrap',
   },
   memberBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: 'rgba(255,255,255,0.12)',
     borderRadius: radius.pill,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.14)',
   },
   memberBadgePlus: {
-    backgroundColor: 'rgba(252,211,77,0.15)',
+    backgroundColor: 'rgba(252,211,77,0.18)',
+    borderColor: 'rgba(252,211,77,0.28)',
   },
   memberText: {
     fontFamily: fonts.bold,
     fontSize: 10,
     color: '#6EE7B7',
+    letterSpacing: 0.2,
   },
   memberTextPlus: { color: '#FCD34D' },
   since: {
     fontFamily: fonts.medium,
     fontSize: 10,
-    color: 'rgba(255,255,255,0.45)',
+    color: 'rgba(255,255,255,0.48)',
   },
   stats: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: 'rgba(255,255,255,0.1)',
     borderRadius: radius.xl,
     paddingVertical: spacing.md,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
+    borderColor: 'rgba(255,255,255,0.16)',
   },
   stat: {
     flex: 1,
+    minWidth: 0,
     alignItems: 'center',
     gap: 3,
+    paddingHorizontal: 2,
   },
   statSep: {
     borderLeftWidth: StyleSheet.hairlineWidth,
-    borderLeftColor: 'rgba(255,255,255,0.12)',
+    borderLeftColor: 'rgba(255,255,255,0.14)',
   },
   statIcon: {
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: 'rgba(110,231,183,0.12)',
+    backgroundColor: 'rgba(110,231,183,0.16)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -276,6 +305,6 @@ const styles = StyleSheet.create({
   statLabel: {
     fontFamily: fonts.medium,
     fontSize: 10,
-    color: 'rgba(255,255,255,0.55)',
+    color: 'rgba(255,255,255,0.58)',
   },
 });

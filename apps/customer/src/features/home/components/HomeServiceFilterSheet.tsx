@@ -32,7 +32,7 @@ export function HomeServiceFilterSheet({ visible, sort, onClose, onSortChange }:
       <View style={[styles.sheet, { paddingBottom: insets.bottom + spacing.lg }]}>
         <View style={styles.handle} />
         <Text style={styles.title}>Sort services</Text>
-        <Text style={styles.sub}>Applies to the catalogue below</Text>
+        <Text style={styles.sub}>Applies to the full catalogue list</Text>
 
         {SORT_OPTIONS.map((opt) => {
           const on = sort === opt.id;

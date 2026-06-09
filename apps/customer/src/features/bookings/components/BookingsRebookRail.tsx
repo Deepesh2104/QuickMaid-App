@@ -1,14 +1,18 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { ListPagination } from '@/components/ui/ListPagination';
 import type { DemoBooking } from '@/constants/demo';
+import { PAGE_SIZE_REBOOK } from '@/constants/pagination';
+import { usePagination } from '@/hooks/usePagination';
 import { HomePhoto } from '@/features/home/components/HomePhoto';
 import { HomeSectionHeader } from '@/features/home/components/HomeSectionHeader';
 import { getServiceImages } from '@/features/home/constants/unsplash.images';
 import { useRebookBooking } from '../hooks/useRebookBooking';
 import { getBookingImageId } from '../utils/bookings.utils';
+import { useLayoutMetrics } from '@/hooks/useLayoutMetrics';
 import { fonts } from '@/theme/fonts';
 import { colors } from '@/theme/colors';
 import { layout, radius, spacing } from '@/theme/spacing';
@@ -17,8 +21,16 @@ interface BookingsRebookRailProps {
   bookings: DemoBooking[];
 }
 
+const GAP = layout.cardGap;
+
 export function BookingsRebookRail({ bookings }: BookingsRebookRailProps) {
+  const { serviceCardW } = useLayoutMetrics();
   const rebook = useRebookBooking();
+  const { page, setPage, totalPages, start, end, slice, total } = usePagination(
+    bookings,
+    PAGE_SIZE_REBOOK,
+    'rebook',
+  );
   if (bookings.length === 0) return null;
 
   return (
@@ -31,27 +43,29 @@ export function BookingsRebookRail({ bookings }: BookingsRebookRailProps) {
         compact
       />
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
-        {bookings.map((b) => {
+      <View style={styles.row}>
+        {slice.map((b) => {
           const imageId = getBookingImageId(b.service);
           return (
             <Pressable
               key={b.id}
-              style={styles.card}
-              onPress={() => rebook(b.service)}
+              style={[styles.card, { width: serviceCardW }]}
+              onPress={() => {
+                Haptics.selectionAsync();
+                rebook(b.service);
+              }}
               accessibilityRole="button"
               accessibilityLabel={`Rebook ${b.service}`}
             >
               <HomePhoto uri={getServiceImages(imageId)} style={styles.photo} overlay="none" borderRadius={radius.lg} />
-              <LinearGradient
-                colors={['transparent', 'rgba(15,20,25,0.75)']}
-                style={styles.photoGrad}
-              />
+              <LinearGradient colors={['transparent', 'rgba(15,20,25,0.78)']} style={styles.photoGrad} />
               <View style={styles.cardBody}>
                 <Text style={styles.service} numberOfLines={1}>
                   {b.service}
                 </Text>
-                <Text style={styles.maid}>{b.maid}</Text>
+                <Text style={styles.maid} numberOfLines={1}>
+                  {b.maid}
+                </Text>
                 <View style={styles.meta}>
                   <Text style={styles.price}>{b.price}</Text>
                   <View style={styles.rebookBtn}>
@@ -63,23 +77,35 @@ export function BookingsRebookRail({ bookings }: BookingsRebookRailProps) {
             </Pressable>
           );
         })}
-      </ScrollView>
+      </View>
+
+      <View style={styles.pager}>
+        <ListPagination
+          page={page}
+          totalPages={totalPages}
+          start={start}
+          end={end}
+          total={total}
+          onPageChange={setPage}
+          label="Book again"
+          itemLabel="services"
+          compact
+        />
+      </View>
     </View>
   );
 }
 
-const CARD_W = 168;
-
 const styles = StyleSheet.create({
   block: { marginBottom: spacing.section },
   row: {
+    flexDirection: 'row',
     paddingHorizontal: layout.pad,
-    gap: spacing.sm,
-    paddingRight: layout.pad + spacing.sm,
+    gap: GAP,
   },
+  pager: { marginHorizontal: layout.pad },
   card: {
-    width: CARD_W,
-    height: 200,
+    height: 196,
     borderRadius: radius.xl,
     overflow: 'hidden',
     backgroundColor: colors.bgSubtle,
@@ -111,11 +137,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginTop: spacing.xs,
+    gap: spacing.xs,
   },
   price: {
     fontFamily: fonts.bold,
     fontSize: 13,
     color: '#6EE7B7',
+    flex: 1,
   },
   rebookBtn: {
     flexDirection: 'row',

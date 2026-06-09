@@ -4,6 +4,8 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useLayoutMetrics } from '@/hooks/useLayoutMetrics';
+
 
 
 import { colors } from '@/theme/colors';
@@ -23,6 +25,7 @@ import { PlusStickyCta } from './PlusStickyCta';
 export function PlusScreen() {
 
   const insets = useSafeAreaInsets();
+  const { tabScrollPadLg } = useLayoutMetrics();
 
   const [selectedPlan, setSelectedPlan] = useState('plus');
 
@@ -34,7 +37,7 @@ export function PlusScreen() {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 100 }]}
+        contentContainerStyle={[styles.scroll, { paddingBottom: tabScrollPadLg }]}
       >
 
         <PlusHeader paddingTop={insets.top} />

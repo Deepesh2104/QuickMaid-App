@@ -3,6 +3,8 @@ import type { Ionicons } from '@expo/vector-icons';
 export interface SavedAddress {
   id: string;
   label: string;
+  /** When label is "Other" — whose place / how to identify it (e.g. Mom's home). */
+  labelNote?: string;
   flatNo?: string;
   building?: string;
   street: string;
@@ -14,6 +16,8 @@ export interface SavedAddress {
   gateCode?: string;
   contactPhone?: string;
   isDefault: boolean;
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface PaymentMethod {
@@ -84,12 +88,15 @@ export interface ProfileAccountData {
   isPlusMember: boolean;
   plusVisitsLeft: number;
   plusRenewDate: string;
+  plusPaused?: boolean;
+  plusPausedUntil?: string;
   visits: number;
   rating: string;
   saved: string;
   referrals: number;
   supportTickets: number;
   csat: number;
+  savedServiceIds: string[];
 }
 
 export type ProfileSheet =

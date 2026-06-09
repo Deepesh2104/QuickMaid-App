@@ -3,7 +3,7 @@ import { StyleSheet } from 'react-native';
 import { colors } from '@/theme/colors';
 import { layout, radius, spacing } from '@/theme/spacing';
 
-export const PAGE_SIZE = 5;
+export { PAGE_SIZE } from '@/constants/pagination';
 
 export const premium = {
   section: {

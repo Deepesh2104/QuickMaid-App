@@ -4,16 +4,27 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useStartBooking } from '@/features/checkout/hooks/useStartBooking';
+import { useTranslation } from '@/i18n/LanguageProvider';
+import type { BookingFilter } from './BookingsFilterRail';
 import { fonts } from '@/theme/fonts';
 import { colors } from '@/theme/colors';
 import { layout, radius, spacing } from '@/theme/spacing';
 
+const FILTER_LABEL_KEYS: Record<BookingFilter, string> = {
+  all: 'bookings.filterLabelAll',
+  upcoming: 'bookings.filterLabelUpcoming',
+  completed: 'bookings.filterLabelCompleted',
+  cancelled: 'bookings.filterLabelCancelled',
+};
+
 interface BookingsEmptyStateProps {
-  filterLabel: string;
+  filter: BookingFilter;
 }
 
-export function BookingsEmptyState({ filterLabel }: BookingsEmptyStateProps) {
+export function BookingsEmptyState({ filter }: BookingsEmptyStateProps) {
   const { bookDefault } = useStartBooking();
+  const { t } = useTranslation();
+  const filterLabel = t(FILTER_LABEL_KEYS[filter]);
 
   return (
     <View style={styles.wrap}>
@@ -25,10 +36,8 @@ export function BookingsEmptyState({ filterLabel }: BookingsEmptyStateProps) {
         </View>
       </View>
 
-      <Text style={styles.title}>No {filterLabel.toLowerCase()} visits</Text>
-      <Text style={styles.sub}>
-        Book from Home — your visits will show here with pro details, live tracking & invoices.
-      </Text>
+      <Text style={styles.title}>{t('bookings.emptyTitle', { filter: filterLabel })}</Text>
+      <Text style={styles.sub}>{t('bookings.emptySub')}</Text>
 
       <Pressable
         style={styles.cta}
@@ -37,7 +46,7 @@ export function BookingsEmptyState({ filterLabel }: BookingsEmptyStateProps) {
       >
         <LinearGradient colors={['#0B6E67', '#084F4A']} style={styles.ctaGrad}>
           <Ionicons name="sparkles" size={16} color={colors.white} />
-          <Text style={styles.ctaText}>Book your first clean</Text>
+          <Text style={styles.ctaText}>{t('bookings.emptyCta')}</Text>
         </LinearGradient>
       </Pressable>
     </View>

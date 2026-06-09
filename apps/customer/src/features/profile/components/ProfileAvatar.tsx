@@ -33,6 +33,8 @@ interface ProfileAvatarProps {
   showCamera?: boolean;
   complete?: boolean;
   percent?: number;
+  ringColor?: string;
+  accessibilityLabel?: string;
   onPress?: () => void;
   style?: ViewStyle;
 }
@@ -44,12 +46,14 @@ export function ProfileAvatar({
   showCamera = false,
   complete,
   percent,
+  ringColor: ringColorProp,
+  accessibilityLabel = 'Change profile photo',
   onPress,
   style,
 }: ProfileAvatarProps) {
   const s = SIZES[size];
   const initials = initialsFrom(name);
-  const ringColor = complete ? colors.success : '#FCD34D';
+  const ringColor = ringColorProp ?? (complete ? colors.success : '#FCD34D');
 
   const body = (
     <View style={[styles.wrap, style]}>
@@ -95,7 +99,7 @@ export function ProfileAvatar({
   if (!onPress) return body;
 
   return (
-    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel="Change profile photo">
+    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={accessibilityLabel}>
       {body}
     </Pressable>
   );

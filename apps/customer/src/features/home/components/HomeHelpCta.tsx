@@ -65,7 +65,6 @@ export function HomeHelpCta() {
 }
 
 const GAP = spacing.md;
-const TILE_W = (layout.screenWidth - layout.pad * 2 - GAP) / 2;
 
 const styles = StyleSheet.create({
   block: { marginBottom: spacing.section },
@@ -75,7 +74,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: layout.pad,
   },
   tile: {
-    width: TILE_W,
+    flex: 1,
+    minWidth: 0,
     backgroundColor: colors.bg,
     borderRadius: radius.xl,
     padding: spacing.lg,

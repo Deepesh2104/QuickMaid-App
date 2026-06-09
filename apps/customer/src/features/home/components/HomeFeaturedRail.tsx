@@ -36,6 +36,7 @@ import { fonts } from '@/theme/fonts';
 
 import { colors } from '@/theme/colors';
 
+import { useLayoutMetrics } from '@/hooks/useLayoutMetrics';
 import { layout, radius, spacing } from '@/theme/spacing';
 
 
@@ -44,11 +45,7 @@ const AnimatedPress = Animated.createAnimatedComponent(Pressable);
 
 
 
-const CARD_W = layout.screenWidth * 0.82;
-
 const CARD_H = 240;
-
-const SNAP = CARD_W + spacing.md;
 
 
 
@@ -64,7 +61,7 @@ const BADGES = [
 
 
 
-function FeaturedCard({ service, index }: { service: ServiceItem; index: number }) {
+function FeaturedCard({ service, index, cardW }: { service: ServiceItem; index: number; cardW: number }) {
   const { bookService } = useStartBooking();
   const openDetail = useOpenServiceDetail();
   const scale = useSharedValue(1);
@@ -79,7 +76,7 @@ function FeaturedCard({ service, index }: { service: ServiceItem; index: number 
 
     <AnimatedPress
 
-      style={[styles.card, anim]}
+      style={[styles.card, { width: cardW }, anim]}
 
       onPressIn={() => {
 
@@ -196,18 +193,14 @@ function FeaturedCard({ service, index }: { service: ServiceItem; index: number 
 
 
 interface HomeFeaturedRailProps {
-
   city: string;
-
-  onSeeAll?: () => void;
-
 }
 
-
-
-export function HomeFeaturedRail({ city, onSeeAll }: HomeFeaturedRailProps) {
+export function HomeFeaturedRail({ city }: HomeFeaturedRailProps) {
 
   const [active, setActive] = useState(0);
+  const { railCardW } = useLayoutMetrics();
+  const snap = railCardW + spacing.md;
 
 
 
@@ -215,7 +208,7 @@ export function HomeFeaturedRail({ city, onSeeAll }: HomeFeaturedRailProps) {
 
     const x = e.nativeEvent.contentOffset.x;
 
-    const idx = Math.round(x / SNAP);
+    const idx = Math.round(x / snap);
 
     setActive(Math.min(Math.max(idx, 0), FEATURED_SERVICES.length - 1));
 
@@ -228,22 +221,10 @@ export function HomeFeaturedRail({ city, onSeeAll }: HomeFeaturedRailProps) {
     <View style={styles.block}>
 
       <HomeSectionHeader
-
         eyebrow="Curated for you"
-
-        title="Popular near you"
-
-        subtitle={`${city}'s favourites this week`}
-
+        title="This week's picks"
+        subtitle={`${city} · packages & specialty cleans`}
         icon="flame"
-
-        actionLabel="See all"
-
-        onAction={() => {
-          Haptics.selectionAsync();
-          onSeeAll?.();
-        }}
-
       />
 
 
@@ -256,7 +237,7 @@ export function HomeFeaturedRail({ city, onSeeAll }: HomeFeaturedRailProps) {
 
         decelerationRate="fast"
 
-        snapToInterval={SNAP}
+        snapToInterval={snap}
 
         onScroll={onScroll}
 
@@ -268,7 +249,7 @@ export function HomeFeaturedRail({ city, onSeeAll }: HomeFeaturedRailProps) {
 
         {FEATURED_SERVICES.map((s, i) => (
 
-          <FeaturedCard key={s.id} service={s} index={i} />
+          <FeaturedCard key={s.id} service={s} index={i} cardW={railCardW} />
 
         ))}
 
@@ -309,8 +290,6 @@ const styles = StyleSheet.create({
   },
 
   card: {
-
-    width: CARD_W,
 
     height: CARD_H,
 

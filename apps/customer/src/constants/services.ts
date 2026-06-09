@@ -920,4 +920,9 @@ export const HOME_SERVICES: ServiceItem[] = [
   },
 ];
 
-export const FEATURED_SERVICES = HOME_SERVICES.slice(0, 3);
+/** Curated carousel — distinct from Quick Grid (deep/regular/kitchen/bathroom). */
+const FEATURED_IDS = ['movein', 'monthly', 'sofa'] as const;
+
+export const FEATURED_SERVICES = FEATURED_IDS.map(
+  (id) => HOME_SERVICES.find((s) => s.id === id)!,
+).filter(Boolean);

@@ -2,6 +2,8 @@ import { useEffect } from 'react';
 
 import { StyleSheet, View } from 'react-native';
 
+import { useLayoutMetrics } from '@/hooks/useLayoutMetrics';
+
 import Animated, {
 
   useAnimatedStyle,
@@ -41,6 +43,7 @@ function Bone({ style }: { style: object }) {
 
 
 export function HomeSkeleton() {
+  const { twoColW } = useLayoutMetrics();
 
   return (
 
@@ -54,9 +57,9 @@ export function HomeSkeleton() {
 
       <View style={styles.split}>
 
-        <Bone style={styles.halfTile} />
+        <Bone style={[styles.halfTile, { width: twoColW }]} />
 
-        <Bone style={styles.halfTile} />
+        <Bone style={[styles.halfTile, { width: twoColW }]} />
 
       </View>
 
@@ -69,12 +72,6 @@ export function HomeSkeleton() {
   );
 
 }
-
-
-
-const INNER_W = layout.screenWidth - layout.pad * 2;
-
-const HALF_W = (INNER_W - layout.cardGap) / 2;
 
 
 
@@ -125,8 +122,6 @@ const styles = StyleSheet.create({
   },
 
   halfTile: {
-
-    width: HALF_W,
 
     height: 168,
 

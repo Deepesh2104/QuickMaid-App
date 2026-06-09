@@ -1,11 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
+import { type Href, useRouter } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
-import { useStartBooking } from '@/features/checkout/hooks/useStartBooking';
 import { resolveServiceIdFromSpecialty } from '@/features/bookings/utils/bookings.utils';
+import { useStartBooking } from '@/features/checkout/hooks/useStartBooking';
+import { useOpenProProfile } from '@/features/pro/hooks/useOpenProProfile';
+import { useTranslation } from '@/i18n/LanguageProvider';
 import { premium } from '../constants/home.premium';
 import { HomeSectionHeader } from './HomeSectionHeader';
 import { fonts } from '@/theme/fonts';
@@ -15,14 +18,47 @@ import { layout, radius, spacing } from '@/theme/spacing';
 const AnimatedPress = Animated.createAnimatedComponent(Pressable);
 
 const PROS = [
-  { id: 'p1', name: 'Sunita Devi', jobs: '1.2k', rating: '4.9', specialty: 'Deep clean', initial: 'S', tone: ['#E6F4F2', '#FFFFFF'] as const },
-  { id: 'p2', name: 'Kamla Bai', jobs: '980', rating: '4.9', specialty: 'Regular', initial: 'K', tone: ['#EEF6FF', '#FFFFFF'] as const },
-  { id: 'p3', name: 'Rekha Sahu', jobs: '860', rating: '4.8', specialty: 'Kitchen', initial: 'R', tone: ['#FFF8EE', '#FFFFFF'] as const },
-  { id: 'p4', name: 'Meena T.', jobs: '740', rating: '4.8', specialty: 'Bathroom', initial: 'M', tone: ['#F3EEFF', '#FFFFFF'] as const },
+  {
+    id: 'm_sunita',
+    name: 'Sunita Devi',
+    jobs: '1.2k',
+    rating: '4.9',
+    specialty: 'Deep clean',
+    initial: 'S',
+    tone: ['#E6F4F2', '#FFFFFF'] as const,
+  },
+  {
+    id: 'm_kamla',
+    name: 'Kamla Bai',
+    jobs: '980',
+    rating: '4.9',
+    specialty: 'Regular',
+    initial: 'K',
+    tone: ['#EEF6FF', '#FFFFFF'] as const,
+  },
+  {
+    id: 'm_rekha',
+    name: 'Rekha Sahu',
+    jobs: '860',
+    rating: '4.8',
+    specialty: 'Kitchen',
+    initial: 'R',
+    tone: ['#FFF8EE', '#FFFFFF'] as const,
+  },
+  {
+    id: 'm_meena',
+    name: 'Meena T.',
+    jobs: '740',
+    rating: '4.8',
+    specialty: 'Bathroom',
+    initial: 'M',
+    tone: ['#F3EEFF', '#FFFFFF'] as const,
+  },
 ];
 
 function ProCard({ pro }: { pro: (typeof PROS)[0] }) {
   const { bookById, bookDefault } = useStartBooking();
+  const openPro = useOpenProProfile();
   const scale = useSharedValue(1);
   const anim = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
@@ -36,13 +72,16 @@ function ProCard({ pro }: { pro: (typeof PROS)[0] }) {
         scale.value = withSpring(1, { damping: 14, stiffness: 320 });
       }}
       onPress={() => {
-        Haptics.selectionAsync();
+        openPro(pro.id, { name: pro.name });
+      }}
+      onLongPress={() => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         const id = resolveServiceIdFromSpecialty(pro.specialty);
         if (id) bookById(id);
         else bookDefault();
       }}
       accessibilityRole="button"
-      accessibilityLabel={`${pro.name}, ${pro.rating} stars`}
+      accessibilityLabel={`${pro.name}, ${pro.rating} stars. Tap for profile, long press to book.`}
     >
       <LinearGradient colors={[...pro.tone]} style={styles.cardBg} />
       <View style={styles.avatar}>
@@ -68,14 +107,22 @@ function ProCard({ pro }: { pro: (typeof PROS)[0] }) {
 }
 
 export function HomeTopPros() {
+  const router = useRouter();
+  const { t } = useTranslation();
+
   return (
     <View style={styles.block}>
       <HomeSectionHeader
-        eyebrow="Verified team"
-        title="Top-rated pros"
-        subtitle="Background-checked · Trained for Raipur homes"
+        eyebrow={t('home.topProsEyebrow')}
+        title={t('home.topProsTitle')}
+        subtitle={t('home.topProsSub')}
         icon="people-outline"
         compact
+        actionLabel={t('home.seeAll')}
+        onAction={() => {
+          Haptics.selectionAsync();
+          router.push('/pro' as Href);
+        }}
       />
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
         {PROS.map((p) => (

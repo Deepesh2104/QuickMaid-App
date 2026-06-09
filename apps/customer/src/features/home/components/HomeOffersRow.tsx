@@ -5,7 +5,6 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
 import { type Href, useRouter } from 'expo-router';
-import { Share } from 'react-native';
 import { HomeSectionHeader } from './HomeSectionHeader';
 import { fonts } from '@/theme/fonts';
 import { colors } from '@/theme/colors';
@@ -49,9 +48,7 @@ function OfferTile({ offer }: { offer: (typeof OFFERS)[0] }) {
       onPress={() => {
         Haptics.selectionAsync();
         if (offer.id === 'refer') {
-          void Share.share({
-            message: 'Join QuickMaid with my code QM100 — get ₹100 off your first home clean! https://quickmaid.app',
-          });
+          router.push('/account/referrals' as Href);
         } else {
           router.push('/(tabs)/plans' as Href);
         }
@@ -63,8 +60,8 @@ function OfferTile({ offer }: { offer: (typeof OFFERS)[0] }) {
       <View style={[styles.icon, { backgroundColor: colors.white }]}>
         <Ionicons name={offer.icon} size={18} color={offer.ink} />
       </View>
-      <Text style={styles.title}>{offer.title}</Text>
-      <Text style={[styles.sub, { color: offer.ink }]}>{offer.sub}</Text>
+      <Text style={styles.title} numberOfLines={1}>{offer.title}</Text>
+      <Text style={[styles.sub, { color: offer.ink }]} numberOfLines={2}>{offer.sub}</Text>
       <Ionicons name="chevron-forward" size={14} color={offer.ink} style={styles.chev} />
     </AnimatedPress>
   );
@@ -90,7 +87,6 @@ export function HomeOffersRow() {
 }
 
 const GAP = spacing.md;
-const TILE_W = (layout.screenWidth - layout.pad * 2 - GAP) / 2;
 
 const styles = StyleSheet.create({
   block: { marginBottom: spacing.section },
@@ -100,7 +96,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: layout.pad,
   },
   tile: {
-    width: TILE_W,
+    flex: 1,
+    minWidth: 0,
     borderRadius: radius.xl,
     padding: spacing.md,
     gap: 4,

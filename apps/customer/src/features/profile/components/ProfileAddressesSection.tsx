@@ -8,6 +8,7 @@ import { fonts } from '@/theme/fonts';
 import { colors } from '@/theme/colors';
 import { layout, radius, spacing } from '@/theme/spacing';
 
+import { getAddressDisplayLabel, getAddressLabelIcon } from '../lib/profile.utils';
 import type { SavedAddress } from '../types/profile.types';
 
 interface ProfileAddressesSectionProps {
@@ -22,7 +23,7 @@ export function ProfileAddressesSection({ addresses, onAdd, onEdit }: ProfileAdd
       <HomeSectionHeader
         eyebrow="Locations"
         title="Saved addresses"
-        subtitle={`${addresses.length} place${addresses.length === 1 ? '' : 's'} · Tap to edit`}
+        subtitle={`${addresses.length} place${addresses.length === 1 ? '' : 's'} · Tap to edit on map`}
         icon="location-outline"
         actionLabel="Add new"
         onAction={() => {
@@ -42,15 +43,15 @@ export function ProfileAddressesSection({ addresses, onAdd, onEdit }: ProfileAdd
               onEdit(addr.id);
             }}
             accessibilityRole="button"
-            accessibilityLabel={`Edit ${addr.label} address`}
+            accessibilityLabel={`Edit ${getAddressDisplayLabel(addr)} address`}
           >
             <LinearGradient colors={addr.isDefault ? ['#E6F4F2', '#FFFFFF'] : ['#FAFBFC', '#FFFFFF']} style={StyleSheet.absoluteFill} />
             <View style={[styles.icon, addr.isDefault && styles.iconDefault]}>
-              <Ionicons name={addr.label === 'Home' ? 'home' : addr.label === 'Office' ? 'business' : 'location'} size={18} color={colors.primaryDark} />
+              <Ionicons name={getAddressLabelIcon(addr.label)} size={18} color={colors.primaryDark} />
             </View>
             <View style={styles.copy}>
               <View style={styles.labelRow}>
-                <Text style={styles.label}>{addr.label}</Text>
+                <Text style={styles.label}>{getAddressDisplayLabel(addr)}</Text>
                 {addr.isDefault ? (
                   <View style={styles.defaultBadge}>
                     <Text style={styles.defaultText}>Default</Text>

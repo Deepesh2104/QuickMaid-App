@@ -227,7 +227,6 @@ export function HelpReachSection({ onOpenChat }: HelpReachSectionProps) {
 }
 
 const GAP = spacing.sm;
-const CHANNEL_W = (layout.screenWidth - layout.pad * 2 - GAP) / 2;
 
 const styles = StyleSheet.create({
   block: { marginBottom: spacing.sm },
@@ -286,7 +285,8 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   channelTile: {
-    width: CHANNEL_W,
+    flex: 1,
+    minWidth: 0,
     borderRadius: radius.xxl,
     padding: spacing.lg,
     gap: 4,

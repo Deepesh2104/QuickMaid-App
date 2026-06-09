@@ -1,6 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
+import { type Href, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { fonts } from '@/theme/fonts';
 import { colors } from '@/theme/colors';
@@ -14,10 +16,11 @@ interface ProfileCrmStatsStripProps {
 }
 
 export function ProfileCrmStatsStrip({ referrals, csat, supportTickets, planLabel }: ProfileCrmStatsStripProps) {
+  const router = useRouter();
   const stats = [
-    { icon: 'star' as const, value: csat.toFixed(1), label: 'CSAT' },
-    { icon: 'gift-outline' as const, value: String(referrals), label: 'Referrals' },
-    { icon: 'headset-outline' as const, value: String(supportTickets), label: 'Tickets' },
+    { id: 'csat', icon: 'star' as const, value: csat.toFixed(1), label: 'CSAT' },
+    { id: 'referrals', icon: 'gift-outline' as const, value: String(referrals), label: 'Referrals' },
+    { id: 'tickets', icon: 'headset-outline' as const, value: String(supportTickets), label: 'Tickets' },
   ];
 
   return (
@@ -28,20 +31,59 @@ export function ProfileCrmStatsStrip({ referrals, csat, supportTickets, planLabe
         <Text style={styles.planText}>{planLabel}</Text>
       </View>
       <View style={styles.row}>
-        {stats.map((s) => (
-          <View key={s.label} style={styles.stat}>
-            <Ionicons name={s.icon} size={13} color={colors.primary} />
-            <Text style={styles.statValue}>{s.value}</Text>
-            <Text style={styles.statLabel}>{s.label}</Text>
-          </View>
-        ))}
+        {stats.map((s) => {
+          const inner = (
+            <>
+              <Ionicons name={s.icon} size={13} color={colors.primary} />
+              <Text style={styles.statValue}>{s.value}</Text>
+              <Text style={styles.statLabel}>{s.label}</Text>
+            </>
+          );
+
+          if (s.id === 'referrals') {
+            return (
+              <Pressable
+                key={s.label}
+                style={styles.stat}
+                onPress={() => {
+                  Haptics.selectionAsync();
+                  router.push('/account/referrals' as Href);
+                }}
+                accessibilityRole="button"
+              >
+                {inner}
+              </Pressable>
+            );
+          }
+
+          if (s.id === 'tickets') {
+            return (
+              <Pressable
+                key={s.label}
+                style={styles.stat}
+                onPress={() => {
+                  Haptics.selectionAsync();
+                  router.push('/support/tickets' as Href);
+                }}
+                accessibilityRole="button"
+              >
+                {inner}
+              </Pressable>
+            );
+          }
+
+          return (
+            <View key={s.label} style={styles.stat}>
+              {inner}
+            </View>
+          );
+        })}
       </View>
     </View>
   );
 }
 
 const GAP = spacing.sm;
-const STAT_W = (layout.screenWidth - layout.pad * 2 - spacing.lg * 2 - GAP * 2) / 3;
 
 const styles = StyleSheet.create({
   wrap: {
@@ -57,7 +99,7 @@ const styles = StyleSheet.create({
   planRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   planText: { fontFamily: fonts.semiBold, fontSize: 12, color: colors.muted },
   row: { flexDirection: 'row', gap: GAP },
-  stat: { width: STAT_W, alignItems: 'center', gap: 2 },
+  stat: { flex: 1, minWidth: 0, alignItems: 'center', gap: 2 },
   statValue: { fontFamily: fonts.extraBold, fontSize: 15, color: colors.ink },
   statLabel: { fontFamily: fonts.medium, fontSize: 10, color: colors.muted },
 });

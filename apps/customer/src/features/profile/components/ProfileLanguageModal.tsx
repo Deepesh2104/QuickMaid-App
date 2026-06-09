@@ -3,17 +3,13 @@ import * as Haptics from 'expo-haptics';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { useTranslation } from '@/i18n/LanguageProvider';
 import { fonts } from '@/theme/fonts';
 import { colors } from '@/theme/colors';
 import { radius, spacing } from '@/theme/spacing';
 
 import { ProfileEditSheet } from './ProfileEditSheet';
 import { premiumFormStyles, ProfileSectionCard } from './ProfilePremiumParts';
-
-const LANGS = [
-  { id: 'en' as const, label: 'English', sub: 'Default · Full app support', flag: '🇮🇳' },
-  { id: 'hi' as const, label: 'हिंदी', sub: 'Coming soon · Partial', flag: '🇮🇳' },
-];
 
 interface ProfileLanguageModalProps {
   visible: boolean;
@@ -23,8 +19,14 @@ interface ProfileLanguageModalProps {
 }
 
 export function ProfileLanguageModal({ visible, value, onClose, onSave }: ProfileLanguageModalProps) {
+  const { t } = useTranslation();
   const [selected, setSelected] = useState(value);
   const [saving, setSaving] = useState(false);
+
+  const LANGS = [
+    { id: 'en' as const, label: t('profile.languageEnglish'), sub: t('profile.langEnSub'), flag: '🇮🇳' },
+    { id: 'hi' as const, label: t('profile.languageHindi'), sub: t('profile.langHiSub'), flag: '🇮🇳' },
+  ];
 
   useEffect(() => {
     if (visible) setSelected(value);
@@ -41,31 +43,33 @@ export function ProfileLanguageModal({ visible, value, onClose, onSave }: Profil
     <ProfileEditSheet
       visible={visible}
       icon="language-outline"
-      badge={selected === 'en' ? 'English' : 'हिंदी'}
-      title="Language"
-      subtitle="Choose how you read the app"
+      badge={selected === 'en' ? t('profile.languageModalBadgeEn') : t('profile.languageModalBadgeHi')}
+      title={t('profile.languageModalTitle')}
+      subtitle={t('profile.languageModalSub')}
       onClose={onClose}
-      saveLabel="Save language"
+      saveLabel={t('profile.languageModalSave')}
       onSave={save}
       saving={saving}
       saveIcon="globe-outline"
     >
       <View style={premiumFormStyles.form}>
-        <ProfileSectionCard icon="chatbubbles-outline" title="App language" hint="More languages coming soon">
+        <ProfileSectionCard
+          icon="chatbubbles-outline"
+          title={t('profile.languageModalSection')}
+          hint={t('profile.languageModalHint')}
+        >
           {LANGS.map((l) => {
             const on = selected === l.id;
-            const disabled = l.id === 'hi';
             return (
               <Pressable
                 key={l.id}
-                style={[styles.row, on && styles.rowOn, disabled && styles.rowOff]}
+                style={[styles.row, on && styles.rowOn]}
                 onPress={() => {
-                  if (disabled) return;
                   Haptics.selectionAsync();
                   setSelected(l.id);
                 }}
                 accessibilityRole="radio"
-                accessibilityState={{ selected: on, disabled }}
+                accessibilityState={{ selected: on }}
               >
                 <Text style={styles.flag}>{l.flag}</Text>
                 <View style={styles.copy}>
@@ -100,7 +104,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primaryLight,
     borderColor: colors.primary,
   },
-  rowOff: { opacity: 0.55 },
   flag: { fontSize: 28 },
   copy: { flex: 1, gap: 2 },
   label: {

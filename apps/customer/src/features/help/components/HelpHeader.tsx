@@ -4,6 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Pressable, StyleSheet, Text, View, type ViewStyle } from 'react-native';
 
 import { SUPPORT_CONTACT } from '@/constants/demo';
+import { useTranslation } from '@/i18n/LanguageProvider';
 import { useOpenNotifications } from '@/features/notifications/hooks/useOpenNotifications';
 import { HomePhoto } from '@/features/home/components/HomePhoto';
 import { HOME_IMAGES } from '@/features/home/constants/unsplash.images';
@@ -16,12 +17,13 @@ interface HelpHeaderProps {
 }
 
 const STATS = [
-  { icon: 'time-outline' as const, value: '5 min', label: 'Avg reply' },
-  { icon: 'chatbubbles-outline' as const, value: 'Live', label: 'Chat' },
-  { icon: 'call-outline' as const, value: '7–10', label: 'Daily hrs' },
+  { icon: 'time-outline' as const, value: '5 min', labelKey: 'help.statReply' },
+  { icon: 'chatbubbles-outline' as const, value: 'Live', labelKey: 'help.statChat' },
+  { icon: 'call-outline' as const, value: '7–10', labelKey: 'help.statHours' },
 ];
 
 export function HelpHeader({ paddingTop }: HelpHeaderProps) {
+  const { t } = useTranslation();
   const openNotifications = useOpenNotifications();
 
   return (
@@ -49,19 +51,19 @@ export function HelpHeader({ paddingTop }: HelpHeaderProps) {
         </View>
 
         <View style={styles.copy}>
-          <Text style={styles.eyebrow}>SUPPORT</Text>
-          <Text style={styles.title}>Help centre</Text>
+          <Text style={styles.eyebrow}>{t('help.eyebrow')}</Text>
+          <Text style={styles.title}>{t('help.title')}</Text>
           <Text style={styles.sub}>
-            Chat, call, or email — we're here {SUPPORT_CONTACT.hours.toLowerCase()}
+            {t('help.sub', { hours: SUPPORT_CONTACT.hours.toLowerCase() })}
           </Text>
         </View>
 
         <View style={styles.stats}>
           {STATS.map((s, i) => (
-            <View key={s.label} style={[styles.stat, i > 0 && styles.statSep]}>
+            <View key={s.labelKey} style={[styles.stat, i > 0 && styles.statSep]}>
               <Ionicons name={s.icon} size={13} color="#6EE7B7" />
               <Text style={styles.statValue}>{s.value}</Text>
-              <Text style={styles.statLabel}>{s.label}</Text>
+              <Text style={styles.statLabel}>{t(s.labelKey)}</Text>
             </View>
           ))}
         </View>

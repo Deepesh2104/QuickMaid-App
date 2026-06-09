@@ -9,6 +9,7 @@ import {
 import { formatInr } from '@/features/checkout/lib/checkout.utils';
 import type { PaymentMode } from '@/features/checkout/types/checkout.types';
 import { addPaymentRecord } from '@/features/payment/lib/payment.storage';
+import { addWalletTransaction } from '@/features/wallet/lib/wallet.storage';
 import type { GatewayPaymentResult } from '@/features/payment/types/payment.types';
 import { getProfileAccount, saveProfileAccount } from '@/features/profile/lib/profile.storage';
 import type { PaymentMethod, ProfileAccountData } from '@/features/profile/types/profile.types';
@@ -139,6 +140,17 @@ export async function processPlusSubscription(
   };
 
   await savePlusSubscription(record);
+
+  if (walletDeduction > 0) {
+    await addWalletTransaction({
+      kind: 'debit',
+      source: 'plus',
+      amount: walletDeduction,
+      title: `${plan.name} membership`,
+      subtitle: subscriptionId,
+      refId: subscriptionId,
+    });
+  }
 
   if (gatewayResult?.success) {
     await addPaymentRecord({

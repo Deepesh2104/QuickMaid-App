@@ -42,7 +42,9 @@ export function CheckoutStickyFooter({ amount, label, sub, onPress, disabled, lo
           <ActivityIndicator color={colors.white} />
         ) : (
           <>
-            <Text style={styles.btnText}>{label}</Text>
+            <Text style={styles.btnText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>
+              {label}
+            </Text>
             <Ionicons name="arrow-forward" size={18} color={colors.white} />
           </>
         )}
@@ -67,7 +69,7 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 8,
   },
-  priceBlock: { gap: 2 },
+  priceBlock: { flex: 1, minWidth: 0, gap: 2 },
   price: {
     fontFamily: fonts.extraBold,
     fontSize: 20,
@@ -80,7 +82,7 @@ const styles = StyleSheet.create({
     color: colors.muted,
   },
   btn: {
-    flex: 1,
+    flex: 1.2,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -88,7 +90,8 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     paddingVertical: 15,
     overflow: 'hidden',
-    minWidth: 160,
+    minWidth: 120,
+    maxWidth: '62%',
   },
   btnOff: { opacity: 0.5 },
   btnText: {

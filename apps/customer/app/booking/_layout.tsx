@@ -10,6 +10,7 @@ export default function BookingLayout() {
       <Stack.Screen name="track/[id]" />
       <Stack.Screen name="invoice/[id]" />
       <Stack.Screen name="receipt/[id]" />
+      <Stack.Screen name="dispute/[id]" />
     </Stack>
   );
 }

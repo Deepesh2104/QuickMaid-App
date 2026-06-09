@@ -11,7 +11,7 @@ import { layout, radius, spacing } from '@/theme/spacing';
 
 const ROUTES: Record<string, Href> = {
   act1: '/(tabs)/bookings',
-  act2: '/(tabs)/plans',
+  act2: '/plus/billing',
   act3: '/(tabs)/bookings',
 };
 

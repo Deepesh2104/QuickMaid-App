@@ -1,4 +1,7 @@
+import type { DemoBooking } from '@/constants/demo';
 import { HOME_SERVICES } from '@/constants/services';
+
+import type { BookingFilter } from '../components/BookingsFilterRail';
 
 const SERVICE_IMAGE_MAP: Record<string, string> = {
   'Deep clean': 'deep',
@@ -37,6 +40,26 @@ export function resolveServiceIdFromName(name: string): string | undefined {
 
 export function resolveServiceIdFromSpecialty(specialty: string): string | undefined {
   return PRO_SPECIALTY_MAP[specialty] ?? resolveServiceIdFromName(specialty);
+}
+
+const STATUS_ORDER: Record<DemoBooking['status'], number> = {
+  upcoming: 0,
+  completed: 1,
+  cancelled: 2,
+};
+
+export function sortBookings(bookings: DemoBooking[]): DemoBooking[] {
+  return [...bookings].sort((a, b) => {
+    const byStatus = STATUS_ORDER[a.status] - STATUS_ORDER[b.status];
+    if (byStatus !== 0) return byStatus;
+    return b.id.localeCompare(a.id);
+  });
+}
+
+export function filterBookings(bookings: DemoBooking[], filter: BookingFilter): DemoBooking[] {
+  const sorted = sortBookings(bookings);
+  if (filter === 'all') return sorted;
+  return sorted.filter((b) => b.status === filter);
 }
 
 export function getGreeting() {

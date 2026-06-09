@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { type Href, useRouter } from 'expo-router';
+import { consumePendingCheckoutCoupon } from '@/features/coupons/lib/coupon.storage';
 import { useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 
@@ -67,6 +68,14 @@ export function CheckoutPaymentScreen() {
       ?? account.payments.find((p) => p.type === 'upi');
     if (def) updateDraft({ paymentMethodId: def.id, paymentMode: def.type === 'card' ? 'card' : 'upi' });
   }, [account, draft.paymentMethodId, updateDraft]);
+
+  useEffect(() => {
+    void consumePendingCheckoutCoupon().then((code) => {
+      if (code && !draft.couponCode) {
+        updateDraft({ couponCode: code });
+      }
+    });
+  }, [draft.couponCode, updateDraft]);
 
   const toggleWallet = (val: boolean) => {
     Haptics.selectionAsync();

@@ -46,8 +46,6 @@ const SAFETY = {
 };
 
 const GAP = spacing.sm;
-const HALF_W = (layout.screenWidth - layout.pad * 2 - GAP) / 2;
-const FULL_W = layout.screenWidth - layout.pad * 2;
 
 export function HelpPolicyBento() {
   const openLegal = useOpenLegal();
@@ -123,7 +121,8 @@ const styles = StyleSheet.create({
     marginBottom: GAP,
   },
   halfCard: {
-    width: HALF_W,
+    flex: 1,
+    minWidth: 0,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
@@ -155,8 +154,7 @@ const styles = StyleSheet.create({
     lineHeight: 14,
   },
   banner: {
-    width: FULL_W,
-    alignSelf: 'center',
+    marginHorizontal: layout.pad,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,

@@ -6,7 +6,7 @@ import { Pressable, StyleSheet, Text, View, type ViewStyle } from 'react-native'
 import { useOpenNotifications } from '@/features/notifications/hooks/useOpenNotifications';
 import { HomePhoto } from '@/features/home/components/HomePhoto';
 import { HOME_IMAGES } from '@/features/home/constants/unsplash.images';
-import { getGreeting } from '../utils/bookings.utils';
+import { useTranslation } from '@/i18n/LanguageProvider';
 import { fonts } from '@/theme/fonts';
 import { colors } from '@/theme/colors';
 import { layout, radius, spacing } from '@/theme/spacing';
@@ -21,9 +21,9 @@ interface BookingsHeaderProps {
 }
 
 const STATS = [
-  { icon: 'calendar' as const, valueKey: 'upcoming' as const, label: 'Upcoming' },
-  { icon: 'checkmark-circle' as const, valueKey: 'completed' as const, label: 'Done' },
-  { icon: 'layers' as const, valueKey: 'total' as const, label: 'Total' },
+  { icon: 'calendar' as const, valueKey: 'upcoming' as const, labelKey: 'bookings.statUpcoming' },
+  { icon: 'checkmark-circle' as const, valueKey: 'completed' as const, labelKey: 'bookings.statDone' },
+  { icon: 'layers' as const, valueKey: 'total' as const, labelKey: 'bookings.statTotal' },
 ];
 
 export function BookingsHeader({
@@ -34,9 +34,10 @@ export function BookingsHeader({
   total,
   unreadCount = 0,
 }: BookingsHeaderProps) {
+  const { t, greeting } = useTranslation();
   const openNotifications = useOpenNotifications();
   const values = { upcoming, completed, total };
-  const greeting = firstName ? `${getGreeting()}, ${firstName}` : getGreeting();
+  const greetingLine = greeting(firstName);
 
   return (
     <View style={styles.wrap}>
@@ -64,19 +65,17 @@ export function BookingsHeader({
         </View>
 
         <View style={styles.copy}>
-          <Text style={styles.eyebrow}>YOUR BOOKINGS</Text>
-          <Text style={styles.title}>Your visits</Text>
-          <Text style={styles.sub}>
-            {greeting} · Track pros, invoices & rebook
-          </Text>
+          <Text style={styles.eyebrow}>{t('bookings.eyebrow')}</Text>
+          <Text style={styles.title}>{t('bookings.title')}</Text>
+          <Text style={styles.sub}>{t('bookings.sub', { greeting: greetingLine })}</Text>
         </View>
 
         <View style={styles.stats} accessibilityRole="summary">
           {STATS.map((s, i) => (
-            <View key={s.label} style={[styles.stat, i > 0 && styles.statSep]}>
+            <View key={s.labelKey} style={[styles.stat, i > 0 && styles.statSep]}>
               <Ionicons name={s.icon} size={13} color="#6EE7B7" />
               <Text style={styles.statValue}>{values[s.valueKey]}</Text>
-              <Text style={styles.statLabel}>{s.label}</Text>
+              <Text style={styles.statLabel}>{t(s.labelKey)}</Text>
             </View>
           ))}
         </View>

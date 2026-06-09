@@ -10,6 +10,7 @@ import { CheckoutShell } from './CheckoutShell';
 import { CheckoutStickyFooter } from './CheckoutStickyFooter';
 import { ProfileEditAddressModal } from '@/features/profile/components/ProfileEditAddressModal';
 import { useProfileAccount } from '@/features/profile/hooks/useProfileAccount';
+import { getAddressDisplayLabel, getAddressLabelIonicon } from '@/features/profile/lib/profile.utils';
 import { getProfileAccount } from '@/features/profile/lib/profile.storage';
 import { fonts } from '@/theme/fonts';
 import { colors } from '@/theme/colors';
@@ -60,8 +61,8 @@ export function CheckoutAddressScreen() {
               <View style={styles.copy}>
                 <View style={styles.head}>
                   <View style={styles.labelPill}>
-                    <Ionicons name={addr.label === 'Office' ? 'business-outline' : 'home-outline'} size={12} color={colors.primaryDark} />
-                    <Text style={styles.labelText}>{addr.label}</Text>
+                    <Ionicons name={getAddressLabelIonicon(addr.label)} size={12} color={colors.primaryDark} />
+                    <Text style={styles.labelText}>{getAddressDisplayLabel(addr)}</Text>
                   </View>
                   {addr.isDefault ? <Text style={styles.default}>DEFAULT</Text> : null}
                 </View>
@@ -72,9 +73,22 @@ export function CheckoutAddressScreen() {
           );
         })}
 
+        <Pressable
+          style={styles.mapBtn}
+          onPress={() => router.push('/account/address-picker?returnTo=checkout' as Href)}
+          accessibilityRole="button"
+        >
+          <Ionicons name="map-outline" size={22} color={colors.primaryDark} />
+          <View style={styles.mapCopy}>
+            <Text style={styles.mapTitle}>Pick on map</Text>
+            <Text style={styles.mapSub}>Drop pin · GPS · Raipur zones</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.mutedLight} />
+        </Pressable>
+
         <Pressable style={styles.addBtn} onPress={() => setShowAdd(true)} accessibilityRole="button">
-          <Ionicons name="add-circle-outline" size={22} color={colors.primary} />
-          <Text style={styles.addText}>Add new address</Text>
+          <Ionicons name="create-outline" size={20} color={colors.primary} />
+          <Text style={styles.addText}>Enter address manually</Text>
         </Pressable>
       </ScrollView>
 
@@ -167,21 +181,34 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.muted,
   },
+  mapBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    padding: spacing.lg,
+    borderRadius: radius.xxl,
+    backgroundColor: colors.white,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(11,110,103,0.18)',
+  },
+  mapCopy: { flex: 1, gap: 2 },
+  mapTitle: { fontFamily: fonts.bold, fontSize: 15, color: colors.ink },
+  mapSub: { fontFamily: fonts.regular, fontSize: 11, color: colors.muted },
   addBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
-    padding: spacing.lg,
-    borderRadius: radius.xxl,
-    borderWidth: 2,
+    padding: spacing.md,
+    borderRadius: radius.xl,
+    borderWidth: 1.5,
     borderStyle: 'dashed',
-    borderColor: 'rgba(11,110,103,0.3)',
+    borderColor: 'rgba(11,110,103,0.25)',
     backgroundColor: colors.primaryLight,
   },
   addText: {
-    fontFamily: fonts.bold,
-    fontSize: 15,
+    fontFamily: fonts.semiBold,
+    fontSize: 13,
     color: colors.primaryDark,
   },
 });

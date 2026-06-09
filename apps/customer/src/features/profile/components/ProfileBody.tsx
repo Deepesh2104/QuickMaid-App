@@ -23,7 +23,9 @@ import { ProfileReferralCard } from './ProfileReferralCard';
 import { ProfileSecuritySection } from './ProfileSecuritySection';
 import { ProfileServiceDetailsSection } from './ProfileServiceDetailsSection';
 import { ProfileSupportSection } from './ProfileSupportSection';
+import { ProfileSavedServicesSection } from '@/features/saved-services/components/ProfileSavedServicesSection';
 import { ProfilePaymentHistorySection } from './ProfilePaymentHistorySection';
+import { ProfileCouponWalletCard } from './ProfileCouponWalletCard';
 import { ProfileWalletSection } from './ProfileWalletSection';
 
 interface ProfileBodyProps {
@@ -92,6 +94,8 @@ export function ProfileBody({
         onAddPayment={onAddPayment}
       />
 
+      <ProfileSavedServicesSection savedServiceIds={account.savedServiceIds ?? []} />
+
       <ProfileServiceDetailsSection
         profile={profile}
         bookingPrefs={account.bookingPrefs}
@@ -112,6 +116,8 @@ export function ProfileBody({
         onAdd={onAddPayment}
         onEdit={onEditPayment}
       />
+
+      <ProfileCouponWalletCard />
 
       <ProfilePaymentHistorySection />
 

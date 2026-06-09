@@ -1,39 +1,44 @@
 import { useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useLayoutMetrics } from '@/hooks/useLayoutMetrics';
 import { SUPPORT_CONTACT } from '@/constants/demo';
 import { fonts } from '@/theme/fonts';
 import { colors } from '@/theme/colors';
 import { layout, radius, spacing } from '@/theme/spacing';
 
+import { normalizeSupportTopic } from '@/features/support/lib/support.utils';
+import { useTranslation } from '@/i18n/LanguageProvider';
+
 import { HelpBody } from './HelpBody';
-import { HelpChatWindow } from './HelpChatWindow';
 import { HelpHeader } from './HelpHeader';
+import { useOpenSupportChat } from '@/features/support/hooks/useOpenSupportChat';
 
 export function HelpScreen() {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  const { tabScrollPad } = useLayoutMetrics();
+  const openSupportChat = useOpenSupportChat();
   const { chat, topic } = useLocalSearchParams<{ chat?: string; topic?: string }>();
-  const [chatOpen, setChatOpen] = useState(false);
-  const [chatTopic, setChatTopic] = useState<string | undefined>();
-
-  const openChat = (nextTopic?: string) => {
-    setChatTopic(nextTopic);
-    setChatOpen(true);
-  };
+  const openedChat = useRef(false);
 
   useEffect(() => {
-    if (chat === '1') {
-      openChat(topic || undefined);
+    if (chat === '1' && !openedChat.current) {
+      openedChat.current = true;
+      openSupportChat({
+        topic: normalizeSupportTopic(topic),
+        context: topic,
+      });
     }
-  }, [chat, topic]);
+  }, [chat, topic, openSupportChat]);
 
   return (
     <View style={styles.root}>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scroll}
+        contentContainerStyle={[styles.scroll, { paddingBottom: tabScrollPad }]}
         keyboardShouldPersistTaps="handled"
       >
         <HelpHeader paddingTop={insets.top} />
@@ -42,10 +47,14 @@ export function HelpScreen() {
           <View style={styles.sheetBridge} pointerEvents="none" />
           <View style={[styles.lowerSheet, { paddingBottom: insets.bottom + spacing.md }]}>
             <View style={styles.sheetHandle} />
-            <HelpBody onOpenChat={openChat} />
+            <HelpBody
+              onOpenChat={(nextTopic) =>
+                openSupportChat({ topic: normalizeSupportTopic(nextTopic), context: nextTopic })
+              }
+            />
 
             <View style={styles.footer}>
-              <Text style={styles.footerBrand}>QuickMaid Help</Text>
+              <Text style={styles.footerBrand}>{t('help.footerBrand')}</Text>
               <Text style={styles.footerSub}>
                 {SUPPORT_CONTACT.phone} · {SUPPORT_CONTACT.email}
               </Text>
@@ -54,11 +63,6 @@ export function HelpScreen() {
         </View>
       </ScrollView>
 
-      <HelpChatWindow
-        visible={chatOpen}
-        topic={chatTopic}
-        onClose={() => setChatOpen(false)}
-      />
     </View>
   );
 }

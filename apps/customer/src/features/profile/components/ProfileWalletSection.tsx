@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { type Href, useRouter } from 'expo-router';
+import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
 import { HomeSectionHeader } from '@/features/home/components/HomeSectionHeader';
 import { fonts } from '@/theme/fonts';
@@ -26,6 +27,9 @@ interface ProfileWalletSectionProps {
 }
 
 export function ProfileWalletSection({ balance, payments, onTopUp, onAdd, onEdit }: ProfileWalletSectionProps) {
+  const router = useRouter();
+  const { width } = useWindowDimensions();
+  const narrow = width < 360;
   const methods = payments.filter((p) => p.type !== 'wallet');
   const defaultPm = payments.find((p) => p.isDefault && p.type !== 'wallet');
 
@@ -44,36 +48,45 @@ export function ProfileWalletSection({ balance, payments, onTopUp, onAdd, onEdit
         compact
       />
 
-      <Pressable
-        style={styles.walletWrap}
-        onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-          onTopUp();
-        }}
-        accessibilityRole="button"
-        accessibilityLabel="Top up wallet"
-      >
-        <ProfileWalletPass balance={balance} compact />
-        <View style={styles.topUpFab}>
-          <LinearGradient colors={['#6EE7B7', '#34D399']} style={StyleSheet.absoluteFill} />
-          <Ionicons name="add" size={22} color={colors.primaryDark} />
-        </View>
-      </Pressable>
+      <View style={styles.walletWrap}>
+        <ProfileWalletPass
+          balance={balance}
+          compact={narrow}
+          onTopUp={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            onTopUp();
+          }}
+        />
+        <Pressable
+          style={styles.historyLink}
+          onPress={() => {
+            Haptics.selectionAsync();
+            router.push('/account/wallet-transactions' as Href);
+          }}
+          accessibilityRole="button"
+        >
+          <Ionicons name="receipt-outline" size={14} color={colors.primary} />
+          <Text style={styles.historyText}>View transaction history</Text>
+          <Ionicons name="chevron-forward" size={14} color={colors.mutedLight} />
+        </Pressable>
+      </View>
 
       <View style={styles.statsStrip}>
         <View style={styles.stat}>
-          <Text style={styles.statVal}>{methods.length}</Text>
-          <Text style={styles.statLabel}>Saved methods</Text>
+          <Text style={[styles.statVal, narrow && styles.statValSm]}>{methods.length}</Text>
+          <Text style={styles.statLabel}>{narrow ? 'Methods' : 'Saved methods'}</Text>
         </View>
         <View style={styles.statSep} />
         <View style={styles.stat}>
-          <Text style={styles.statVal}>{defaultPm?.label ?? '—'}</Text>
+          <Text style={[styles.statVal, narrow && styles.statValSm]} numberOfLines={1}>
+            {defaultPm?.label ?? '—'}
+          </Text>
           <Text style={styles.statLabel}>Default</Text>
         </View>
         <View style={styles.statSep} />
         <View style={styles.stat}>
-          <Ionicons name="shield-checkmark" size={14} color={colors.primary} />
-          <Text style={styles.statLabel}>Encrypted</Text>
+          <Ionicons name="shield-checkmark" size={narrow ? 12 : 14} color={colors.primary} />
+          <Text style={styles.statLabel}>{narrow ? 'Secure' : 'Encrypted'}</Text>
         </View>
       </View>
 
@@ -143,25 +156,21 @@ const styles = StyleSheet.create({
   walletWrap: {
     marginHorizontal: layout.pad,
     marginBottom: spacing.md,
-    position: 'relative',
+    alignSelf: 'stretch',
+    gap: spacing.sm,
   },
-  topUpFab: {
-    position: 'absolute',
-    bottom: spacing.lg,
-    right: spacing.lg,
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+  historyLink: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-    borderWidth: 3,
-    borderColor: colors.white,
-    shadowColor: '#084F4A',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 6,
+    gap: 6,
+    alignSelf: 'flex-start',
+    paddingHorizontal: 2,
+  },
+  historyText: {
+    fontFamily: fonts.semiBold,
+    fontSize: 12,
+    color: colors.primaryDark,
+    flex: 1,
   },
   statsStrip: {
     flexDirection: 'row',
@@ -189,6 +198,10 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.ink,
     textAlign: 'center',
+    maxWidth: '100%',
+  },
+  statValSm: {
+    fontSize: 11,
   },
   statLabel: {
     fontFamily: fonts.medium,

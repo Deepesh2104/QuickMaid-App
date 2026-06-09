@@ -51,8 +51,6 @@ const PERKS = [
 ];
 
 const GAP = spacing.sm;
-const HALF_W = (layout.screenWidth - layout.pad * 2 - GAP) / 2;
-const THIRD_W = (layout.screenWidth - layout.pad * 2 - GAP * 2) / 3;
 
 export function PlusPerksGrid() {
   const widePerks = PERKS.filter((p) => p.wide);
@@ -108,7 +106,8 @@ const styles = StyleSheet.create({
     marginBottom: GAP,
   },
   wideCard: {
-    width: HALF_W,
+    flex: 1,
+    minWidth: 0,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
@@ -126,7 +125,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  wideCopy: { flex: 1, gap: 2 },
+  wideCopy: { flex: 1, minWidth: 0, gap: 2 },
   title: {
     fontFamily: fonts.bold,
     fontSize: 13,
@@ -143,7 +142,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: layout.pad,
   },
   narrowCard: {
-    width: THIRD_W,
+    flex: 1,
+    minWidth: 0,
     borderRadius: radius.xl,
     padding: spacing.md,
     alignItems: 'center',
@@ -166,6 +166,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: colors.ink,
     textAlign: 'center',
+    width: '100%',
   },
   narrowSub: {
     fontFamily: fonts.regular,

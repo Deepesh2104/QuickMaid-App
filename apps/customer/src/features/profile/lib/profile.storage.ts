@@ -94,6 +94,7 @@ const DEFAULT_ACCOUNT: ProfileAccountData = {
   referrals: 2,
   supportTickets: 0,
   csat: 4.9,
+  savedServiceIds: ['deep', 'monthly'],
 };
 
 function mergeAccount(parsed: Partial<ProfileAccountData>): ProfileAccountData {
@@ -107,6 +108,7 @@ function mergeAccount(parsed: Partial<ProfileAccountData>): ProfileAccountData {
     communication: { ...DEFAULT_ACCOUNT.communication, ...parsed.communication },
     permissions: { ...DEFAULT_ACCOUNT.permissions, ...parsed.permissions },
     plan: { ...DEFAULT_ACCOUNT.plan, ...parsed.plan },
+    savedServiceIds: parsed.savedServiceIds ?? DEFAULT_ACCOUNT.savedServiceIds,
   };
   merged.addresses = (parsed.addresses ?? DEFAULT_ACCOUNT.addresses).map((a) =>
     normalizeAddress({ ...a, id: a.id }),
@@ -124,8 +126,27 @@ export async function getProfileAccount(): Promise<ProfileAccountData> {
   }
 }
 
+const profileListeners = new Set<() => void>();
+
+export function subscribeProfileAccount(listener: () => void): () => void {
+  profileListeners.add(listener);
+  return () => profileListeners.delete(listener);
+}
+
+function notifyProfileAccount() {
+  profileListeners.forEach((fn) => fn());
+}
+
 export async function saveProfileAccount(data: ProfileAccountData): Promise<void> {
   await AsyncStorage.setItem(STORAGE_KEYS.profileAccount, JSON.stringify(data));
+  notifyProfileAccount();
+}
+
+export async function patchProfileAccount(patch: Partial<ProfileAccountData>): Promise<ProfileAccountData> {
+  const current = await getProfileAccount();
+  const next = { ...current, ...patch };
+  await saveProfileAccount(next);
+  return next;
 }
 
 export function newId(prefix: string) {

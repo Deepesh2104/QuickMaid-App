@@ -1,9 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { ListPagination } from '@/components/ui/ListPagination';
 import type { DemoBooking } from '@/constants/demo';
+import { PAGE_SIZE_INVOICES } from '@/constants/pagination';
+import { usePagination } from '@/hooks/usePagination';
 import { useOpenBookingDocument } from '../hooks/useOpenBookingDocument';
 import { HomeSectionHeader } from '@/features/home/components/HomeSectionHeader';
 import { fonts } from '@/theme/fonts';
@@ -17,6 +20,11 @@ interface BookingsInvoiceRailProps {
 export function BookingsInvoiceRail({ bookings }: BookingsInvoiceRailProps) {
   const openDocument = useOpenBookingDocument();
   const paid = bookings.filter((b) => b.status === 'completed');
+  const { page, setPage, totalPages, start, end, slice, total } = usePagination(
+    paid,
+    PAGE_SIZE_INVOICES,
+    'invoices',
+  );
   if (paid.length === 0) return null;
 
   return (
@@ -29,8 +37,8 @@ export function BookingsInvoiceRail({ bookings }: BookingsInvoiceRailProps) {
         compact
       />
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
-        {paid.map((b) => (
+      <View style={styles.row}>
+        {slice.map((b) => (
           <Pressable
             key={b.id}
             style={styles.card}
@@ -55,7 +63,21 @@ export function BookingsInvoiceRail({ bookings }: BookingsInvoiceRailProps) {
             </View>
           </Pressable>
         ))}
-      </ScrollView>
+      </View>
+
+      <View style={styles.pager}>
+        <ListPagination
+          page={page}
+          totalPages={totalPages}
+          start={start}
+          end={end}
+          total={total}
+          onPageChange={setPage}
+          label="Invoices"
+          itemLabel="receipts"
+          compact
+        />
+      </View>
     </View>
   );
 }
@@ -65,10 +87,11 @@ const CARD_W = 156;
 const styles = StyleSheet.create({
   block: { marginBottom: spacing.section },
   row: {
+    flexDirection: 'row',
     paddingHorizontal: layout.pad,
     gap: spacing.sm,
-    paddingRight: layout.pad + spacing.sm,
   },
+  pager: { marginHorizontal: layout.pad },
   card: {
     width: CARD_W,
     borderRadius: radius.xl,

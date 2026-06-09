@@ -1,115 +1,114 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import Svg, { Circle, Defs, Line, Path, Stop, LinearGradient as SvgGradient } from 'react-native-svg';
-import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
+import { StyleSheet, View } from 'react-native';
+import Svg, { Circle, Defs, Path, Stop, LinearGradient as SvgGradient } from 'react-native-svg';
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
 
 import { proMapPosition } from '../lib/booking.tracking';
-import { fonts } from '@/theme/fonts';
 import { colors } from '@/theme/colors';
-import { radius } from '@/theme/spacing';
 
 interface BookingTrackMapProps {
   progress: number;
-  address: string;
 }
 
-const ROUTE =
-  'M 48 210 C 90 190, 120 150, 160 130 S 240 90, 290 78';
+const ROUTE = 'M 36 230 C 90 205, 130 175, 175 150 S 250 105, 295 82';
 
-export function BookingTrackMap({ progress, address }: BookingTrackMapProps) {
+export function BookingTrackMap({ progress }: BookingTrackMapProps) {
   const pos = proMapPosition(progress);
   const pulse = useSharedValue(1);
 
   useEffect(() => {
-    pulse.value = withRepeat(withTiming(1.35, { duration: 1200 }), -1, true);
+    pulse.value = withRepeat(
+      withSequence(
+        withTiming(1.8, { duration: 1500, easing: Easing.out(Easing.quad) }),
+        withTiming(1, { duration: 0 }),
+      ),
+      -1,
+    );
   }, [pulse]);
 
   const pulseStyle = useAnimatedStyle(() => ({
     transform: [{ scale: pulse.value }],
-    opacity: 2 - pulse.value,
+    opacity: 0.45 - pulse.value * 0.2,
   }));
+
+  const routeLen = 300 * progress;
 
   return (
     <View style={styles.wrap}>
-      <Svg width="100%" height="100%" viewBox="0 0 360 280" style={StyleSheet.absoluteFill}>
+      <Svg width="100%" height="100%" viewBox="0 0 360 320" style={StyleSheet.absoluteFill}>
         <Defs>
-          <SvgGradient id="mapBg" x1="0" y1="0" x2="1" y2="1">
-            <Stop offset="0" stopColor="#E8F5F3" />
-            <Stop offset="1" stopColor="#D4EDE8" />
-          </SvgGradient>
-          <SvgGradient id="route" x1="0" y1="0" x2="1" y2="0">
-            <Stop offset="0" stopColor="#12A598" stopOpacity="0.35" />
-            <Stop offset="1" stopColor="#0B6E67" />
+          <SvgGradient id="mapBg" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor="#F0EDE8" />
+            <Stop offset="1" stopColor="#E3DDD4" />
           </SvgGradient>
         </Defs>
 
-        <Path d="M0 0 H360 V280 H0 Z" fill="url(#mapBg)" />
+        <Path d="M0 0 H360 V320 H0 Z" fill="url(#mapBg)" />
 
-        {Array.from({ length: 9 }, (_, i) => (
-          <Line
-            key={`h-${i}`}
-            x1={0}
-            y1={i * 32}
-            x2={360}
-            y2={i * 32}
-            stroke="rgba(11,110,103,0.06)"
-            strokeWidth={1}
-          />
-        ))}
-        {Array.from({ length: 12 }, (_, i) => (
-          <Line
-            key={`v-${i}`}
-            x1={i * 32}
-            y1={0}
-            x2={i * 32}
-            y2={280}
-            stroke="rgba(11,110,103,0.06)"
-            strokeWidth={1}
-          />
-        ))}
+        {/* City blocks — Google Maps lite feel */}
+        <Path d="M 0 80 H140 V160 H0 Z" fill="rgba(255,255,255,0.55)" />
+        <Path d="M 160 40 H280 V130 H160 Z" fill="rgba(255,255,255,0.45)" />
+        <Path d="M 200 200 H360 V290 H200 Z" fill="rgba(255,255,255,0.5)" />
+        <Path d="M 20 200 H120 V280 H20 Z" fill="rgba(255,255,255,0.4)" />
 
-        <Path d={ROUTE} stroke="url(#route)" strokeWidth={5} fill="none" strokeLinecap="round" />
+        {/* Roads */}
+        <Path d="M 0 160 H360" stroke="#FFFFFF" strokeWidth={10} />
+        <Path d="M 0 160 H360" stroke="#D8D2C8" strokeWidth={4} />
+        <Path d="M 140 0 V320" stroke="#FFFFFF" strokeWidth={8} />
+        <Path d="M 140 0 V320" stroke="#D8D2C8" strokeWidth={3} />
+        <Path d="M 0 240 H200" stroke="#FFFFFF" strokeWidth={7} />
+        <Path d="M 0 240 H200" stroke="#D8D2C8" strokeWidth={3} />
+
+        {/* Route — travelled */}
+        <Path
+          d={ROUTE}
+          stroke="rgba(11,110,103,0.2)"
+          strokeWidth={6}
+          fill="none"
+          strokeLinecap="round"
+        />
         <Path
           d={ROUTE}
           stroke="#0B6E67"
           strokeWidth={5}
           fill="none"
           strokeLinecap="round"
-          strokeDasharray={`${progress * 320} 320`}
+          strokeDasharray={`${routeLen} 300`}
         />
 
-        <Circle cx={290} cy={78} r={22} fill="rgba(11,110,103,0.12)" />
-        <Circle cx={290} cy={78} r={10} fill="#0B6E67" />
+        {/* Destination halo */}
+        <Circle cx={295} cy={82} r={28} fill="rgba(11,110,103,0.1)" />
+        <Circle cx={295} cy={82} r={8} fill="#0B6E67" />
       </Svg>
 
-      <View style={[styles.dest, { right: '12%', top: '22%' }]}>
-        <View style={styles.destPin}>
+      {/* Home pin — Zomato style */}
+      <View style={[styles.homePin, { right: '12%', top: '22%' }]}>
+        <View style={styles.homePinHead}>
           <Ionicons name="home" size={14} color={colors.white} />
         </View>
-        <Text style={styles.destLabel} numberOfLines={1}>
-          Your home
-        </Text>
+        <View style={styles.homePinTail} />
       </View>
 
+      {/* Partner marker pulse */}
       <Animated.View
-        style={[
-          styles.pulse,
-          pulseStyle,
-          { left: `${pos.x}%`, top: `${pos.y}%` },
-        ]}
+        style={[styles.partnerPulse, pulseStyle, { left: `${pos.x}%`, top: `${pos.y}%` }]}
+        pointerEvents="none"
       />
-      <View style={[styles.pro, { left: `${pos.x}%`, top: `${pos.y}%` }]}>
-        <View style={styles.proPin}>
-          <Ionicons name="bicycle" size={16} color={colors.white} />
-        </View>
-      </View>
 
-      <View style={styles.zone}>
-        <Ionicons name="location-outline" size={12} color={colors.primaryDark} />
-        <Text style={styles.zoneText} numberOfLines={1}>
-          {address}
-        </Text>
+      {/* Partner marker — Swiggy delivery executive */}
+      <View style={[styles.partner, { left: `${pos.x}%`, top: `${pos.y}%` }]}>
+        <View style={styles.partnerBubble}>
+          <Ionicons name="person" size={18} color={colors.white} />
+        </View>
+        <View style={styles.partnerPointer} />
       </View>
     </View>
   );
@@ -118,81 +117,81 @@ export function BookingTrackMap({ progress, address }: BookingTrackMapProps) {
 const styles = StyleSheet.create({
   wrap: {
     flex: 1,
-    minHeight: 280,
-    backgroundColor: '#E8F5F3',
+    backgroundColor: '#EAE6E1',
     overflow: 'hidden',
   },
-  dest: {
+  homePin: {
     position: 'absolute',
     alignItems: 'center',
-    gap: 4,
-    maxWidth: 100,
+    zIndex: 2,
   },
-  destPin: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.primary,
+  homePinHead: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: '#0B6E67',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 3,
     borderColor: colors.white,
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 4,
   },
-  destLabel: {
-    fontFamily: fonts.bold,
-    fontSize: 10,
-    color: colors.primaryDark,
-    backgroundColor: 'rgba(255,255,255,0.9)',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: radius.pill,
+  homePinTail: {
+    width: 0,
+    height: 0,
+    borderLeftWidth: 6,
+    borderRightWidth: 6,
+    borderTopWidth: 8,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderTopColor: '#0B6E67',
+    marginTop: -2,
   },
-  pulse: {
+  partnerPulse: {
     position: 'absolute',
-    width: 44,
-    height: 44,
-    marginLeft: -22,
-    marginTop: -22,
-    borderRadius: 22,
+    width: 48,
+    height: 48,
+    marginLeft: -24,
+    marginTop: -30,
+    borderRadius: 24,
     backgroundColor: 'rgba(11,110,103,0.25)',
+    zIndex: 1,
   },
-  pro: {
+  partner: {
     position: 'absolute',
-    marginLeft: -18,
-    marginTop: -18,
+    alignItems: 'center',
+    marginLeft: -20,
+    marginTop: -26,
+    zIndex: 3,
   },
-  proPin: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#12A598',
+  partnerBubble: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#0B6E67',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 3,
     borderColor: colors.white,
-    shadowColor: '#084F4A',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
     shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
     elevation: 6,
   },
-  zone: {
-    position: 'absolute',
-    left: 12,
-    bottom: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: 'rgba(255,255,255,0.92)',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: radius.pill,
-    maxWidth: '72%',
-  },
-  zoneText: {
-    flex: 1,
-    fontFamily: fonts.semiBold,
-    fontSize: 11,
-    color: colors.primaryDark,
+  partnerPointer: {
+    width: 0,
+    height: 0,
+    borderLeftWidth: 5,
+    borderRightWidth: 5,
+    borderTopWidth: 7,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderTopColor: '#0B6E67',
+    marginTop: -1,
   },
 });

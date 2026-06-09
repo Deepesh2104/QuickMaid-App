@@ -11,6 +11,7 @@ import { HomePhoto } from './HomePhoto';
 import { HomeSectionHeader } from './HomeSectionHeader';
 import { fonts } from '@/theme/fonts';
 import { colors } from '@/theme/colors';
+import { useLayoutMetrics } from '@/hooks/useLayoutMetrics';
 import { layout, radius, spacing } from '@/theme/spacing';
 
 const AnimatedPress = Animated.createAnimatedComponent(Pressable);
@@ -18,14 +19,14 @@ const AnimatedPress = Animated.createAnimatedComponent(Pressable);
 const BUNDLE_IDS = ['bhk2deep', 'monthly', 'diwali', 'sofa3plus'];
 const BUNDLES = HOME_SERVICES.filter((s) => BUNDLE_IDS.includes(s.id));
 
-function BundleCard({ service, tag }: { service: (typeof BUNDLES)[0]; tag: string }) {
+function BundleCard({ service, tag, cardW }: { service: (typeof BUNDLES)[0]; tag: string; cardW: number }) {
   const { bookService } = useStartBooking();
   const scale = useSharedValue(1);
   const anim = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
   return (
     <AnimatedPress
-      style={[styles.card, anim]}
+      style={[styles.card, { width: cardW }, anim]}
       onPressIn={() => {
         scale.value = withSpring(0.97, { damping: 14, stiffness: 320 });
       }}
@@ -62,6 +63,7 @@ function BundleCard({ service, tag }: { service: (typeof BUNDLES)[0]; tag: strin
 const TAGS = ['Save 20%', 'Best value', 'Festival', 'Combo'];
 
 export function HomeBundleRail() {
+  const { railCardW58 } = useLayoutMetrics();
   return (
     <View style={styles.block}>
       <HomeSectionHeader
@@ -73,14 +75,12 @@ export function HomeBundleRail() {
       />
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
         {BUNDLES.map((s, i) => (
-          <BundleCard key={s.id} service={s} tag={TAGS[i] ?? 'Popular'} />
+          <BundleCard key={s.id} service={s} tag={TAGS[i] ?? 'Popular'} cardW={railCardW58} />
         ))}
       </ScrollView>
     </View>
   );
 }
-
-const CARD_W = layout.screenWidth * 0.58;
 
 const styles = StyleSheet.create({
   block: { marginBottom: spacing.section },
@@ -90,7 +90,6 @@ const styles = StyleSheet.create({
     paddingRight: layout.pad + spacing.md,
   },
   card: {
-    width: CARD_W,
     height: 168,
     borderRadius: radius.xxl,
     overflow: 'hidden',

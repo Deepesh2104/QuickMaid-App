@@ -1,9 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Alert, Pressable, Share, StyleSheet, Text, View } from 'react-native';
+import { type Href, useRouter } from 'expo-router';
+import { Pressable, Share, StyleSheet, Text, View } from 'react-native';
 
 import { useOpenLegal } from '@/features/legal/hooks/useOpenLegal';
+import { useTranslation } from '@/i18n/LanguageProvider';
 
 import { HomeSectionHeader } from '@/features/home/components/HomeSectionHeader';
 import { fonts } from '@/theme/fonts';
@@ -12,17 +14,20 @@ import { layout, radius, spacing } from '@/theme/spacing';
 
 const ITEMS = [
   { id: 'privacy', icon: 'shield-checkmark-outline' as const, label: 'Privacy & security', sub: 'Data, permissions, account' },
-  { id: 'applock', icon: 'finger-print-outline' as const, label: 'App lock', sub: 'Face ID · PIN (coming soon)' },
+  { id: 'applock', icon: 'finger-print-outline' as const, label: 'App lock', subKey: 'profile.appLockSub' },
   { id: 'export', icon: 'document-lock-outline' as const, label: 'Download my data', sub: 'Export bookings & invoices' },
+  { id: 'delete', icon: 'trash-outline' as const, label: 'Delete account', sub: 'Permanently remove your data', danger: true },
 ];
 
 export function ProfileSecuritySection() {
+  const router = useRouter();
   const openLegal = useOpenLegal();
+  const { t } = useTranslation();
 
   const onItem = (id: string) => {
     Haptics.selectionAsync();
     if (id === 'privacy') openLegal('privacy');
-    else if (id === 'applock') Alert.alert('App lock', 'Face ID & PIN lock will be available in the next update.');
+    else if (id === 'applock') router.push('/account/app-lock' as Href);
     else if (id === 'export') {
       void Share.share({
         message: [
@@ -31,15 +36,17 @@ export function ProfileSecuritySection() {
           'Contact privacy@quickmaid.demo for a full GDPR export in production.',
         ].join('\n'),
       });
+    } else if (id === 'delete') {
+      router.push('/account/delete' as Href);
     }
   };
 
   return (
     <View style={styles.block}>
       <HomeSectionHeader
-        eyebrow="Security"
-        title="Privacy & data"
-        subtitle="Your info stays protected"
+        eyebrow={t('profile.securityEyebrow')}
+        title={t('profile.securityTitle')}
+        subtitle={t('profile.securitySub')}
         icon="lock-closed-outline"
         compact
       />
@@ -56,8 +63,10 @@ export function ProfileSecuritySection() {
               <Ionicons name={item.icon} size={18} color={colors.primaryDark} />
             </View>
             <View style={styles.rowCopy}>
-              <Text style={styles.rowLabel}>{item.label}</Text>
-              <Text style={styles.rowSub}>{item.sub}</Text>
+              <Text style={[styles.rowLabel, item.danger && styles.rowLabelDanger]}>{item.label}</Text>
+              <Text style={styles.rowSub}>
+                {'subKey' in item && item.subKey ? t(item.subKey) : 'sub' in item ? item.sub : ''}
+              </Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color={colors.mutedLight} />
           </Pressable>
@@ -109,6 +118,9 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bold,
     fontSize: 14,
     color: colors.ink,
+  },
+  rowLabelDanger: {
+    color: '#D92D20',
   },
   rowSub: {
     fontFamily: fonts.regular,

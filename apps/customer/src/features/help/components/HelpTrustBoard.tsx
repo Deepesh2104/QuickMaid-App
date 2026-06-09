@@ -39,7 +39,6 @@ export function HelpTrustBoard() {
 }
 
 const GAP = spacing.sm;
-const METRIC_W = (layout.screenWidth - layout.pad * 2 - spacing.lg * 2 - GAP * 2) / 3;
 
 const styles = StyleSheet.create({
   wrap: {
@@ -64,7 +63,8 @@ const styles = StyleSheet.create({
   },
   row: { flexDirection: 'row', gap: GAP },
   metric: {
-    width: METRIC_W,
+    flex: 1,
+    minWidth: 0,
     alignItems: 'center',
     gap: 2,
   },

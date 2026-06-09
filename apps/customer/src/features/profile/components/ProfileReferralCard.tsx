@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { type Href, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Pressable, Share, StyleSheet, Text, View } from 'react-native';
 
@@ -12,6 +13,8 @@ interface ProfileReferralCardProps {
 }
 
 export function ProfileReferralCard({ code }: ProfileReferralCardProps) {
+  const router = useRouter();
+
   const share = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
@@ -23,12 +26,13 @@ export function ProfileReferralCard({ code }: ProfileReferralCardProps) {
     }
   };
 
+  const openRewards = () => {
+    Haptics.selectionAsync();
+    router.push('/account/referrals' as Href);
+  };
+
   return (
-    <Pressable
-      style={styles.wrap}
-      onPress={() => void share()}
-      accessibilityRole="button"
-    >
+    <Pressable style={styles.wrap} onPress={openRewards} accessibilityRole="button">
       <LinearGradient colors={['#6941C6', '#53389E']} style={StyleSheet.absoluteFill} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} />
       <View style={styles.glow} />
 
@@ -39,16 +43,25 @@ export function ProfileReferralCard({ code }: ProfileReferralCardProps) {
         <View style={styles.copy}>
           <Text style={styles.eyebrow}>Refer & earn</Text>
           <Text style={styles.title}>Give ₹100, get ₹100</Text>
-          <Text style={styles.sub}>Share your code · Friends save on first clean</Text>
+          <Text style={styles.sub}>View rewards · Track invites</Text>
         </View>
+        <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.7)" />
       </View>
 
       <View style={styles.codeBox}>
         <Text style={styles.code}>{code}</Text>
-        <View style={styles.shareBtn}>
+        <Pressable
+          style={styles.shareBtn}
+          onPress={(e) => {
+            e.stopPropagation?.();
+            void share();
+          }}
+          accessibilityRole="button"
+          accessibilityLabel="Share referral code"
+        >
           <Ionicons name="share-social" size={14} color="#53389E" />
           <Text style={styles.shareText}>Share</Text>
-        </View>
+        </Pressable>
       </View>
     </Pressable>
   );
@@ -72,7 +85,7 @@ const styles = StyleSheet.create({
     borderRadius: 50,
     backgroundColor: 'rgba(233,215,254,0.15)',
   },
-  left: { flexDirection: 'row', gap: spacing.md, alignItems: 'flex-start' },
+  left: { flexDirection: 'row', gap: spacing.md, alignItems: 'center' },
   icon: {
     width: 44,
     height: 44,

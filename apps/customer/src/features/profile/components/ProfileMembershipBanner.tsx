@@ -23,7 +23,7 @@ export function ProfileMembershipBanner({ isPlusMember = true, visitsLeft = 8, r
     return (
       <Pressable
         style={styles.plusWrap}
-        onPress={() => router.push('/(tabs)/plans' as Href)}
+        onPress={() => router.push('/plus/manage' as Href)}
         accessibilityRole="button"
       >
         <LinearGradient colors={['#0F1419', '#1A2332']} style={StyleSheet.absoluteFill} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} />
@@ -33,7 +33,9 @@ export function ProfileMembershipBanner({ isPlusMember = true, visitsLeft = 8, r
         </View>
         <View style={styles.plusCopy}>
           <Text style={styles.plusTitle}>QuickMaid Plus</Text>
-          <Text style={styles.plusSub}>{visitsLeft} of 12 visits left · Renews {renewDate}</Text>
+          <Text style={styles.plusSub} numberOfLines={2}>
+            {visitsLeft} of 12 visits left · Renews {renewDate}
+          </Text>
         </View>
         <View style={styles.plusBadge}>
           <Text style={styles.plusBadgeText}>Active</Text>
@@ -89,7 +91,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  plusCopy: { flex: 1, gap: 2 },
+  plusCopy: { flex: 1, minWidth: 0, gap: 2 },
   plusTitle: {
     fontFamily: fonts.extraBold,
     fontSize: 15,
@@ -132,7 +134,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  upgradeCopy: { flex: 1, gap: 2 },
+  upgradeCopy: { flex: 1, minWidth: 0, gap: 2 },
   upgradeTitle: {
     fontFamily: fonts.extraBold,
     fontSize: 14,

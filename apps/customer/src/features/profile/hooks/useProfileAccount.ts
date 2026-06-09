@@ -3,6 +3,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { UserProfile } from '@/constants/app';
 import { getUserProfile, registerUser, saveUserProfile } from '@/lib/storage';
 
+import { addWalletTransaction } from '@/features/wallet/lib/wallet.storage';
+import { invalidateSavedServicesCache } from '@/features/saved-services/hooks/useSavedServices';
+import { toggleSavedServiceIds } from '@/features/saved-services/lib/saved.services';
 import { getProfileCompletion } from '../lib/profile.completion';
 import { getProfileAccount, newId, saveProfileAccount } from '../lib/profile.storage';
 import { normalizeAddress } from '../lib/profile.utils';
@@ -112,6 +115,13 @@ export function useProfileAccount() {
     async (amount: number) => {
       if (!account || amount <= 0) return;
       await persistAccount({ ...account, walletBalance: account.walletBalance + amount });
+      await addWalletTransaction({
+        kind: 'credit',
+        source: 'topup',
+        amount,
+        title: 'Wallet top-up',
+        subtitle: 'Instant credit · No expiry',
+      });
     },
     [account, persistAccount],
   );
@@ -172,6 +182,21 @@ export function useProfileAccount() {
     [account, persistAccount],
   );
 
+  const toggleSavedService = useCallback(
+    async (serviceId: string) => {
+      if (!account) return;
+      const next = toggleSavedServiceIds(account.savedServiceIds ?? [], serviceId);
+      await persistAccount({ ...account, savedServiceIds: next });
+      invalidateSavedServicesCache();
+    },
+    [account, persistAccount],
+  );
+
+  const isServiceSaved = useCallback(
+    (serviceId: string) => (account?.savedServiceIds ?? []).includes(serviceId),
+    [account?.savedServiceIds],
+  );
+
   const completion = useMemo(
     () => (account ? getProfileCompletion(profile, account) : { percent: 0, missing: [], total: 13, done: 0 }),
     [profile, account],
@@ -196,5 +221,7 @@ export function useProfileAccount() {
     setVisitAccess,
     setCommunication,
     setPermissions,
+    toggleSavedService,
+    isServiceSaved,
   };
 }

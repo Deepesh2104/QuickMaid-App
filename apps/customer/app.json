@@ -93,16 +93,23 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#010F0E",
+          "backgroundColor": "#000806",
           "image": "./assets/splash-icon.png",
           "imageWidth": 180
         }
       ],
       "expo-image",
-      "expo-sharing"
+      "expo-sharing",
+      "expo-local-authentication"
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "ec741f3c-2a08-4ceb-863d-268107b6b9bf"
+      }
     }
   }
 }

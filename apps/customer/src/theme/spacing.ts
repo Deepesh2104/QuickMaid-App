@@ -1,5 +1,6 @@
 import { Dimensions } from 'react-native';
 
+/** @deprecated Prefer `useLayoutMetrics()` — static width does not update on rotation */
 const { width: SCREEN_W } = Dimensions.get('window');
 
 export const layout = {
@@ -7,6 +8,7 @@ export const layout = {
   pad: 20,
   padLg: 24,
   cardGap: 12,
+  /** @deprecated Prefer `useLayoutMetrics().serviceCardW` */
   serviceCardW: (SCREEN_W - 40 - 12) / 2,
 } as const;
 

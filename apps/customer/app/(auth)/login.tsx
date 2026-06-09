@@ -4,12 +4,12 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
-  Dimensions,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -25,14 +25,13 @@ import { type } from '../../src/theme/typography';
 const HERO_BG = '#0B6E67';
 const SHEET_OVERLAP = 28;
 const PAD = layout.pad;
-const { height: SCREEN_H } = Dimensions.get('window');
-
 const TRUST = [
   { icon: 'shield-checkmark-outline' as const, text: 'End-to-end secure' },
   { icon: 'lock-closed-outline' as const, text: 'Never shared' },
 ];
 
 export default function LoginScreen() {
+  const { height: screenH } = useWindowDimensions();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { city, setPhone } = useAuthFlow();
@@ -40,7 +39,7 @@ export default function LoginScreen() {
   const [error, setError] = useState('');
 
   const isValid = phone.length === 10;
-  const heroMinH = Math.min(Math.max(SCREEN_H * 0.34, 248), 300) + insets.top;
+  const heroMinH = Math.min(Math.max(screenH * 0.34, 248), 300) + insets.top;
 
   const handleContinue = () => {
     if (!isValid) {

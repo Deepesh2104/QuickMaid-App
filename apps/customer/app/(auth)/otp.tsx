@@ -4,13 +4,13 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
-  Dimensions,
   KeyboardAvoidingView,
   Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -28,14 +28,13 @@ import { type } from '../../src/theme/typography';
 const HERO_BG = '#0B6E67';
 const SHEET_OVERLAP = 28;
 const PAD = layout.pad;
-const { height: SCREEN_H } = Dimensions.get('window');
-
 const TRUST = [
   { icon: 'shield-checkmark-outline' as const, text: 'End-to-end secure' },
   { icon: 'time-outline' as const, text: 'Valid for 10 min' },
 ];
 
 export default function OtpScreen() {
+  const { height: screenH } = useWindowDimensions();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { phone } = useAuthFlow();
@@ -44,7 +43,7 @@ export default function OtpScreen() {
   const [loading, setLoading] = useState(false);
   const [timer, setTimer] = useState(30);
 
-  const heroMinH = Math.min(Math.max(SCREEN_H * 0.34, 248), 300) + insets.top;
+  const heroMinH = Math.min(Math.max(screenH * 0.34, 248), 300) + insets.top;
 
   const formatted = phone
     ? `+91 ${phone.replace(/(\d{5})(\d{5})/, '$1 $2')}`

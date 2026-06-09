@@ -1,4 +1,10 @@
-import type { AppNotification, NotificationCategory } from '../types/notification.types';
+import type { Ionicons } from '@expo/vector-icons';
+
+import type {
+  AppNotification,
+  NotificationAction,
+  NotificationCategory,
+} from '../types/notification.types';
 
 export function formatNotificationTime(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -11,6 +17,28 @@ export function formatNotificationTime(iso: string): string {
   if (days === 1) return 'Yesterday';
   if (days < 7) return `${days}d ago`;
   return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+}
+
+export function formatNotificationDate(iso: string): string {
+  return new Date(iso).toLocaleString('en-IN', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+}
+
+export function notificationDayLabel(iso: string): string {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const d = new Date(iso);
+  d.setHours(0, 0, 0, 0);
+  if (d.getTime() === today.getTime()) return 'Today';
+  if (d.getTime() === yesterday.getTime()) return 'Yesterday';
+  return 'Earlier';
 }
 
 export function groupNotificationsByDay(
@@ -40,10 +68,51 @@ export function groupNotificationsByDay(
     .map((label) => ({ label, items: groups[label] }));
 }
 
-export const NOTIFICATION_FILTERS: { id: 'all' | NotificationCategory; label: string }[] = [
-  { id: 'all', label: 'All' },
-  { id: 'booking', label: 'Bookings' },
-  { id: 'pro', label: 'Pro' },
-  { id: 'payment', label: 'Payments' },
-  { id: 'offer', label: 'Offers' },
+export const NOTIFICATION_FILTERS: {
+  id: 'all' | NotificationCategory;
+  label: string;
+  shortLabel: string;
+  icon: keyof typeof Ionicons.glyphMap;
+}[] = [
+  { id: 'all', label: 'All alerts', shortLabel: 'All', icon: 'layers-outline' },
+  { id: 'booking', label: 'Bookings', shortLabel: 'Bookings', icon: 'calendar-outline' },
+  { id: 'pro', label: 'Pro updates', shortLabel: 'Pro', icon: 'person-outline' },
+  { id: 'payment', label: 'Payments', shortLabel: 'Pay', icon: 'card-outline' },
+  { id: 'offer', label: 'Offers', shortLabel: 'Offers', icon: 'pricetag-outline' },
+  { id: 'system', label: 'System', shortLabel: 'System', icon: 'sparkles-outline' },
 ];
+
+export const CATEGORY_META: Record<
+  NotificationCategory,
+  { label: string; icon: keyof typeof Ionicons.glyphMap; accent: string }
+> = {
+  booking: { label: 'Booking', icon: 'calendar', accent: '#0B6E67' },
+  pro: { label: 'Pro update', icon: 'person-circle', accent: '#175CD3' },
+  payment: { label: 'Payment', icon: 'card', accent: '#027A48' },
+  offer: { label: 'Offer', icon: 'pricetag', accent: '#B54708' },
+  system: { label: 'System', icon: 'sparkles', accent: '#667085' },
+};
+
+export function getActionLabel(action?: NotificationAction): string {
+  if (!action || action.type === 'none') return 'Got it';
+  switch (action.type) {
+    case 'booking':
+      return 'View booking';
+    case 'bookings':
+      return 'Open bookings';
+    case 'service':
+      return 'View service';
+    case 'plans':
+      return 'Explore Plus';
+    case 'home':
+      return 'Browse services';
+    case 'profile':
+      return 'Open profile';
+    default:
+      return 'Continue';
+  }
+}
+
+export function hasDeepLink(action?: NotificationAction): boolean {
+  return Boolean(action && action.type !== 'none');
+}

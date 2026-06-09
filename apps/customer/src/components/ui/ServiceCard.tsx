@@ -2,8 +2,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { fonts } from '../../theme/fonts';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { useLayoutMetrics } from '@/hooks/useLayoutMetrics';
 import { colors } from '../../theme/colors';
-import { layout, radius, shadow, spacing } from '../../theme/spacing';
+import { radius, shadow, spacing } from '../../theme/spacing';
 import { type } from '../../theme/typography';
 
 interface ServiceCardProps {
@@ -29,8 +30,10 @@ export function ServiceCard({
   tint,
   onPress,
 }: ServiceCardProps) {
+  const { serviceCardW } = useLayoutMetrics();
+
   return (
-    <Pressable style={styles.card} onPress={onPress}>
+    <Pressable style={[styles.card, { width: serviceCardW }]} onPress={onPress}>
       <View style={[styles.image, { backgroundColor: tint }]}>
         <View style={styles.iconWrap}>
           <Ionicons name={icon} size={22} color={colors.inkSecondary} />
@@ -66,7 +69,6 @@ export function ServiceCard({
 
 const styles = StyleSheet.create({
   card: {
-    width: layout.serviceCardW,
     backgroundColor: colors.bg,
     borderRadius: radius.xl,
     marginBottom: spacing.md,

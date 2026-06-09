@@ -2,8 +2,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { fonts } from '../../theme/fonts';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { useLayoutMetrics } from '@/hooks/useLayoutMetrics';
 import { colors } from '../../theme/colors';
-import { layout, radius, shadow, spacing } from '../../theme/spacing';
+import { radius, shadow, spacing } from '../../theme/spacing';
 import { type } from '../../theme/typography';
 
 interface HomeServiceTileProps {
@@ -23,8 +24,10 @@ export function HomeServiceTile({
   tint,
   onPress,
 }: HomeServiceTileProps) {
+  const { serviceCardW } = useLayoutMetrics();
+
   return (
-    <Pressable style={styles.tile} onPress={onPress}>
+    <Pressable style={[styles.tile, { width: serviceCardW }]} onPress={onPress}>
       <View style={[styles.bg, { backgroundColor: tint }]}>
         <View style={styles.iconWrap}>
           <Ionicons name={icon} size={26} color={colors.inkSecondary} />
@@ -43,11 +46,8 @@ export function HomeServiceTile({
   );
 }
 
-const TILE_W = (layout.screenWidth - layout.pad * 2 - layout.cardGap) / 2;
-
 const styles = StyleSheet.create({
   tile: {
-    width: TILE_W,
     backgroundColor: colors.bg,
     borderRadius: radius.xl,
     overflow: 'hidden',

@@ -2,12 +2,12 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { fonts } from '../../theme/fonts';
 import { ReactNode } from 'react';
 import {
-  Dimensions,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
   ViewStyle,
 } from 'react-native';
@@ -21,8 +21,6 @@ import { type } from '../../theme/typography';
 export const AUTH_HERO_BG = '#0B6E67';
 export const AUTH_SHEET_OVERLAP = 28;
 export const AUTH_PAD = layout.pad;
-
-const { height: SCREEN_H } = Dimensions.get('window');
 
 interface AuthScreenLayoutProps {
   step?: number;
@@ -53,9 +51,10 @@ export function AuthScreenLayout({
   compactHero = false,
   showLogo = true,
 }: AuthScreenLayoutProps) {
+  const { height: screenH } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const ratio = compactHero ? 0.28 : 0.34;
-  const heroMinH = Math.min(Math.max(SCREEN_H * ratio, compactHero ? 220 : 248), 300) + insets.top;
+  const heroMinH = Math.min(Math.max(screenH * ratio, compactHero ? 220 : 248), 300) + insets.top;
 
   return (
     <View style={styles.root}>

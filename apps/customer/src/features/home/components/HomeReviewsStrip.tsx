@@ -6,6 +6,7 @@ import { premium } from '../constants/home.premium';
 import { HomeSectionHeader } from './HomeSectionHeader';
 import { fonts } from '@/theme/fonts';
 import { colors } from '@/theme/colors';
+import { useLayoutMetrics } from '@/hooks/useLayoutMetrics';
 import { layout, radius, spacing } from '@/theme/spacing';
 
 const REVIEWS = [
@@ -33,6 +34,7 @@ const REVIEWS = [
 ];
 
 export function HomeReviewsStrip() {
+  const { railCardW78 } = useLayoutMetrics();
   return (
     <View style={styles.block}>
       <HomeSectionHeader
@@ -44,7 +46,7 @@ export function HomeReviewsStrip() {
       />
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
         {REVIEWS.map((r) => (
-          <View key={r.name} style={styles.card}>
+          <View key={r.name} style={[styles.card, { width: railCardW78 }]}>
             <LinearGradient colors={['#FAFBFC', '#FFFFFF']} style={styles.cardBg} />
             <View style={styles.quoteIcon}>
               <Ionicons name="chatbubble" size={14} color={colors.primary} />
@@ -76,8 +78,6 @@ export function HomeReviewsStrip() {
   );
 }
 
-const CARD_W = layout.screenWidth * 0.78;
-
 const styles = StyleSheet.create({
   block: { ...premium.section },
   row: {
@@ -86,7 +86,6 @@ const styles = StyleSheet.create({
     paddingRight: layout.pad + spacing.md,
   },
   card: {
-    width: CARD_W,
     padding: spacing.lg,
     gap: spacing.sm,
     overflow: 'hidden',

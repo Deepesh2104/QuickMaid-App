@@ -3,13 +3,13 @@ import { fonts } from '../../src/theme/fonts';
 import { useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
 import {
-  Dimensions,
   FlatList,
   NativeScrollEvent,
   NativeSyntheticEvent,
   Pressable,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
   ViewToken,
 } from 'react-native';
@@ -23,10 +23,10 @@ import { colors } from '../../src/theme/colors';
 import { layout, radius, shadow, spacing } from '../../src/theme/spacing';
 import { type } from '../../src/theme/typography';
 
-const { width } = Dimensions.get('window');
 const TINTS = [colors.primaryLight, '#EEF6FF', '#FFF8EE'];
 
 export default function OnboardingScreen() {
+  const { width } = useWindowDimensions();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const listRef = useRef<FlatList>(null);

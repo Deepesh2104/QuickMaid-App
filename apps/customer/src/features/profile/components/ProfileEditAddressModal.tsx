@@ -27,6 +27,7 @@ interface ProfileEditAddressModalProps {
 
 export function ProfileEditAddressModal({ visible, address, onClose, onSave, onDelete }: ProfileEditAddressModalProps) {
   const [label, setLabel] = useState('Home');
+  const [labelNote, setLabelNote] = useState('');
   const [flatNo, setFlatNo] = useState('');
   const [building, setBuilding] = useState('');
   const [street, setStreet] = useState('');
@@ -40,7 +41,9 @@ export function ProfileEditAddressModal({ visible, address, onClose, onSave, onD
 
   useEffect(() => {
     if (visible) {
-      setLabel(address?.label ?? 'Home');
+      const addrLabel = address?.label ?? 'Home';
+      setLabel(['Home', 'Office', 'Other'].includes(addrLabel) ? addrLabel : 'Other');
+      setLabelNote(address?.labelNote ?? '');
       setFlatNo(address?.flatNo ?? '');
       setBuilding(address?.building ?? '');
       setStreet(address?.street ?? address?.line ?? '');
@@ -55,10 +58,12 @@ export function ProfileEditAddressModal({ visible, address, onClose, onSave, onD
 
   const save = async () => {
     if (!street.trim() || pincode.length !== 6) return;
+    if (label === 'Other' && !labelNote.trim()) return;
     setSaving(true);
     await onSave({
       id: address?.id,
       label,
+      labelNote: label === 'Other' ? labelNote.trim() : undefined,
       flatNo: flatNo.trim() || undefined,
       building: building.trim() || undefined,
       street: street.trim(),
@@ -93,14 +98,30 @@ export function ProfileEditAddressModal({ visible, address, onClose, onSave, onD
       saveLabel={address ? 'Update address' : 'Save address'}
       onSave={save}
       saving={saving}
-      saveDisabled={!street.trim() || pincode.length !== 6}
+      saveDisabled={!street.trim() || pincode.length !== 6 || (label === 'Other' && !labelNote.trim())}
       saveIcon="location"
       deleteLabel={address && onDelete ? 'Delete address' : undefined}
       onDelete={address && onDelete ? remove : undefined}
     >
       <View style={premiumFormStyles.form}>
         <ProfileSectionCard icon="pricetag-outline" title="Address label" hint="Home, office or other">
-          <ChoiceChips label="Label" options={LABEL_OPTS} value={label} onChange={setLabel} />
+          <ChoiceChips
+            label="Label"
+            options={LABEL_OPTS}
+            value={label}
+            onChange={(next) => {
+              setLabel(next);
+              if (next !== 'Other') setLabelNote('');
+            }}
+          />
+          {label === 'Other' ? (
+            <QmInput
+              label="Describe this place *"
+              value={labelNote}
+              onChangeText={setLabelNote}
+              placeholder="e.g. Mom's home, Friend Rajesh, Parents' address"
+            />
+          ) : null}
         </ProfileSectionCard>
 
         <ProfileSectionCard icon="home-outline" title="Location details" hint="Street, zone & PIN for dispatch">

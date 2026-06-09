@@ -47,6 +47,11 @@ export async function getUnreadCount(): Promise<number> {
   return all.filter((n) => !n.read).length;
 }
 
+export async function getNotificationById(id: string): Promise<AppNotification | null> {
+  const all = await getNotifications();
+  return all.find((n) => n.id === id) ?? null;
+}
+
 export async function addNotification(notification: StoredNotification): Promise<void> {
   const stored = await getStored();
   const without = stored.filter((n) => n.id !== notification.id);

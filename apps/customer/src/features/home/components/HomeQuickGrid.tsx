@@ -44,10 +44,6 @@ const AnimatedPress = Animated.createAnimatedComponent(Pressable);
 
 const GAP = layout.cardGap;
 
-const INNER_W = layout.screenWidth - layout.pad * 2;
-
-const HALF_W = (INNER_W - GAP) / 2;
-
 
 
 function usePressAnim() {
@@ -354,7 +350,7 @@ const styles = StyleSheet.create({
 
   hero: {
 
-    width: INNER_W,
+    width: '100%',
 
     height: 188,
 
@@ -422,7 +418,7 @@ const styles = StyleSheet.create({
 
   },
 
-  heroCopy: { flex: 1, gap: 4 },
+  heroCopy: { flex: 1, minWidth: 0, gap: 4 },
 
   heroName: {
 
@@ -506,7 +502,9 @@ const styles = StyleSheet.create({
 
   compact: {
 
-    width: HALF_W,
+    flex: 1,
+
+    minWidth: 0,
 
     height: 168,
 
@@ -574,7 +572,7 @@ const styles = StyleSheet.create({
 
   wide: {
 
-    width: INNER_W,
+    width: '100%',
 
     height: 112,
 
@@ -600,7 +598,7 @@ const styles = StyleSheet.create({
 
   },
 
-  wideCopy: { flex: 1, gap: 2 },
+  wideCopy: { flex: 1, minWidth: 0, gap: 2 },
 
   wideName: {
 

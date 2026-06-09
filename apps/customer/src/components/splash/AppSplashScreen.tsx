@@ -1,233 +1,508 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useEffect, useRef } from 'react';
-import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useMemo, useRef } from 'react';
+import { Animated, Dimensions, Easing, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Circle, Defs, RadialGradient, Stop } from 'react-native-svg';
+import Svg, { Circle, Defs, Line, RadialGradient, Stop } from 'react-native-svg';
 
 import { fonts } from '../../theme/fonts';
 import { layout, radius, spacing } from '../../theme/spacing';
 
-export const SPLASH_DELAY_MS = 1800;
-export const SPLASH_EXIT_MS = 480;
+export const SPLASH_DELAY_MS = 2200;
+export const SPLASH_EXIT_MS = 520;
+
+const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
 const TRUST = [
-  { icon: 'shield-checkmark' as const, label: 'Verified pros', delay: 280 },
-  { icon: 'flash' as const, label: 'Same-day slots', delay: 380 },
-  { icon: 'diamond' as const, label: 'Plus savings', delay: 480 },
+  { icon: 'shield-checkmark' as const, label: 'Verified pros', sub: 'Background checked', delay: 340 },
+  { icon: 'flash' as const, label: 'Same-day', sub: '60 min slots', delay: 460 },
+  { icon: 'diamond' as const, label: 'Plus perks', sub: 'Up to 25% off', delay: 580 },
 ];
 
-const STATS = [
+type StatItem = { value: string; label: string; suffix?: string };
+
+const STATS: StatItem[] = [
   { value: '50k+', label: 'Homes cleaned' },
-  { value: '4.85★', label: 'Rated service' },
-  { value: '98%', label: 'On-time' },
+  { value: '4.85', suffix: '★', label: 'Rated service' },
+  { value: '98%', label: 'On-time visits' },
 ];
 
-function useFadeUp(delay = 0) {
+const PARTICLES = [
+  { x: 0.08, y: 0.14, s: 3, d: 0 },
+  { x: 0.22, y: 0.08, s: 2, d: 200 },
+  { x: 0.78, y: 0.12, s: 3, d: 400 },
+  { x: 0.92, y: 0.22, s: 2, d: 120 },
+  { x: 0.06, y: 0.38, s: 2, d: 300 },
+  { x: 0.88, y: 0.42, s: 4, d: 500 },
+  { x: 0.14, y: 0.62, s: 2, d: 180 },
+  { x: 0.72, y: 0.58, s: 3, d: 360 },
+  { x: 0.34, y: 0.72, s: 2, d: 80 },
+  { x: 0.58, y: 0.78, s: 3, d: 440 },
+  { x: 0.9, y: 0.68, s: 2, d: 260 },
+  { x: 0.48, y: 0.16, s: 2, d: 620 },
+  { x: 0.62, y: 0.28, s: 3, d: 140 },
+  { x: 0.18, y: 0.84, s: 2, d: 520 },
+];
+
+function useFadeUp(delay = 0, distance = 22) {
   const opacity = useRef(new Animated.Value(0)).current;
-  const translateY = useRef(new Animated.Value(18)).current;
+  const translateY = useRef(new Animated.Value(distance)).current;
 
   useEffect(() => {
     Animated.parallel([
       Animated.timing(opacity, {
         toValue: 1,
-        duration: 620,
+        duration: 720,
         delay,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
       Animated.timing(translateY, {
         toValue: 0,
-        duration: 620,
+        duration: 720,
         delay,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
     ]).start();
-  }, [delay, opacity, translateY]);
+  }, [delay, distance, opacity, translateY]);
 
-  return { opacity, transform: [{ translateY }] };
+  return { opacity, translateY };
 }
 
-function TrustPill({ icon, label, delay }: { icon: keyof typeof Ionicons.glyphMap; label: string; delay: number }) {
-  const anim = useFadeUp(delay);
+function useLoopPulse(duration = 1600, min = 0.3, max = 1) {
+  const value = useRef(new Animated.Value(min)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(value, {
+          toValue: max,
+          duration: duration / 2,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(value, {
+          toValue: min,
+          duration: duration / 2,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ]),
+    ).start();
+  }, [duration, max, min, value]);
+
+  return value;
+}
+
+function Particle({ x, y, size, delay }: { x: number; y: number; size: number; delay: number }) {
+  const opacity = useRef(new Animated.Value(0.15)).current;
+  const scale = useRef(new Animated.Value(0.6)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.delay(delay),
+        Animated.parallel([
+          Animated.timing(opacity, {
+            toValue: 1,
+            duration: 900,
+            easing: Easing.out(Easing.quad),
+            useNativeDriver: true,
+          }),
+          Animated.timing(scale, {
+            toValue: 1,
+            duration: 900,
+            useNativeDriver: true,
+          }),
+        ]),
+        Animated.parallel([
+          Animated.timing(opacity, {
+            toValue: 0.12,
+            duration: 1100,
+            useNativeDriver: true,
+          }),
+          Animated.timing(scale, {
+            toValue: 0.5,
+            duration: 1100,
+            useNativeDriver: true,
+          }),
+        ]),
+      ]),
+    ).start();
+  }, [delay, opacity, scale]);
+
   return (
-    <Animated.View style={[styles.trustPill, anim]}>
-      <View style={styles.trustIcon}>
-        <Ionicons name={icon} size={12} color="#6EE7B7" />
-      </View>
-      <Text style={styles.trustText}>{label}</Text>
+    <Animated.View
+      pointerEvents="none"
+      style={[
+        styles.particle,
+        {
+          left: x * SCREEN_W,
+          top: y * SCREEN_H,
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          opacity,
+          transform: [{ scale }],
+        },
+      ]}
+    />
+  );
+}
+
+function OrbitRing({
+  size,
+  duration,
+  reverse,
+  borderColor,
+  dotColor,
+}: {
+  size: number;
+  duration: number;
+  reverse?: boolean;
+  borderColor: string;
+  dotColor: string;
+}) {
+  const spin = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.timing(spin, {
+        toValue: 1,
+        duration,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      }),
+    ).start();
+  }, [duration, spin]);
+
+  const rotate = spin.interpolate({
+    inputRange: [0, 1],
+    outputRange: reverse ? ['360deg', '0deg'] : ['0deg', '360deg'],
+  });
+
+  return (
+    <Animated.View
+      style={[
+        styles.orbitRingWrap,
+        { width: size, height: size, borderRadius: size / 2, transform: [{ rotate }] },
+      ]}
+      pointerEvents="none"
+    >
+      <View style={[styles.orbitRingLine, { width: size, height: size, borderRadius: size / 2, borderColor }]} />
+      <View style={[styles.orbitDot, { backgroundColor: dotColor, top: 2 }]} />
+    </Animated.View>
+  );
+}
+
+function TrustCard({
+  icon,
+  label,
+  sub,
+  delay,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  sub: string;
+  delay: number;
+}) {
+  const { opacity, translateY } = useFadeUp(delay, 16);
+  return (
+    <Animated.View style={[styles.trustCard, { opacity, transform: [{ translateY }] }]}>
+      <LinearGradient
+        colors={['rgba(255,255,255,0.14)', 'rgba(255,255,255,0.04)']}
+        style={styles.trustCardGrad}
+      >
+        <View style={styles.trustIconWrap}>
+          <Ionicons name={icon} size={14} color="#FCD34D" />
+        </View>
+        <Text style={styles.trustLabel}>{label}</Text>
+        <Text style={styles.trustSub}>{sub}</Text>
+      </LinearGradient>
+    </Animated.View>
+  );
+}
+
+function StatCell({
+  value,
+  suffix,
+  label,
+  delay,
+  bordered,
+}: {
+  value: string;
+  suffix?: string;
+  label: string;
+  delay: number;
+  bordered?: boolean;
+}) {
+  const { opacity, translateY } = useFadeUp(delay, 12);
+  const pop = useRef(new Animated.Value(0.85)).current;
+
+  useEffect(() => {
+    Animated.spring(pop, {
+      toValue: 1,
+      delay: delay + 200,
+      damping: 10,
+      stiffness: 140,
+      useNativeDriver: true,
+    }).start();
+  }, [delay, pop]);
+
+  return (
+    <Animated.View
+      style={[
+        styles.statCell,
+        bordered && styles.statCellBorder,
+        { opacity, transform: [{ translateY }, { scale: pop }] },
+      ]}
+    >
+      <Text style={styles.statValue}>
+        {value}
+        {suffix ? <Text style={styles.statSuffix}>{suffix}</Text> : null}
+      </Text>
+      <Text style={styles.statLabel}>{label}</Text>
     </Animated.View>
   );
 }
 
 export function AppSplashScreen() {
   const insets = useSafeAreaInsets();
-  const heroScale = useRef(new Animated.Value(0.88)).current;
+  const heroScale = useRef(new Animated.Value(0.82)).current;
   const heroOpacity = useRef(new Animated.Value(0)).current;
-  const ringSpin = useRef(new Animated.Value(0)).current;
+  const logoBreathe = useRef(new Animated.Value(1)).current;
   const shimmer = useRef(new Animated.Value(0)).current;
-  const glowPulse = useRef(new Animated.Value(0.35)).current;
+  const aurora = useRef(new Animated.Value(0)).current;
+  const scanLine = useRef(new Animated.Value(0)).current;
   const progress = useRef(new Animated.Value(0)).current;
-  const floatA = useRef(new Animated.Value(0)).current;
-  const floatB = useRef(new Animated.Value(0)).current;
-  const sparkle = useRef(new Animated.Value(0)).current;
+  const brandGlow = useRef(new Animated.Value(0)).current;
 
-  const badgeAnim = useFadeUp(120);
-  const statsAnim = useFadeUp(560);
-  const bottomAnim = useFadeUp(640);
+  const glowPulse = useLoopPulse(1800, 0.25, 0.95);
+  const badgeAnim = useFadeUp(80, 14);
+  const statsAnim = useFadeUp(620, 18);
+  const bottomAnim = useFadeUp(700, 14);
+  const badgeStyle = { opacity: badgeAnim.opacity, transform: [{ translateY: badgeAnim.translateY }] };
+  const statsStyle = { opacity: statsAnim.opacity, transform: [{ translateY: statsAnim.translateY }] };
+  const bottomStyle = { opacity: bottomAnim.opacity, transform: [{ translateY: bottomAnim.translateY }] };
+
+  const particles = useMemo(() => PARTICLES, []);
 
   useEffect(() => {
     Animated.parallel([
       Animated.spring(heroScale, {
         toValue: 1,
-        damping: 13,
-        stiffness: 110,
-        mass: 0.9,
+        damping: 11,
+        stiffness: 95,
+        mass: 0.85,
         useNativeDriver: true,
       }),
       Animated.timing(heroOpacity, {
         toValue: 1,
-        duration: 700,
+        duration: 900,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(logoBreathe, {
+            toValue: 1.04,
+            duration: 2200,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(logoBreathe, {
+            toValue: 1,
+            duration: 2200,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ]),
+      ),
       Animated.timing(progress, {
         toValue: 1,
         duration: SPLASH_DELAY_MS,
-        easing: Easing.bezier(0.22, 1, 0.36, 1),
+        easing: Easing.bezier(0.16, 1, 0.3, 1),
         useNativeDriver: false,
       }),
       Animated.loop(
-        Animated.timing(ringSpin, {
+        Animated.sequence([
+          Animated.timing(shimmer, {
+            toValue: 1,
+            duration: 1800,
+            easing: Easing.inOut(Easing.quad),
+            useNativeDriver: true,
+          }),
+          Animated.timing(shimmer, { toValue: 0, duration: 0, useNativeDriver: true }),
+          Animated.delay(600),
+        ]),
+      ),
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(aurora, {
+            toValue: 1,
+            duration: 5000,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+          Animated.timing(aurora, {
+            toValue: 0,
+            duration: 5000,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+        ]),
+      ),
+      Animated.loop(
+        Animated.timing(scanLine, {
           toValue: 1,
-          duration: 12000,
+          duration: 4000,
           easing: Easing.linear,
           useNativeDriver: true,
         }),
       ),
       Animated.loop(
         Animated.sequence([
-          Animated.timing(glowPulse, {
+          Animated.timing(brandGlow, {
             toValue: 1,
-            duration: 1400,
-            easing: Easing.inOut(Easing.ease),
+            duration: 1200,
             useNativeDriver: true,
           }),
-          Animated.timing(glowPulse, {
-            toValue: 0.35,
-            duration: 1400,
-            easing: Easing.inOut(Easing.ease),
+          Animated.timing(brandGlow, {
+            toValue: 0.4,
+            duration: 1200,
             useNativeDriver: true,
           }),
-        ]),
-      ),
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(shimmer, {
-            toValue: 1,
-            duration: 2200,
-            easing: Easing.inOut(Easing.quad),
-            useNativeDriver: true,
-          }),
-          Animated.timing(shimmer, {
-            toValue: 0,
-            duration: 0,
-            useNativeDriver: true,
-          }),
-          Animated.delay(800),
-        ]),
-      ),
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(floatA, { toValue: 1, duration: 3200, useNativeDriver: true }),
-          Animated.timing(floatA, { toValue: 0, duration: 3200, useNativeDriver: true }),
-        ]),
-      ),
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(floatB, { toValue: 1, duration: 4200, useNativeDriver: true }),
-          Animated.timing(floatB, { toValue: 0, duration: 4200, useNativeDriver: true }),
-        ]),
-      ),
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(sparkle, { toValue: 1, duration: 900, useNativeDriver: true }),
-          Animated.timing(sparkle, { toValue: 0.2, duration: 900, useNativeDriver: true }),
         ]),
       ),
     ]).start();
-  }, [floatA, floatB, glowPulse, heroOpacity, heroScale, progress, ringSpin, shimmer, sparkle]);
+  }, [aurora, brandGlow, heroOpacity, heroScale, logoBreathe, progress, scanLine, shimmer]);
 
   const progressWidth = progress.interpolate({
     inputRange: [0, 1],
     outputRange: ['0%', '100%'],
   });
 
-  const ringRotate = ringSpin.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '360deg'],
-  });
-
   const shimmerX = shimmer.interpolate({
     inputRange: [0, 1],
-    outputRange: [-120, 160],
+    outputRange: [-140, SCREEN_W * 0.55],
   });
 
-  const floatAY = floatA.interpolate({ inputRange: [0, 1], outputRange: [0, -14] });
-  const floatBY = floatB.interpolate({ inputRange: [0, 1], outputRange: [0, 12] });
+  const auroraX = aurora.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-40, 40],
+  });
+
+  const scanTranslateY = scanLine.interpolate({
+    inputRange: [0, 1],
+    outputRange: [SCREEN_H * 0.12, SCREEN_H * 0.88],
+  });
+
+  const brandGlowOpacity = brandGlow.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.35, 1],
+  });
 
   return (
     <View style={styles.root}>
       <LinearGradient
-        colors={['#010F0E', '#042824', '#084F4A', '#0B6E67', '#12A598']}
-        locations={[0, 0.28, 0.55, 0.78, 1]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
+        colors={['#000806', '#011412', '#043530', '#084F4A', '#0B6E67', '#14B8A6']}
+        locations={[0, 0.15, 0.38, 0.58, 0.78, 1]}
+        start={{ x: 0.05, y: 0 }}
+        end={{ x: 0.95, y: 1 }}
         style={StyleSheet.absoluteFill}
       />
 
+      <Animated.View
+        style={[styles.auroraLayer, { transform: [{ translateX: auroraX }] }]}
+        pointerEvents="none"
+      >
+        <LinearGradient
+          colors={['transparent', 'rgba(252,211,77,0.18)', 'transparent']}
+          start={{ x: 0, y: 0.5 }}
+          end={{ x: 1, y: 0.5 }}
+          style={StyleSheet.absoluteFill}
+        />
+      </Animated.View>
+
       <LinearGradient
-        colors={['rgba(252,211,77,0.14)', 'transparent', 'rgba(110,231,183,0.1)']}
-        locations={[0, 0.45, 1]}
-        start={{ x: 1, y: 0 }}
-        end={{ x: 0, y: 1 }}
+        colors={['rgba(110,231,183,0.12)', 'transparent', 'rgba(252,211,77,0.08)']}
+        locations={[0, 0.5, 1]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={StyleSheet.absoluteFill}
+        pointerEvents="none"
+      />
+
+      <LinearGradient
+        colors={['rgba(0,0,0,0.55)', 'transparent', 'transparent', 'rgba(0,0,0,0.65)']}
+        locations={[0, 0.22, 0.72, 1]}
         style={StyleSheet.absoluteFill}
         pointerEvents="none"
       />
 
       <Svg width="100%" height="100%" style={StyleSheet.absoluteFill} pointerEvents="none">
         <Defs>
-          <RadialGradient id="glow" cx="50%" cy="35%" rx="50%" ry="40%">
-            <Stop offset="0%" stopColor="#6EE7B7" stopOpacity="0.22" />
-            <Stop offset="100%" stopColor="#010F0E" stopOpacity="0" />
+          <RadialGradient id="heroGlow" cx="50%" cy="34%" rx="55%" ry="42%">
+            <Stop offset="0%" stopColor="#6EE7B7" stopOpacity="0.28" />
+            <Stop offset="45%" stopColor="#0B6E67" stopOpacity="0.08" />
+            <Stop offset="100%" stopColor="#000806" stopOpacity="0" />
+          </RadialGradient>
+          <RadialGradient id="goldGlow" cx="80%" cy="20%" rx="35%" ry="30%">
+            <Stop offset="0%" stopColor="#FCD34D" stopOpacity="0.15" />
+            <Stop offset="100%" stopColor="#000806" stopOpacity="0" />
           </RadialGradient>
         </Defs>
-        <Circle cx="50%" cy="32%" r="220" fill="url(#glow)" />
+        <Circle cx="50%" cy="34%" r="260" fill="url(#heroGlow)" />
+        <Circle cx="82%" cy="18%" r="140" fill="url(#goldGlow)" />
+        <Line x1="12%" y1="20%" x2="28%" y2="32%" stroke="rgba(255,255,255,0.06)" strokeWidth={1} />
+        <Line x1="72%" y1="24%" x2="88%" y2="18%" stroke="rgba(252,211,77,0.1)" strokeWidth={1} />
+        <Line x1="8%" y1="70%" x2="22%" y2="58%" stroke="rgba(110,231,183,0.08)" strokeWidth={1} />
+        <Line x1="78%" y1="72%" x2="92%" y2="64%" stroke="rgba(255,255,255,0.05)" strokeWidth={1} />
       </Svg>
 
-      <Animated.View style={[styles.orbGold, { opacity: glowPulse, transform: [{ translateY: floatAY }] }]} />
-      <Animated.View style={[styles.orbMint, { opacity: glowPulse, transform: [{ translateY: floatBY }] }]} />
-      <View style={styles.gridOverlay} pointerEvents="none" />
+      {particles.map((p, i) => (
+        <Particle key={i} x={p.x} y={p.y} size={p.s} delay={p.d} />
+      ))}
 
-      <Animated.View style={[styles.orbitWrap, { transform: [{ rotate: ringRotate }] }]} pointerEvents="none">
-        <View style={styles.orbitRing} />
-        <View style={styles.orbitDot} />
-      </Animated.View>
+      <Animated.View
+        style={[styles.scanLine, { transform: [{ translateY: scanTranslateY }] }]}
+        pointerEvents="none"
+      />
+
+      <View style={styles.orbitCenter} pointerEvents="none">
+        <OrbitRing size={300} duration={16000} borderColor="rgba(255,255,255,0.06)" dotColor="#6EE7B7" />
+        <OrbitRing
+          size={248}
+          duration={11000}
+          reverse
+          borderColor="rgba(252,211,77,0.12)"
+          dotColor="#FCD34D"
+        />
+        <OrbitRing size={196} duration={8000} borderColor="rgba(110,231,183,0.1)" dotColor="#FFFFFF" />
+      </View>
 
       <View
         style={[
           styles.content,
-          { paddingTop: insets.top + 16, paddingBottom: Math.max(insets.bottom, 24) },
+          { paddingTop: insets.top + 12, paddingBottom: Math.max(insets.bottom, 28) },
         ]}
       >
-        <Animated.View style={[styles.topBadge, badgeAnim]}>
-          <View style={styles.livePulse}>
-            <View style={styles.liveDot} />
-          </View>
-          <Text style={styles.topBadgeEyebrow}>PREMIUM HOME CARE</Text>
-          <View style={styles.badgeDivider} />
-          <Text style={styles.topBadgeText}>Now in Raipur</Text>
+        <Animated.View style={[styles.crownBadge, badgeStyle]}>
+          <LinearGradient
+            colors={['rgba(252,211,77,0.22)', 'rgba(255,255,255,0.06)']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.crownBadgeGrad}
+          >
+            <Ionicons name="ribbon" size={13} color="#FCD34D" />
+            <Text style={styles.crownText}>INDIA&apos;S PREMIUM HOME SERVICE</Text>
+            <View style={styles.crownDivider} />
+            <View style={styles.livePulse}>
+              <View style={styles.liveDot} />
+            </View>
+            <Text style={styles.crownCity}>Raipur</Text>
+          </LinearGradient>
         </Animated.View>
 
         <Animated.View
@@ -236,62 +511,102 @@ export function AppSplashScreen() {
             { opacity: heroOpacity, transform: [{ scale: heroScale }] },
           ]}
         >
-          <Animated.View style={[styles.heroGlow, { opacity: glowPulse }]} />
+          <Animated.View style={[styles.heroAura, { opacity: glowPulse }]} />
 
-          <View style={styles.logoStack}>
+          <Animated.View style={[styles.logoOuter, { transform: [{ scale: logoBreathe }] }]}>
+            <View style={styles.logoHalo} />
             <LinearGradient
-              colors={['rgba(255,255,255,0.22)', 'rgba(255,255,255,0.06)']}
-              style={styles.logoGlass}
+              colors={['rgba(252,211,77,0.45)', 'rgba(110,231,183,0.35)', 'rgba(255,255,255,0.2)']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.logoFrame}
             >
-              <LinearGradient colors={['#0F1419', '#1A2332']} style={styles.logoInner}>
-                <Ionicons name="sparkles" size={28} color="#6EE7B7" />
-                <Animated.View style={[styles.sparkleAccent, { opacity: sparkle }]}>
-                  <Ionicons name="diamond" size={14} color="#FCD34D" />
-                </Animated.View>
+              <LinearGradient colors={['#0A1219', '#152232', '#0D9488']} style={styles.logoBody}>
+                <Text style={styles.logoMonogram}>Q</Text>
+                <View style={styles.logoSparkRow}>
+                  <Ionicons name="sparkles" size={11} color="#6EE7B7" />
+                </View>
               </LinearGradient>
-              <Animated.View style={[styles.shimmerBar, { transform: [{ translateX: shimmerX }] }]} />
+              <Animated.View style={[styles.logoShimmer, { transform: [{ translateX: shimmerX }] }]} />
             </LinearGradient>
+          </Animated.View>
+
+          <View style={styles.brandStack}>
+            <Animated.Text style={[styles.brandShadow, { opacity: brandGlowOpacity }]}>
+              QuickMaid
+            </Animated.Text>
+            <Text style={styles.brand}>QuickMaid</Text>
+            <LinearGradient
+              colors={['transparent', '#FCD34D', '#6EE7B7', 'transparent']}
+              start={{ x: 0, y: 0.5 }}
+              end={{ x: 1, y: 0.5 }}
+              style={styles.brandUnderline}
+            />
           </View>
 
-          <Text style={styles.brand}>QuickMaid</Text>
           <View style={styles.brandRow}>
             <View style={styles.brandLine} />
-            <Text style={styles.brandSub}>Spotless homes · Trusted pros</Text>
+            <Ionicons name="diamond" size={8} color="rgba(252,211,77,0.8)" />
+            <Text style={styles.brandSub}>Spotless · Trusted · Instant</Text>
+            <Ionicons name="diamond" size={8} color="rgba(252,211,77,0.8)" />
             <View style={styles.brandLine} />
           </View>
-          <Text style={styles.tagline}>Book verified maids in minutes.{'\n'}Pay securely · Track live.</Text>
+
+          <Text style={styles.tagline}>
+            Verified maids at your doorstep.{'\n'}
+            Book in 60 seconds · Pay securely · Track live.
+          </Text>
         </Animated.View>
 
-        <Animated.View style={[styles.statsGlass, statsAnim]}>
-          {STATS.map((s, i) => (
-            <View key={s.label} style={[styles.statCell, i > 0 && styles.statCellBorder]}>
-              <Text style={styles.statValue}>{s.value}</Text>
-              <Text style={styles.statLabel}>{s.label}</Text>
-            </View>
-          ))}
+        <Animated.View style={[styles.statsGlass, statsStyle]}>
+          <LinearGradient
+            colors={['rgba(255,255,255,0.1)', 'rgba(255,255,255,0.03)']}
+            style={styles.statsGrad}
+          >
+            {STATS.map((s, i) => (
+              <StatCell
+                key={s.label}
+                value={s.value}
+                suffix={s.suffix}
+                label={s.label}
+                delay={680 + i * 90}
+                bordered={i > 0}
+              />
+            ))}
+          </LinearGradient>
         </Animated.View>
 
         <View style={styles.trustRow}>
           {TRUST.map((item) => (
-            <TrustPill key={item.label} icon={item.icon} label={item.label} delay={item.delay} />
+            <TrustCard
+              key={item.label}
+              icon={item.icon}
+              label={item.label}
+              sub={item.sub}
+              delay={item.delay}
+            />
           ))}
         </View>
 
-        <Animated.View style={[styles.bottom, bottomAnim]}>
+        <Animated.View style={[styles.bottom, bottomStyle]}>
           <View style={styles.progressWrap}>
             <View style={styles.progressTrack}>
               <Animated.View style={[styles.progressFill, { width: progressWidth }]}>
                 <LinearGradient
-                  colors={['#6EE7B7', '#FFFFFF', '#FCD34D']}
+                  colors={['#059669', '#6EE7B7', '#FFFFFF', '#FCD34D']}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
                   style={StyleSheet.absoluteFill}
                 />
+                <View style={styles.progressHead} />
               </Animated.View>
             </View>
-            <Text style={styles.progressLabel}>Preparing your experience</Text>
+            <View style={styles.progressMeta}>
+              <Ionicons name="hourglass-outline" size={11} color="rgba(255,255,255,0.5)" />
+              <Text style={styles.progressLabel}>Curating your premium experience</Text>
+            </View>
           </View>
-          <Text style={styles.footer}>QuickMaid Customer · v1.0</Text>
+          <Text style={styles.footer}>QuickMaid · Crafted with care · v1.0</Text>
         </Animated.View>
       </View>
     </View>
@@ -301,59 +616,55 @@ export function AppSplashScreen() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#010F0E',
+    backgroundColor: '#000806',
   },
-  orbGold: {
-    position: 'absolute',
-    top: '18%',
-    right: -40,
-    width: 160,
-    height: 160,
-    borderRadius: 80,
-    backgroundColor: 'rgba(252,211,77,0.12)',
-  },
-  orbMint: {
-    position: 'absolute',
-    bottom: '22%',
-    left: -50,
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    backgroundColor: 'rgba(110,231,183,0.1)',
-  },
-  gridOverlay: {
+  auroraLayer: {
     ...StyleSheet.absoluteFill,
-    opacity: 0.04,
-    borderWidth: 0,
-    backgroundColor: 'transparent',
-    borderColor: 'rgba(255,255,255,0.3)',
+    opacity: 0.85,
   },
-  orbitWrap: {
+  particle: {
+    position: 'absolute',
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#6EE7B7',
+    shadowOpacity: 0.9,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 0 },
+  },
+  scanLine: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    height: 1,
+    backgroundColor: 'rgba(110,231,183,0.12)',
+    shadowColor: '#6EE7B7',
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 0 },
+  },
+  orbitCenter: {
     position: 'absolute',
     alignSelf: 'center',
-    top: '30%',
-    width: 260,
-    height: 260,
+    top: '27%',
+    width: 300,
+    height: 300,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  orbitRing: {
-    width: 260,
-    height: 260,
-    borderRadius: 130,
+  orbitRingWrap: {
+    position: 'absolute',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  orbitRingLine: {
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.07)',
   },
   orbitDot: {
     position: 'absolute',
-    top: 8,
-    width: 8,
-    height: 8,
+    width: 7,
+    height: 7,
     borderRadius: 4,
-    backgroundColor: '#FCD34D',
-    shadowColor: '#FCD34D',
-    shadowOpacity: 0.8,
-    shadowRadius: 8,
+    shadowOpacity: 0.9,
+    shadowRadius: 10,
     shadowOffset: { width: 0, height: 0 },
   },
   content: {
@@ -361,141 +672,186 @@ const styles = StyleSheet.create({
     paddingHorizontal: layout.pad,
     justifyContent: 'space-between',
   },
-  topBadge: {
+  crownBadge: {
+    alignSelf: 'center',
+  },
+  crownBadgeGrad: {
     flexDirection: 'row',
     alignItems: 'center',
-    alignSelf: 'center',
-    gap: 8,
+    gap: 7,
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: radius.pill,
-    backgroundColor: 'rgba(255,255,255,0.08)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.16)',
+    borderColor: 'rgba(252,211,77,0.28)',
+  },
+  crownText: {
+    fontFamily: fonts.bold,
+    fontSize: 8.5,
+    color: '#FCD34D',
+    letterSpacing: 1.4,
+  },
+  crownDivider: {
+    width: 1,
+    height: 12,
+    backgroundColor: 'rgba(255,255,255,0.18)',
   },
   livePulse: {
     width: 14,
     height: 14,
     borderRadius: 7,
-    backgroundColor: 'rgba(74,222,128,0.2)',
+    backgroundColor: 'rgba(74,222,128,0.22)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   liveDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
     backgroundColor: '#4ADE80',
   },
-  topBadgeEyebrow: {
-    fontFamily: fonts.bold,
-    fontSize: 9,
-    color: '#FCD34D',
-    letterSpacing: 1.2,
-  },
-  badgeDivider: {
-    width: 1,
-    height: 12,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-  },
-  topBadgeText: {
+  crownCity: {
     fontFamily: fonts.semiBold,
-    fontSize: 11,
-    color: 'rgba(255,255,255,0.9)',
+    fontSize: 10,
+    color: 'rgba(255,255,255,0.88)',
   },
   hero: {
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
-    marginTop: -spacing.xl,
+    marginTop: -spacing.lg,
   },
-  heroGlow: {
+  heroAura: {
     position: 'absolute',
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    backgroundColor: 'rgba(110,231,183,0.16)',
+    width: 240,
+    height: 240,
+    borderRadius: 120,
+    backgroundColor: 'rgba(110,231,183,0.14)',
   },
-  logoStack: {
+  logoOuter: {
     marginBottom: spacing.md,
-  },
-  logoGlass: {
-    width: 96,
-    height: 96,
-    borderRadius: 28,
-    padding: 3,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.28)',
-  },
-  logoInner: {
-    flex: 1,
-    borderRadius: 25,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  sparkleAccent: {
+  logoHalo: {
     position: 'absolute',
-    top: 10,
-    right: 12,
+    width: 130,
+    height: 130,
+    borderRadius: 65,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: 'rgba(255,255,255,0.02)',
   },
-  shimmerBar: {
+  logoFrame: {
+    width: 112,
+    height: 112,
+    borderRadius: 32,
+    padding: 2.5,
+    overflow: 'hidden',
+  },
+  logoBody: {
+    flex: 1,
+    borderRadius: 29,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logoMonogram: {
+    fontFamily: fonts.extraBold,
+    fontSize: 48,
+    color: '#FFFFFF',
+    letterSpacing: -2,
+    marginTop: -4,
+    textShadowColor: 'rgba(110,231,183,0.5)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 16,
+  },
+  logoSparkRow: {
+    position: 'absolute',
+    bottom: 14,
+    right: 16,
+  },
+  logoShimmer: {
     position: 'absolute',
     top: 0,
     bottom: 0,
-    width: 40,
-    backgroundColor: 'rgba(255,255,255,0.18)',
-    transform: [{ skewX: '-18deg' }],
+    width: 48,
+    backgroundColor: 'rgba(255,255,255,0.22)',
+    transform: [{ skewX: '-20deg' }],
+  },
+  brandStack: {
+    alignItems: 'center',
+    position: 'relative',
+  },
+  brandShadow: {
+    position: 'absolute',
+    fontFamily: fonts.extraBold,
+    fontSize: 44,
+    color: '#6EE7B7',
+    letterSpacing: -1.4,
+    lineHeight: 48,
+    top: 1,
+    opacity: 0.4,
   },
   brand: {
     fontFamily: fonts.extraBold,
-    fontSize: 38,
+    fontSize: 44,
     color: '#FFFFFF',
-    letterSpacing: -1.2,
-    lineHeight: 42,
+    letterSpacing: -1.4,
+    lineHeight: 48,
+    textShadowColor: 'rgba(0,0,0,0.35)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 8,
+  },
+  brandUnderline: {
+    width: 120,
+    height: 2,
+    borderRadius: 1,
+    marginTop: 6,
   },
   brandRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    marginTop: 2,
+    marginTop: 4,
   },
   brandLine: {
-    width: 28,
-    height: 1,
-    backgroundColor: 'rgba(255,255,255,0.25)',
+    width: 32,
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: 'rgba(255,255,255,0.22)',
   },
   brandSub: {
-    fontFamily: fonts.medium,
-    fontSize: 11,
-    color: 'rgba(255,255,255,0.72)',
-    letterSpacing: 0.6,
+    fontFamily: fonts.semiBold,
+    fontSize: 10,
+    color: 'rgba(255,255,255,0.7)',
+    letterSpacing: 1.2,
     textTransform: 'uppercase',
   },
   tagline: {
     fontFamily: fonts.medium,
-    fontSize: 15,
-    color: 'rgba(255,255,255,0.88)',
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.86)',
     textAlign: 'center',
     marginTop: spacing.md,
-    lineHeight: 22,
-    maxWidth: 300,
+    lineHeight: 21,
+    maxWidth: 310,
+    letterSpacing: 0.1,
   },
   statsGlass: {
-    flexDirection: 'row',
     alignSelf: 'center',
-    backgroundColor: 'rgba(255,255,255,0.07)',
     borderRadius: radius.xxl,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.14)',
+  },
+  statsGrad: {
+    flexDirection: 'row',
   },
   statCell: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: spacing.md,
+    paddingVertical: spacing.md + 2,
     paddingHorizontal: spacing.sm,
-    minWidth: 96,
+    minWidth: 100,
   },
   statCellBorder: {
     borderLeftWidth: 1,
@@ -503,46 +859,61 @@ const styles = StyleSheet.create({
   },
   statValue: {
     fontFamily: fonts.extraBold,
-    fontSize: 16,
+    fontSize: 18,
     color: '#FFFFFF',
-    letterSpacing: -0.3,
+    letterSpacing: -0.4,
+  },
+  statSuffix: {
+    color: '#FCD34D',
+    fontSize: 14,
   },
   statLabel: {
     fontFamily: fonts.medium,
     fontSize: 9,
-    color: 'rgba(255,255,255,0.62)',
-    marginTop: 2,
+    color: 'rgba(255,255,255,0.58)',
+    marginTop: 3,
     textAlign: 'center',
+    letterSpacing: 0.3,
   },
   trustRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     gap: spacing.sm,
-    flexWrap: 'wrap',
   },
-  trustPill: {
-    flexDirection: 'row',
+  trustCard: {
+    flex: 1,
+    maxWidth: 112,
+  },
+  trustCardGrad: {
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: radius.pill,
-    backgroundColor: 'rgba(15,20,25,0.35)',
+    paddingVertical: 10,
+    paddingHorizontal: 6,
+    borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: 'rgba(110,231,183,0.22)',
+    borderColor: 'rgba(255,255,255,0.1)',
+    gap: 3,
   },
-  trustIcon: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: 'rgba(110,231,183,0.12)',
+  trustIconWrap: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: 'rgba(15,20,25,0.5)',
+    borderWidth: 1,
+    borderColor: 'rgba(252,211,77,0.25)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  trustText: {
+  trustLabel: {
     fontFamily: fonts.semiBold,
-    fontSize: 11,
-    color: 'rgba(255,255,255,0.92)',
+    fontSize: 10,
+    color: '#FFFFFF',
+    textAlign: 'center',
+  },
+  trustSub: {
+    fontFamily: fonts.medium,
+    fontSize: 8,
+    color: 'rgba(255,255,255,0.5)',
+    textAlign: 'center',
   },
   bottom: {
     gap: spacing.md,
@@ -551,28 +922,47 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   progressTrack: {
-    height: 4,
+    height: 5,
     borderRadius: radius.pill,
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    overflow: 'hidden',
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    overflow: 'visible',
   },
   progressFill: {
     height: '100%',
     borderRadius: radius.pill,
     overflow: 'hidden',
+    position: 'relative',
+  },
+  progressHead: {
+    position: 'absolute',
+    top: -3,
+    right: -5,
+    width: 11,
+    height: 11,
+    borderRadius: 6,
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#6EE7B7',
+    shadowOpacity: 1,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 0 },
+  },
+  progressMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
   },
   progressLabel: {
     fontFamily: fonts.medium,
     fontSize: 11,
-    color: 'rgba(255,255,255,0.55)',
-    textAlign: 'center',
-    letterSpacing: 0.2,
+    color: 'rgba(255,255,255,0.52)',
+    letterSpacing: 0.3,
   },
   footer: {
     fontFamily: fonts.medium,
     fontSize: 10,
-    color: 'rgba(255,255,255,0.38)',
+    color: 'rgba(255,255,255,0.34)',
     textAlign: 'center',
-    letterSpacing: 0.4,
+    letterSpacing: 0.6,
   },
 });

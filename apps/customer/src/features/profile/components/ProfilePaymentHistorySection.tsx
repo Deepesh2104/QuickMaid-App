@@ -1,7 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
+import { type Href, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { ListPagination } from '@/components/ui/ListPagination';
+import { PAGE_SIZE_PAYMENTS } from '@/constants/pagination';
+import { usePagination } from '@/hooks/usePagination';
 import { getPaymentHistory } from '@/features/payment/lib/payment.storage';
 import type { PaymentRecord } from '@/features/payment/types/payment.types';
 import { formatInr } from '@/features/checkout/lib/checkout.utils';
@@ -11,11 +16,18 @@ import { colors } from '@/theme/colors';
 import { layout, radius, spacing } from '@/theme/spacing';
 
 export function ProfilePaymentHistorySection() {
+  const router = useRouter();
   const [records, setRecords] = useState<PaymentRecord[]>([]);
 
   useEffect(() => {
     getPaymentHistory().then(setRecords);
   }, []);
+
+  const { page, setPage, totalPages, start, end, slice, total } = usePagination(
+    records,
+    PAGE_SIZE_PAYMENTS,
+    'payments',
+  );
 
   if (!records.length) return null;
 
@@ -24,8 +36,16 @@ export function ProfilePaymentHistorySection() {
       <HomeSectionHeader eyebrow="Transactions" title="Payment history" subtitle="Via Razorpay" icon="receipt-outline" compact />
 
       <View style={styles.list}>
-        {records.slice(0, 5).map((r, i) => (
-          <View key={r.id} style={[styles.row, i < Math.min(records.length, 5) - 1 && styles.rowBorder]}>
+        {slice.map((r, i) => (
+          <Pressable
+            key={r.id}
+            style={[styles.row, i < slice.length - 1 && styles.rowBorder]}
+            onPress={() => {
+              Haptics.selectionAsync();
+              router.push(`/payments/${r.id}` as Href);
+            }}
+            accessibilityRole="button"
+          >
             <View style={[styles.icon, r.status === 'captured' ? styles.iconOk : styles.iconPending]}>
               <Ionicons name={r.status === 'captured' ? 'checkmark' : 'time'} size={14} color={r.status === 'captured' ? '#059669' : '#B45309'} />
             </View>
@@ -37,8 +57,23 @@ export function ProfilePaymentHistorySection() {
               <Text style={styles.amt}>{formatInr(r.amount)}</Text>
               <Text style={styles.status}>{r.status}</Text>
             </View>
-          </View>
+            <Ionicons name="chevron-forward" size={14} color={colors.mutedLight} />
+          </Pressable>
         ))}
+      </View>
+
+      <View style={styles.pager}>
+        <ListPagination
+          page={page}
+          totalPages={totalPages}
+          start={start}
+          end={end}
+          total={total}
+          onPageChange={setPage}
+          label="Payments"
+          itemLabel="transactions"
+          compact
+        />
       </View>
     </View>
   );
@@ -46,6 +81,7 @@ export function ProfilePaymentHistorySection() {
 
 const styles = StyleSheet.create({
   block: { marginBottom: spacing.section },
+  pager: { marginHorizontal: layout.pad, marginTop: spacing.sm },
   list: {
     marginHorizontal: layout.pad,
     borderRadius: radius.xl,

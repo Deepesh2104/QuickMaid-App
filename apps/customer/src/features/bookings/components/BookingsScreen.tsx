@@ -3,6 +3,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useLayoutMetrics } from '@/hooks/useLayoutMetrics';
 import { useHomeProfile } from '@/features/home/hooks/useHomeProfile';
 import { colors } from '@/theme/colors';
 import { radius, spacing } from '@/theme/spacing';
@@ -11,6 +12,7 @@ import { useOpenRateBooking } from '../hooks/useOpenRateBooking';
 import { useNotifications } from '@/features/notifications/hooks/useNotifications';
 import { usePendingVisitComplete } from '../hooks/usePendingVisitComplete';
 import { useUserBookings } from '../hooks/useUserBookings';
+import { filterBookings } from '../utils/bookings.utils';
 import { BookingsBody } from './BookingsBody';
 import { BookingVisitCompleteModal } from './BookingVisitCompleteModal';
 import { BookingsFilterRail, type BookingFilter } from './BookingsFilterRail';
@@ -18,6 +20,7 @@ import { BookingsHeader } from './BookingsHeader';
 
 export function BookingsScreen() {
   const insets = useSafeAreaInsets();
+  const { tabScrollPad } = useLayoutMetrics();
   const { profile, refresh: refreshProfile } = useHomeProfile();
   const { bookings, refresh: refreshBookings } = useUserBookings();
   const { payload, visible, checkPending, dismiss } = usePendingVisitComplete();
@@ -36,35 +39,17 @@ export function BookingsScreen() {
     [bookings],
   );
 
-  const upcomingHero = useMemo(
-    () => bookings.find((b) => b.status === 'upcoming'),
+  const filteredBookings = useMemo(() => filterBookings(bookings, filter), [bookings, filter]);
+
+  const upcomingBookings = useMemo(
+    () => filterBookings(bookings, 'upcoming'),
     [bookings],
   );
-
-  const listBookings = useMemo(() => {
-    if (filter === 'all') {
-      return bookings.filter((b) => b.status !== 'upcoming');
-    }
-    if (filter === 'upcoming') {
-      return [];
-    }
-    return bookings.filter((b) => b.status === filter);
-  }, [bookings, filter]);
 
   const completedBookings = useMemo(
     () => bookings.filter((b) => b.status === 'completed'),
     [bookings],
   );
-
-  const rebookBookings = useMemo(
-    () =>
-      filter === 'cancelled' || filter === 'upcoming'
-        ? []
-        : completedBookings,
-    [filter, completedBookings],
-  );
-
-  const showHero = Boolean((filter === 'all' || filter === 'upcoming') && upcomingHero);
 
   useFocusEffect(
     useCallback(() => {
@@ -84,23 +69,19 @@ export function BookingsScreen() {
     setRefreshing(false);
   }, [refreshProfile, refreshBookings]);
 
-  const total = bookings.length;
-  const completed = counts.completed;
-  const upcoming = counts.upcoming;
-
   return (
     <View style={styles.root}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
-        contentContainerStyle={{ paddingBottom: insets.bottom + spacing.md }}
+        contentContainerStyle={{ paddingBottom: tabScrollPad }}
       >
         <BookingsHeader
           paddingTop={insets.top}
           firstName={profile?.name?.split(' ')[0]}
-          upcoming={upcoming}
-          completed={completed}
-          total={total}
+          upcoming={counts.upcoming}
+          completed={counts.completed}
+          total={counts.all}
           unreadCount={unreadCount}
         />
 
@@ -111,11 +92,8 @@ export function BookingsScreen() {
             <BookingsFilterRail active={filter} counts={counts} onSelect={setFilter} />
             <BookingsBody
               filter={filter}
-              counts={counts}
-              showHero={showHero}
-              upcomingHero={upcomingHero}
-              listBookings={listBookings}
-              rebookBookings={rebookBookings}
+              filteredBookings={filteredBookings}
+              upcomingBookings={upcomingBookings}
               completedBookings={completedBookings}
               onOtpVerified={onOtpVerified}
             />

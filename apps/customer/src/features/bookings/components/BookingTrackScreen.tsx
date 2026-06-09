@@ -1,12 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Linking,
   Pressable,
+  ScrollView,
   Share,
   StyleSheet,
   Text,
@@ -16,30 +16,29 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { DemoBooking } from '@/constants/demo';
 import { useOpenSupport } from '@/features/help/hooks/useOpenSupport';
+import { resolveMaidId } from '../lib/maid.profile';
+import { useOpenProProfile } from '@/features/pro/hooks/useOpenProProfile';
 import { getBookingById } from '../lib/booking.lookup';
 import {
   TRACK_STEPS,
+  distanceRemaining,
   etaLabel,
+  etaMinutesLabel,
+  etaMinutesUnit,
   initialTrackState,
+  partnerStatusLine,
   phaseFromProgress,
-  phaseLabel,
-  type TrackPhase,
+  tripProgressPercent,
 } from '../lib/booking.tracking';
 import { BookingTrackMap } from './BookingTrackMap';
 import { fonts } from '@/theme/fonts';
 import { colors } from '@/theme/colors';
 import { layout, radius, spacing } from '@/theme/spacing';
 
-const STEP_ICONS: Record<TrackPhase, keyof typeof Ionicons.glyphMap> = {
-  assigned: 'person',
-  en_route: 'bicycle',
-  nearby: 'navigate',
-  arrived: 'home',
-};
-
 export function BookingTrackScreen() {
   const router = useRouter();
   const openSupport = useOpenSupport();
+  const openProProfile = useOpenProProfile();
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [booking, setBooking] = useState<DemoBooking | null>(null);
@@ -66,17 +65,17 @@ export function BookingTrackScreen() {
 
   useEffect(() => {
     if (!booking || booking.status !== 'upcoming') return;
-
     const timer = setInterval(() => {
       setEtaMin((m) => Math.max(1, m - 1));
       setProgress((p) => Math.min(0.96, p + 0.04));
     }, 6000);
-
     return () => clearInterval(timer);
   }, [booking]);
 
   const phase = useMemo(() => phaseFromProgress(progress), [progress]);
   const stepIndex = TRACK_STEPS.findIndex((s) => s.id === phase);
+  const progressPct = tripProgressPercent(progress);
+  const showOtp = (phase === 'nearby' || phase === 'arrived') && Boolean(booking?.completionOtp);
 
   const shareTrip = async () => {
     if (!booking) return;
@@ -91,7 +90,7 @@ export function BookingTrackScreen() {
 
   if (loading) {
     return (
-      <View style={[styles.loader, { paddingTop: insets.top }]}>
+      <View style={[styles.centered, { paddingTop: insets.top }]}>
         <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
@@ -99,11 +98,10 @@ export function BookingTrackScreen() {
 
   if (!booking) {
     return (
-      <View style={[styles.empty, { paddingTop: insets.top }]}>
-        <Ionicons name="navigate-outline" size={48} color={colors.muted} />
+      <View style={[styles.centered, { paddingTop: insets.top }]}>
         <Text style={styles.emptyTitle}>Booking not found</Text>
-        <Pressable style={styles.emptyBtn} onPress={() => router.back()}>
-          <Text style={styles.emptyBtnText}>Go back</Text>
+        <Pressable style={styles.primaryBtn} onPress={() => router.back()}>
+          <Text style={styles.primaryBtnText}>Go back</Text>
         </Pressable>
       </View>
     );
@@ -111,12 +109,11 @@ export function BookingTrackScreen() {
 
   if (booking.status !== 'upcoming') {
     return (
-      <View style={[styles.empty, { paddingTop: insets.top }]}>
-        <Ionicons name="time-outline" size={48} color={colors.muted} />
+      <View style={[styles.centered, { paddingTop: insets.top }]}>
         <Text style={styles.emptyTitle}>Tracking unavailable</Text>
-        <Text style={styles.emptySub}>Live map sirf upcoming visits ke liye hai</Text>
-        <Pressable style={styles.emptyBtn} onPress={() => router.back()}>
-          <Text style={styles.emptyBtnText}>Go back</Text>
+        <Text style={styles.emptySub}>Live tracking sirf upcoming visits ke liye</Text>
+        <Pressable style={styles.primaryBtn} onPress={() => router.back()}>
+          <Text style={styles.primaryBtnText}>Go back</Text>
         </Pressable>
       </View>
     );
@@ -124,259 +121,334 @@ export function BookingTrackScreen() {
 
   return (
     <View style={styles.root}>
+      {/* Map — hero, Swiggy style */}
       <View style={styles.mapArea}>
-        <BookingTrackMap progress={progress} address={booking.address} />
+        <BookingTrackMap progress={progress} />
 
-        <View style={[styles.mapTop, { paddingTop: insets.top + spacing.sm }]}>
-          <Pressable style={styles.floatBtn} onPress={() => router.back()} accessibilityRole="button">
+        <View style={[styles.mapBar, { paddingTop: insets.top + spacing.sm }]}>
+          <Pressable style={styles.mapBtn} onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={22} color={colors.ink} />
           </Pressable>
-          <View style={styles.liveBadge}>
-            <View style={styles.liveDot} />
-            <Text style={styles.liveText}>LIVE</Text>
-          </View>
-          <Pressable style={styles.floatBtn} onPress={() => void shareTrip()} accessibilityRole="button">
-            <Ionicons name="share-outline" size={20} color={colors.ink} />
+          <Pressable
+            style={styles.mapBtn}
+            onPress={() => openSupport({ chat: true, topic: `Track · ${booking.maid}` })}
+          >
+            <Ionicons name="help-circle-outline" size={22} color={colors.ink} />
           </Pressable>
         </View>
       </View>
 
+      {/* Bottom sheet — Zomato white card */}
       <View style={[styles.sheet, { paddingBottom: insets.bottom + spacing.md }]}>
         <View style={styles.handle} />
 
-        <View style={styles.etaRow}>
-          <View>
-            <Text style={styles.eta}>{etaLabel(etaMin)}</Text>
-            <Text style={styles.phase}>{phaseLabel(phase)}</Text>
-          </View>
-          <View style={styles.etaBadge}>
-            <Ionicons name="time-outline" size={14} color={colors.primaryDark} />
-            <Text style={styles.etaBadgeText}>{booking.time}</Text>
-          </View>
-        </View>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.sheetInner}>
+          <Text style={styles.statusLine}>{partnerStatusLine(booking.maid, phase)}</Text>
 
-        <View style={styles.progress}>
-          <View style={[styles.progressFill, { width: `${Math.round(progress * 100)}%` }]} />
-        </View>
+          <View style={styles.etaBlock}>
+            <Text style={styles.etaNum}>{etaMinutesLabel(etaMin)}</Text>
+            {etaMinutesUnit(etaMin) ? (
+              <Text style={styles.etaUnit}>{etaMinutesUnit(etaMin)}</Text>
+            ) : null}
+          </View>
 
-        <View style={styles.steps}>
-          {TRACK_STEPS.map((step, i) => {
-            const done = i <= stepIndex;
-            const active = i === stepIndex;
-            return (
-              <View key={step.id} style={styles.stepWrap}>
-                <View style={styles.stepCol}>
-                  <View style={[styles.stepDot, done && styles.stepDotDone, active && styles.stepDotActive]}>
-                    <Ionicons
-                      name={STEP_ICONS[step.id]}
-                      size={12}
-                      color={done ? colors.white : colors.muted}
-                    />
-                  </View>
-                  <Text style={[styles.stepLabel, done && styles.stepLabelDone]}>{step.label}</Text>
+          <Text style={styles.etaSub}>
+            {distanceRemaining(progress)} away · {booking.time} slot
+          </Text>
+
+          <View style={styles.progressTrack}>
+            <View style={[styles.progressFill, { width: `${progressPct}%` }]} />
+          </View>
+
+          <View style={styles.steps}>
+            {TRACK_STEPS.map((step, i) => {
+              const done = i <= stepIndex;
+              const active = i === stepIndex;
+              return (
+                <View key={step.id} style={styles.stepItem}>
+                  <View
+                    style={[
+                      styles.stepDot,
+                      done && styles.stepDotDone,
+                      active && styles.stepDotActive,
+                    ]}
+                  />
+                  <Text style={[styles.stepLabel, (done || active) && styles.stepLabelOn]}>
+                    {step.shortLabel}
+                  </Text>
                 </View>
-                {i < TRACK_STEPS.length - 1 ? (
-                  <View style={[styles.stepLine, done && styles.stepLineDone]} />
-                ) : null}
+              );
+            })}
+          </View>
+
+          {showOtp && booking.completionOtp ? (
+            <View style={styles.otpBox}>
+              <View style={styles.otpLeft}>
+                <Ionicons name="key" size={18} color="#B54708" />
+                <View>
+                  <Text style={styles.otpTitle}>Share OTP when done</Text>
+                  <Text style={styles.otpSub}>Tabhi dena jab cleaning complete ho</Text>
+                </View>
               </View>
-            );
-          })}
-        </View>
+              <Text style={styles.otpCode}>{booking.completionOtp}</Text>
+            </View>
+          ) : null}
 
-        <View style={styles.proCard}>
-          <View style={styles.proAvatar}>
-            <Text style={styles.proInitial}>{booking.maid.charAt(0)}</Text>
-          </View>
-          <View style={styles.proCopy}>
-            <Text style={styles.proName}>{booking.maid}</Text>
-            <Text style={styles.proMeta}>
-              {booking.service}
-              {booking.maidRating ? ` · ${booking.maidRating}★` : ''}
-              {booking.maidJobs ? ` · ${booking.maidJobs} jobs` : ''}
-            </Text>
-            <Text style={styles.proRef}>{booking.bookingRef ?? booking.id}</Text>
-          </View>
-          <View style={styles.verified}>
-            <Ionicons name="shield-checkmark" size={12} color="#027A48" />
-            <Text style={styles.verifiedText}>Verified</Text>
-          </View>
-        </View>
+          <View style={styles.divider} />
 
-        <View style={styles.actions}>
+          {/* Partner row — Swiggy delivery executive */}
+          <View style={styles.partnerRow}>
+            <Pressable
+              style={styles.partnerTap}
+              onPress={() => {
+                openProProfile(resolveMaidId(booking.maid, booking.maidId), {
+                  name: booking.maid,
+                  bookingId: booking.id,
+                  status: booking.status,
+                });
+              }}
+              accessibilityRole="button"
+              accessibilityLabel={`View ${booking.maid} profile`}
+            >
+              <View style={styles.partnerAvatar}>
+                <Text style={styles.partnerInitial}>{booking.maid.charAt(0)}</Text>
+              </View>
+              <View style={styles.partnerInfo}>
+                <Text style={styles.partnerName}>{booking.maid}</Text>
+                <Text style={styles.partnerRole}>
+                  Your cleaning pro
+                  {booking.maidRating ? ` · ${booking.maidRating}★` : ''}
+                </Text>
+              </View>
+            </Pressable>
+            <Pressable
+              style={styles.callCircle}
+              onPress={() => {
+                Haptics.selectionAsync();
+                void Linking.openURL('tel:+919876543210');
+              }}
+            >
+              <Ionicons name="call" size={20} color={colors.white} />
+            </Pressable>
+          </View>
+
           <Pressable
-            style={styles.actionBtn}
+            style={styles.callWide}
             onPress={() => {
-              Haptics.selectionAsync();
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               void Linking.openURL('tel:+919876543210');
             }}
           >
-            <Ionicons name="call-outline" size={18} color={colors.primaryDark} />
-            <Text style={styles.actionText}>Call</Text>
+            <Ionicons name="call" size={18} color={colors.white} />
+            <Text style={styles.callWideText}>Call {booking.maid.split(' ')[0]}</Text>
           </Pressable>
-          <Pressable
-            style={styles.actionBtn}
-            onPress={() => booking && openSupport({ chat: true, topic: `Track visit · ${booking.maid}` })}
-          >
-            <Ionicons name="chatbubble-ellipses-outline" size={18} color={colors.primaryDark} />
-            <Text style={styles.actionText}>Message</Text>
-          </Pressable>
-          <Pressable
-            style={styles.actionPrimary}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              void shareTrip();
-            }}
-          >
-            <LinearGradient colors={['#0B6E67', '#084F4A']} style={StyleSheet.absoluteFill} />
-            <Ionicons name="share-social-outline" size={16} color={colors.white} />
-            <Text style={styles.actionPrimaryText}>Share trip</Text>
-          </Pressable>
-        </View>
 
-        <View style={styles.safety}>
-          <Ionicons name="shield-outline" size={16} color={colors.primaryDark} />
-          <Text style={styles.safetyText}>
-            OTP tabhi share karein jab kaam poora ho. Trip link family ke saath share kar sakte ho.
-          </Text>
-        </View>
+          <View style={styles.orderBox}>
+            <View style={styles.orderRow}>
+              <Ionicons name="sparkles-outline" size={16} color={colors.muted} />
+              <Text style={styles.orderService}>{booking.service}</Text>
+            </View>
+            <View style={styles.orderRow}>
+              <Ionicons name="location-outline" size={16} color={colors.muted} />
+              <Text style={styles.orderAddress} numberOfLines={2}>
+                {booking.address}
+              </Text>
+            </View>
+            <Text style={styles.orderRef}>Booking · {booking.bookingRef ?? booking.id}</Text>
+          </View>
+
+          <View style={styles.footerLinks}>
+            <Pressable
+              style={styles.footerLink}
+              onPress={() => openSupport({ chat: true, topic: `Track · ${booking.maid}` })}
+            >
+              <Ionicons name="chatbubble-ellipses-outline" size={16} color={colors.primary} />
+              <Text style={styles.footerLinkText}>Chat with support</Text>
+            </Pressable>
+            <Pressable style={styles.footerLink} onPress={() => void shareTrip()}>
+              <Ionicons name="share-outline" size={16} color={colors.primary} />
+              <Text style={styles.footerLinkText}>Share trip</Text>
+            </Pressable>
+          </View>
+        </ScrollView>
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#F4F6F8' },
-  loader: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F4F6F8' },
-  empty: {
+  root: { flex: 1, backgroundColor: colors.white },
+  centered: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.md,
     padding: layout.pad,
-    backgroundColor: '#F4F6F8',
+    backgroundColor: colors.white,
   },
-  emptyTitle: { fontFamily: fonts.bold, fontSize: 18, color: colors.ink },
+  emptyTitle: { fontFamily: fonts.bold, fontSize: 17, color: colors.ink },
   emptySub: { fontFamily: fonts.medium, fontSize: 13, color: colors.muted, textAlign: 'center' },
-  emptyBtn: {
+  primaryBtn: {
     backgroundColor: colors.primary,
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.md,
-    borderRadius: radius.pill,
+    borderRadius: radius.md,
   },
-  emptyBtnText: { fontFamily: fonts.bold, fontSize: 14, color: colors.white },
-  mapArea: { flex: 1, minHeight: 300, position: 'relative' },
-  mapTop: {
+  primaryBtnText: { fontFamily: fonts.bold, fontSize: 14, color: colors.white },
+  mapArea: { flex: 1, minHeight: 280 },
+  mapBar: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: layout.pad,
-    zIndex: 2,
   },
-  floatBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: 'rgba(255,255,255,0.95)',
+  mapBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.white,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(15,20,25,0.08)',
+    shadowColor: '#000',
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
   },
-  liveBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: colors.white,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: 'rgba(2,122,72,0.2)',
-  },
-  liveDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.success },
-  liveText: { fontFamily: fonts.bold, fontSize: 11, color: colors.success, letterSpacing: 0.5 },
   sheet: {
     backgroundColor: colors.white,
-    borderTopLeftRadius: radius.xxl,
-    borderTopRightRadius: radius.xxl,
-    paddingHorizontal: layout.pad,
-    paddingTop: spacing.md,
-    gap: spacing.md,
-    marginTop: -spacing.lg,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.divider,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    marginTop: -16,
+    maxHeight: '48%',
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: -4 },
+    elevation: 8,
   },
   handle: {
     alignSelf: 'center',
-    width: 40,
+    width: 36,
     height: 4,
     borderRadius: 2,
-    backgroundColor: colors.divider,
+    backgroundColor: '#E0E0E0',
+    marginTop: spacing.sm,
     marginBottom: spacing.xs,
   },
-  etaRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  eta: { fontFamily: fonts.extraBold, fontSize: 26, color: colors.ink, letterSpacing: -0.5 },
-  phase: { fontFamily: fonts.medium, fontSize: 13, color: colors.muted },
-  etaBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: colors.primaryLight,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 6,
-    borderRadius: radius.pill,
+  sheetInner: {
+    paddingHorizontal: layout.pad,
+    paddingBottom: spacing.sm,
+    gap: spacing.md,
   },
-  etaBadgeText: { fontFamily: fonts.semiBold, fontSize: 12, color: colors.primaryDark },
-  progress: {
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: colors.bgMuted,
+  statusLine: {
+    fontFamily: fonts.semiBold,
+    fontSize: 15,
+    color: colors.ink,
+    lineHeight: 21,
+  },
+  etaBlock: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 6,
+  },
+  etaNum: {
+    fontFamily: fonts.extraBold,
+    fontSize: 48,
+    color: colors.ink,
+    letterSpacing: -2,
+    lineHeight: 52,
+  },
+  etaUnit: {
+    fontFamily: fonts.semiBold,
+    fontSize: 16,
+    color: colors.muted,
+    marginBottom: 8,
+  },
+  etaSub: {
+    fontFamily: fonts.medium,
+    fontSize: 13,
+    color: colors.muted,
+    marginTop: -4,
+  },
+  progressTrack: {
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#EEEEEE',
     overflow: 'hidden',
   },
-  progressFill: { height: '100%', borderRadius: 3, backgroundColor: colors.primary },
-  steps: { flexDirection: 'row', alignItems: 'flex-start' },
-  stepWrap: { flex: 1, flexDirection: 'row', alignItems: 'flex-start' },
-  stepCol: { alignItems: 'center', gap: 4, flex: 1 },
+  progressFill: {
+    height: '100%',
+    backgroundColor: colors.primary,
+    borderRadius: 2,
+  },
+  steps: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 2,
+  },
+  stepItem: { alignItems: 'center', gap: 6, flex: 1 },
   stepDot: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    backgroundColor: colors.bgMuted,
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#E0E0E0',
   },
   stepDotDone: { backgroundColor: colors.primary },
-  stepDotActive: { borderWidth: 2, borderColor: '#6EE7B7' },
+  stepDotActive: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: colors.primary,
+    borderWidth: 2,
+    borderColor: '#A7F3D0',
+  },
   stepLabel: {
     fontFamily: fonts.medium,
-    fontSize: 9,
-    color: colors.muted,
+    fontSize: 10,
+    color: colors.mutedLight,
     textAlign: 'center',
-    lineHeight: 12,
   },
-  stepLabelDone: { color: colors.primaryDark, fontFamily: fonts.semiBold },
-  stepLine: {
-    width: 12,
-    height: 2,
-    backgroundColor: colors.bgMuted,
-    marginTop: 12,
+  stepLabelOn: { color: colors.primaryDark, fontFamily: fonts.semiBold },
+  otpBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFFAEB',
+    borderRadius: radius.md,
+    padding: spacing.md,
+    borderWidth: 1,
+    borderColor: '#FEDF89',
   },
-  stepLineDone: { backgroundColor: colors.primary },
-  proCard: {
+  otpLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flex: 1 },
+  otpTitle: { fontFamily: fonts.bold, fontSize: 12, color: '#B54708' },
+  otpSub: { fontFamily: fonts.medium, fontSize: 10, color: '#B54708', opacity: 0.8 },
+  otpCode: {
+    fontFamily: fonts.extraBold,
+    fontSize: 22,
+    color: '#B54708',
+    letterSpacing: 4,
+  },
+  divider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.divider,
+  },
+  partnerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    backgroundColor: '#F8FDFC',
-    borderRadius: radius.xl,
-    padding: spacing.lg,
-    borderWidth: 1,
-    borderColor: 'rgba(11,110,103,0.12)',
   },
-  proAvatar: {
+  partnerTap: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    minWidth: 0,
+  },
+  partnerAvatar: {
     width: 48,
     height: 48,
     borderRadius: 24,
@@ -384,49 +456,55 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  proInitial: { fontFamily: fonts.extraBold, fontSize: 18, color: colors.primaryDark },
-  proCopy: { flex: 1, gap: 2 },
-  proName: { fontFamily: fonts.extraBold, fontSize: 15, color: colors.ink },
-  proMeta: { fontFamily: fonts.medium, fontSize: 12, color: colors.muted },
-  proRef: { fontFamily: fonts.semiBold, fontSize: 11, color: colors.primary },
-  verified: { flexDirection: 'row', alignItems: 'center', gap: 3 },
-  verifiedText: { fontFamily: fonts.bold, fontSize: 10, color: '#027A48' },
-  actions: { flexDirection: 'row', gap: spacing.sm },
-  actionBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 12,
-    borderRadius: radius.pill,
-    backgroundColor: colors.primaryLight,
-  },
-  actionText: { fontFamily: fonts.bold, fontSize: 13, color: colors.primaryDark },
-  actionPrimary: {
-    flex: 1.2,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 12,
-    borderRadius: radius.pill,
-    overflow: 'hidden',
-  },
-  actionPrimaryText: { fontFamily: fonts.bold, fontSize: 13, color: colors.white },
-  safety: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.sm,
-    padding: spacing.md,
-    borderRadius: radius.lg,
-    backgroundColor: colors.primaryLight,
-  },
-  safetyText: {
-    flex: 1,
-    fontFamily: fonts.medium,
-    fontSize: 11,
+  partnerInitial: {
+    fontFamily: fonts.extraBold,
+    fontSize: 18,
     color: colors.primaryDark,
-    lineHeight: 16,
   },
+  partnerInfo: { flex: 1, gap: 2 },
+  partnerName: { fontFamily: fonts.bold, fontSize: 16, color: colors.ink },
+  partnerRole: { fontFamily: fonts.medium, fontSize: 12, color: colors.muted },
+  callCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  callWide: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.primary,
+    paddingVertical: 14,
+    borderRadius: radius.md,
+  },
+  callWideText: { fontFamily: fonts.bold, fontSize: 15, color: colors.white },
+  orderBox: {
+    backgroundColor: '#FAFAFA',
+    borderRadius: radius.md,
+    padding: spacing.md,
+    gap: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+  },
+  orderRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
+  orderService: { flex: 1, fontFamily: fonts.semiBold, fontSize: 13, color: colors.ink },
+  orderAddress: { flex: 1, fontFamily: fonts.regular, fontSize: 13, color: colors.muted, lineHeight: 18 },
+  orderRef: { fontFamily: fonts.medium, fontSize: 11, color: colors.mutedLight },
+  footerLinks: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: spacing.xl,
+    paddingTop: spacing.xs,
+  },
+  footerLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: spacing.sm,
+  },
+  footerLinkText: { fontFamily: fonts.semiBold, fontSize: 13, color: colors.primary },
 });

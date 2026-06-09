@@ -1,15 +1,10 @@
-import { CHECKOUT_COUPONS } from '@/features/payment/constants/gateway';
+import { resolveCouponDiscountAmount } from '@/features/coupons/lib/coupon.utils';
 import type { ProfileAccountData } from '@/features/profile/types/profile.types';
 
 import type { CheckoutDraft, OrderSummary } from '../types/checkout.types';
 
 export function resolveCouponDiscount(code: string | undefined, amount: number): number {
-  if (!code || amount <= 0) return 0;
-  const coupon = CHECKOUT_COUPONS.find((c) => c.code === code);
-  if (!coupon) return 0;
-  if ('percent' in coupon && coupon.percent) return Math.round((amount * coupon.percent) / 100);
-  if ('flat' in coupon && coupon.flat) return Math.min(coupon.flat, amount);
-  return 0;
+  return resolveCouponDiscountAmount(code, amount);
 }
 
 export function parsePrice(price: string): number {

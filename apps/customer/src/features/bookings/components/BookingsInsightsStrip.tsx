@@ -48,7 +48,6 @@ export function BookingsInsightsStrip() {
 }
 
 const GAP = spacing.sm;
-const STAT_W = (layout.screenWidth - layout.pad * 2 - spacing.lg * 2 - GAP * 2) / 3;
 
 const styles = StyleSheet.create({
   wrap: {
@@ -96,7 +95,8 @@ const styles = StyleSheet.create({
   },
   row: { flexDirection: 'row', gap: GAP },
   stat: {
-    width: STAT_W,
+    flex: 1,
+    minWidth: 0,
     backgroundColor: 'rgba(255,255,255,0.08)',
     borderRadius: radius.xl,
     padding: spacing.sm + 2,

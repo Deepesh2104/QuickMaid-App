@@ -4,6 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import type { BookingStatus } from '@/constants/demo';
+import { useTranslation } from '@/i18n/LanguageProvider';
 import { fonts } from '@/theme/fonts';
 import { colors } from '@/theme/colors';
 import { layout, radius, spacing } from '@/theme/spacing';
@@ -12,14 +13,14 @@ export type BookingFilter = 'all' | BookingStatus;
 
 const FILTERS: {
   id: BookingFilter;
-  label: string;
+  labelKey: string;
   icon: keyof typeof Ionicons.glyphMap;
   gradient: readonly [string, string];
 }[] = [
-  { id: 'all', label: 'All', icon: 'layers-outline', gradient: ['#0B6E67', '#084F4A'] },
-  { id: 'upcoming', label: 'Upcoming', icon: 'time-outline', gradient: ['#175CD3', '#1245A8'] },
-  { id: 'completed', label: 'Past', icon: 'checkmark-circle-outline', gradient: ['#027A48', '#05603A'] },
-  { id: 'cancelled', label: 'Cancelled', icon: 'close-circle-outline', gradient: ['#475467', '#344054'] },
+  { id: 'all', labelKey: 'bookings.filterAll', icon: 'layers-outline', gradient: ['#0B6E67', '#084F4A'] },
+  { id: 'upcoming', labelKey: 'bookings.filterUpcoming', icon: 'time-outline', gradient: ['#175CD3', '#1245A8'] },
+  { id: 'completed', labelKey: 'bookings.filterPast', icon: 'checkmark-circle-outline', gradient: ['#027A48', '#05603A'] },
+  { id: 'cancelled', labelKey: 'bookings.filterCancelled', icon: 'close-circle-outline', gradient: ['#475467', '#344054'] },
 ];
 
 interface BookingsFilterRailProps {
@@ -29,6 +30,8 @@ interface BookingsFilterRailProps {
 }
 
 export function BookingsFilterRail({ active, counts, onSelect }: BookingsFilterRailProps) {
+  const { t } = useTranslation();
+
   return (
     <View style={styles.wrap}>
       <ScrollView
@@ -63,7 +66,7 @@ export function BookingsFilterRail({ active, counts, onSelect }: BookingsFilterR
                 size={15}
                 color={on ? colors.white : colors.primary}
               />
-              <Text style={[styles.pillLabel, on && styles.pillLabelOn]}>{f.label}</Text>
+                  <Text style={[styles.pillLabel, on && styles.pillLabelOn]}>{t(f.labelKey)}</Text>
               <View style={[styles.badge, on && styles.badgeOn]}>
                 <Text style={[styles.badgeText, on && styles.badgeTextOn]}>{count}</Text>
               </View>

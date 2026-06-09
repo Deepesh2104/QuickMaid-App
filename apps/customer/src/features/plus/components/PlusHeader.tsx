@@ -4,6 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Pressable, StyleSheet, Text, View, type ViewStyle } from 'react-native';
 
 import { useOpenNotifications } from '@/features/notifications/hooks/useOpenNotifications';
+import { useTranslation } from '@/i18n/LanguageProvider';
 import { HomePhoto } from '@/features/home/components/HomePhoto';
 import { HOME_IMAGES } from '@/features/home/constants/unsplash.images';
 import { fonts } from '@/theme/fonts';
@@ -15,12 +16,13 @@ interface PlusHeaderProps {
 }
 
 const STATS = [
-  { icon: 'pricetag' as const, value: '20%', label: 'Savings' },
-  { icon: 'calendar' as const, value: '12', label: 'Visits/mo' },
-  { icon: 'flash' as const, value: 'Priority', label: 'Slots' },
+  { icon: 'pricetag' as const, value: '20%', labelKey: 'plus.statSavings' },
+  { icon: 'calendar' as const, value: '12', labelKey: 'plus.statVisits' },
+  { icon: 'flash' as const, value: 'Priority', labelKey: 'plus.statSlots' },
 ];
 
 export function PlusHeader({ paddingTop }: PlusHeaderProps) {
+  const { t } = useTranslation();
   const openNotifications = useOpenNotifications();
 
   return (
@@ -48,19 +50,17 @@ export function PlusHeader({ paddingTop }: PlusHeaderProps) {
         </View>
 
         <View style={styles.copy}>
-          <Text style={styles.eyebrow}>MEMBERSHIP</Text>
-          <Text style={styles.title}>QuickMaid Plus</Text>
-          <Text style={styles.sub}>
-            Save more every month · Same maid · Priority booking slots
-          </Text>
+          <Text style={styles.eyebrow}>{t('plus.eyebrow')}</Text>
+          <Text style={styles.title}>{t('plus.title')}</Text>
+          <Text style={styles.sub}>{t('plus.sub')}</Text>
         </View>
 
         <View style={styles.stats}>
           {STATS.map((s, i) => (
-            <View key={s.label} style={[styles.stat, i > 0 && styles.statSep]}>
+            <View key={s.labelKey} style={[styles.stat, i > 0 && styles.statSep]}>
               <Ionicons name={s.icon} size={13} color="#6EE7B7" />
               <Text style={styles.statValue}>{s.value}</Text>
-              <Text style={styles.statLabel}>{s.label}</Text>
+              <Text style={styles.statLabel}>{t(s.labelKey)}</Text>
             </View>
           ))}
         </View>

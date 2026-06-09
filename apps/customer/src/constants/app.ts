@@ -14,6 +14,13 @@ export const STORAGE_KEYS = {
   notificationsInbox: '@qm/notifications_inbox',
   notificationsRead: '@qm/notifications_read',
   plusLastSubscription: '@qm/plus_last_subscription',
+  referralLedger: '@qm/referral_ledger',
+  supportTickets: '@qm/support_tickets',
+  bookingDisputes: '@qm/booking_disputes',
+  walletTransactions: '@qm/wallet_transactions',
+  couponWallet: '@qm/coupon_wallet',
+  pendingCoupon: '@qm/pending_coupon',
+  appLockSettings: '@qm/app_lock_settings',
 } as const;
 
 export interface UserProfile {

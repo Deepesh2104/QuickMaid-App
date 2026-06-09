@@ -60,7 +60,6 @@ export function HelpEmergencyRow() {
 }
 
 const GAP = spacing.sm;
-const BTN_W = (layout.screenWidth - layout.pad * 2 - GAP) / 2;
 
 const styles = StyleSheet.create({
   block: {
@@ -80,7 +79,8 @@ const styles = StyleSheet.create({
   },
   row: { flexDirection: 'row', gap: GAP },
   btn: {
-    width: BTN_W,
+    flex: 1,
+    minWidth: 0,
     borderRadius: radius.xl,
     padding: spacing.lg,
     alignItems: 'center',

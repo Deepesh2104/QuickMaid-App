@@ -17,6 +17,8 @@ import {
 } from '@/features/checkout/lib/checkout.payment';
 import { addNotification } from '@/features/notifications/lib/notifications.storage';
 import { addPaymentRecord } from '@/features/payment/lib/payment.storage';
+import { markCouponUsed } from '@/features/coupons/lib/coupon.storage';
+import { addWalletTransaction } from '@/features/wallet/lib/wallet.storage';
 import type { GatewayPaymentResult } from '@/features/payment/types/payment.types';
 import {
   computeOrderSummary,
@@ -124,6 +126,8 @@ export function CheckoutProvider({ children }: { children: React.ReactNode }) {
       }
 
       let nextAccount = { ...account };
+      const bookingRef = generateBookingRef(item.priceNum);
+
       if (summary.walletDeduction > 0) {
         nextAccount = {
           ...nextAccount,
@@ -132,8 +136,6 @@ export function CheckoutProvider({ children }: { children: React.ReactNode }) {
         await saveProfileAccount(nextAccount);
         setAccount(nextAccount);
       }
-
-      const bookingRef = generateBookingRef(item.priceNum);
       const assignment = autoAssignMaid(account.bookingPrefs.favoriteMaidName);
       const order: PlacedOrder = {
         id: `ord_${Date.now()}`,
@@ -166,6 +168,17 @@ export function CheckoutProvider({ children }: { children: React.ReactNode }) {
         maidAssignedAt: assignment.assignedAt,
       };
 
+      if (summary.walletDeduction > 0) {
+        await addWalletTransaction({
+          kind: 'debit',
+          source: 'booking',
+          amount: summary.walletDeduction,
+          title: item.name,
+          subtitle: bookingRef,
+          refId: order.id,
+        });
+      }
+
       if (gatewayResult?.success) {
         await addPaymentRecord({
           id: gatewayResult.paymentId,
@@ -180,6 +193,10 @@ export function CheckoutProvider({ children }: { children: React.ReactNode }) {
           status: 'captured',
           createdAt: new Date().toISOString(),
         });
+      }
+
+      if (draft.couponCode) {
+        await markCouponUsed(draft.couponCode);
       }
 
       await addStoredBooking(order);

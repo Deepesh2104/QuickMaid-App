@@ -1,8 +1,9 @@
-import { useRouter } from 'expo-router';
+import { type Href, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useLayoutMetrics } from '@/hooks/useLayoutMetrics';
 import { clearSession } from '@/lib/storage';
 import { colors } from '@/theme/colors';
 import { radius, spacing } from '@/theme/spacing';
@@ -23,6 +24,7 @@ import { ProfileWalletTopUpModal } from './ProfileWalletTopUpModal';
 
 export function ProfileScreen() {
   const insets = useSafeAreaInsets();
+  const { tabScrollPad } = useLayoutMetrics();
   const router = useRouter();
   const state = useProfileAccount();
   const [sheet, setSheet] = useState<ProfileSheet | null>(null);
@@ -82,7 +84,7 @@ export function ProfileScreen() {
     <View style={styles.root}>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + spacing.md }]}
+        contentContainerStyle={[styles.scroll, { paddingBottom: tabScrollPad }]}
       >
         <ProfileHeader
           paddingTop={insets.top}
@@ -107,8 +109,8 @@ export function ProfileScreen() {
               completion={completion}
               onLogout={logout}
               onEditProfile={() => openSheet({ type: 'profile' })}
-              onAddAddress={() => openSheet({ type: 'address' })}
-              onEditAddress={(id) => openSheet({ type: 'address', id })}
+              onAddAddress={() => router.push('/account/address-picker' as Href)}
+              onEditAddress={(id) => router.push(`/account/address-picker?id=${id}` as Href)}
               onAddPayment={() => openSheet({ type: 'payment' })}
               onEditPayment={(id) => openSheet({ type: 'payment', id })}
               onTopUpWallet={() => openSheet({ type: 'wallet' })}
@@ -142,7 +144,7 @@ export function ProfileScreen() {
   );
 }
 
-const SHEET_OVERLAP = 18;
+const SHEET_OVERLAP = 22;
 const HEADER_TAIL = '#0F1419';
 
 const styles = StyleSheet.create({
