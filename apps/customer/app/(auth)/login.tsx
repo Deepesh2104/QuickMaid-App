@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { BecomePartnerBanner } from '../../src/components/ui/BecomePartnerBanner';
 import { PhoneInput } from '../../src/components/ui/PhoneInput';
 import { QmButton } from '../../src/components/ui/QmButton';
 import { QmLogo } from '../../src/components/ui/QmLogo';
@@ -136,6 +137,8 @@ export default function LoginScreen() {
               <Ionicons name="information-circle-outline" size={16} color={colors.primary} />
               <Text style={styles.demoText}>Demo mode — any 10-digit number works</Text>
             </View>
+
+            <BecomePartnerBanner />
           </ScrollView>
 
           <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
