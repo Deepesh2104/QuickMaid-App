@@ -33,6 +33,17 @@
 14. [Testing](#14-testing)
 15. [Conventions & best practices](#15-conventions--best-practices)
 16. [Cross-reference index](#16-cross-reference-index)
+17. [Payment gateway deep dive](#17-payment-gateway-deep-dive)
+18. [Booking lifecycle & state machine](#18-booking-lifecycle--state-machine)
+19. [Plus membership engine](#19-plus-membership-engine)
+20. [Profile system](#20-profile-system)
+21. [Navigation hooks (`useOpen*`)](#21-navigation-hooks-useopen)
+22. [Native modules reference](#22-native-modules-reference)
+23. [Demo & seed data catalog](#23-demo--seed-data-catalog)
+24. [i18n reference & coverage](#24-i18n-reference--coverage)
+25. [Auth flow specification](#25-auth-flow-specification)
+26. [Config & build files](#26-config--build-files)
+27. [Appendix: feature file index](#27-appendix-feature-file-index)
 
 ---
 
@@ -64,7 +75,7 @@ The QuickMaid **Customer App** is the mobile client for homeowners in Raipur to 
 | Framework | React Native 0.85 + Expo ~56 |
 | Navigation | Expo Router 56 (file-based, typed routes) |
 | Language | TypeScript 6 (strict) |
-| Forms | react-hook-form + zod |
+| Forms | react-hook-form + zod (home search only); inline validation elsewhere |
 | Persistence | `@react-native-async-storage/async-storage` |
 | Animation | react-native-reanimated 4 |
 | Fonts | Plus Jakarta Sans (`@expo-google-fonts/plus-jakarta-sans`) |
@@ -231,7 +242,7 @@ const apiUrl = Constants.expoConfig?.extra?.apiBaseUrl;
 
 ```
 apps/customer/
-├── app/                    # Expo Router — file-based routes (49 screens)
+├── app/                    # Expo Router — 49 screens + 14 layout files (63 total)
 ├── assets/                 # App icon, splash, favicon
 ├── docs/
 │   └── CUSTOMER_DATA.md    # API data contract (identity, addresses, prefs)
@@ -540,6 +551,7 @@ Defined in `src/constants/app.ts` → `STORAGE_KEYS`:
 | `@qm/pending_coupon` | `coupon.storage.ts` | Checkout coupon bridge |
 | `@qm/pending_visit_complete` | `booking.completion.ts` | Post-visit OTP prompt |
 | `@qm/app_lock_settings` | `appLock.storage.ts` | PIN hash, biometric flag |
+| `@qm/checkout_draft` | — | **Unused** — checkout draft lives in `CheckoutContext` state only |
 
 ### Pub/sub pattern
 
@@ -674,7 +686,22 @@ Mapped from [QuickMaid PHASE3_BACKEND.md](../../../QuickMaid/docs/PHASE3_BACKEND
 | `LocationHeader` | `city`, `address`, `onPress` | — | — | Home header |
 | `SplitHeroLayout` | `top`, `bottom`, `footer` | — | — | Auth split layouts |
 | `WaveShape` | `color`, `height`, `flip` | — | `react-native-svg` | Decorative |
-| `BecomePartnerBanner` | `compact?` | — | `Linking` | Home footer CTA |
+| `BecomePartnerBanner` | `compact?` | — | `openPartnerAppStore` | Login screen + home footer — opens Partner app store listing |
+
+### Feature sub-components (not in `src/components/`)
+
+Beyond the 30 shared primitives above, **200+ feature-scoped components** live under `src/features/*/components/`. Major composers:
+
+| Screen | # parts | Key children |
+|--------|---------|--------------|
+| `HomeScreen` | 25+ | `HomeHeader`, `HomeQuickGrid`, `HomeFeaturedRail`, `HomeTopPros`, `HomePlusCard`, `HomeDeliverToSheet`, … |
+| `BookingsScreen` | 20+ | See [§18 Booking UI composition](#booking-ui-composition-sub-components) |
+| `ProfileScreen` | 18+ | See [§20 Profile sections](#profile-sections-render-order-in-profilebody) |
+| `PlusScreen` | 12+ | `PlusBody`, `PlusPlanPicker`, `PlusCompareSection`, `PlusFaqSection`, … |
+| `CheckoutPaymentScreen` | 8+ | `CheckoutShell`, `CheckoutStepBar`, `RazorpayGatewayModal`, `PaymentProcessingModal`, … |
+| `HelpScreen` | 11 | `HelpBody`, `HelpReachSection`, `HelpPolicyBento`, `HelpSelfHelpRail`, … |
+
+Full per-file index: [§27 Appendix](#27-appendix-feature-file-index).
 
 ### Navigation (`src/components/navigation/`)
 
@@ -917,6 +944,13 @@ Add to `package.json`:
 5. Bookings tab → open detail → reschedule → cancel
 6. Profile → add address → app lock PIN → background → unlock
 7. Switch language Hindi → verify tab labels
+8. Coupon wallet → redeem FIRST20 → apply at checkout
+9. Plus subscribe → Flex 6 plan → manage → pause membership
+10. Booking b1 → enter OTP 482916 → visit complete modal → rate
+11. Invoice PDF export → share sheet
+12. App lock → set 4-digit PIN → background app → unlock
+13. BecomePartnerBanner on login → store link opens
+14. Pro directory → open pro profile → book CTA
 ```
 
 ---
@@ -1019,6 +1053,757 @@ export default function ReferralRewardsRoute() {
 | Platform overview | [`QuickMaid/docs/PLATFORM.md`](../../../QuickMaid/docs/PLATFORM.md) |
 | Phase 3 API plan | [`QuickMaid/docs/PHASE3_BACKEND.md`](../../../QuickMaid/docs/PHASE3_BACKEND.md) |
 | Monorepo README | [`QuickMaid-App/README.md`](../../README.md) |
+
+---
+
+## 17. Payment gateway deep dive
+
+### Payment modes
+
+| Mode | ID | Gateway required? | Notes |
+|------|-----|-------------------|-------|
+| Wallet (full) | `wallet_full` | No | Deducts entire payable from `walletBalance` |
+| Wallet (partial) | `wallet_partial` | Yes for remainder | Wallet first, then UPI/card |
+| UPI | `upi` | Yes | Installed-app picker or VPA entry |
+| Card | `card` | Yes | CVV demo validation |
+| Net banking | `netbanking` | Yes | `RazorpayNetBankingEmiModal` |
+| EMI | `emi` | Yes | Tenure picker in netbanking modal |
+| Cash | `cash` | No | Simulated instant success |
+| Pay later | `pay_later` | No | Simulated; collected on visit |
+
+### Checkout payment pipeline
+
+```mermaid
+sequenceDiagram
+  participant UI as CheckoutPaymentScreen
+  participant Val as validatePayment()
+  participant Res as resolvePaymentMode()
+  participant GW as Razorpay modals
+  participant Raz as chargeRazorpayGateway()
+  participant Pay as completePayment()
+  participant Ctx as CheckoutContext
+
+  UI->>Val: draft + account
+  Val-->>UI: error string or null
+  UI->>Res: compute payable
+  Res-->>UI: PaymentMode
+  alt needsGatewayPayment
+    UI->>GW: open modal (UPI/card or netbanking/EMI)
+    GW->>Raz: user confirms
+    Raz-->>UI: GatewayPaymentResult
+  end
+  UI->>Pay: onStep callback
+  Pay-->>Ctx: success + txnId
+  Ctx->>Ctx: addStoredBooking, notifications, wallet
+```
+
+| Step | Function | File | Behavior |
+|------|----------|------|----------|
+| 1 | `validatePayment()` | `checkout.payment.ts` | Requires cart, address, slot, method when payable > 0 |
+| 2 | `resolvePaymentMode()` | `checkout.payment.ts` | Wallet-only vs partial vs gateway |
+| 3 | `needsGatewayPayment()` | `checkout.payment.ts` | True for upi/card/netbanking/emi with charge > 0 |
+| 4 | `needsNetBankingEmiGateway()` | `checkout.payment.ts` | Routes to netbanking modal vs standard modal |
+| 5 | `chargeRazorpayGateway()` | `razorpay.gateway.ts` | Demo validation → fake `pay_*` payment ID |
+| 6 | `completePayment()` | `checkout.payment.ts` | Steps: `init` → `authorizing` → `confirming` → `done` |
+| 7 | Fallback | `simulatePayment()` | Cash, pay_later, wallet-only paths |
+
+### Razorpay UI components
+
+| Component | File | Methods | UX details |
+|-----------|------|---------|------------|
+| `RazorpayGatewayModal` | `payment/components/` | UPI, card | 5-min countdown timer, VPA `name@upi`, CVV for cards |
+| `RazorpayNetBankingEmiModal` | `payment/components/` | Net banking, EMI | Bank list + EMI tenure chips |
+| `InstalledUpiAppsPicker` | `payment/components/` | UPI | Grid of detected apps from `useInstalledUpiApps` |
+| `PaymentProcessingModal` | `checkout/components/` | All | Animated step indicator via `onStep` |
+| `PaymentFailedModal` | `payment/components/` | All | Retry CTA |
+| `PaymentGatewayBadge` | `payment/components/` | — | "Secured by Razorpay" trust strip |
+| `PaymentOffersStrip` | `payment/components/` | — | Checkout coupon chips from `CHECKOUT_COUPONS` |
+
+### Gateway constants (`src/features/payment/constants/gateway.ts`)
+
+| Export | Value / purpose |
+|--------|-----------------|
+| `PAYMENT_GATEWAY.id` | `razorpay` |
+| `PAYMENT_GATEWAY.merchantVpa` | `quickmaid@razorpay` (demo) |
+| `PAYMENT_GATEWAY.keyId` | `rzp_test_QuickMaid` (demo — replace via env in prod) |
+| `UPI_APPS_CATALOG` | 10 apps — see table below |
+| `NETBANKING_BANKS_LIST` | HDFC, ICICI, SBI, Axis, Kotak, … |
+| `EMI_TENURES` | 3/6/9/12 months with interest labels |
+| `CHECKOUT_COUPONS` | Inline offers on payment screen (separate from wallet catalog) |
+| `computeEmiInstallment()` | EMI math helper |
+
+### UPI apps catalog
+
+| ID | Label | Android package | Schemes |
+|----|-------|-----------------|---------|
+| `gpay` | Google Pay | `com.google.android.apps.nbu.paisa.user` | `gpay://`, `tez://`, `googlepay://` |
+| `phonepe` | PhonePe | `com.phonepe.app` | `phonepe://` |
+| `paytm` | Paytm | `net.one97.paytm` | `paytmmp://`, `paytm://` |
+| `bhim` | BHIM UPI | `in.org.npci.upiapp` | `bhim://`, `upi://` |
+| `amazonpay` | Amazon Pay | `in.amazon.mShop.android.shopping` | `amazonpay://` |
+| `cred` | CRED | `com.dreamplug.androidapp` | `credpay://`, `cred://` |
+| `mobikwik` | MobiKwik | `com.mobikwik_new` | `mobikwik://` |
+| `navi` | Navi | `com.naviapp` | `navipay://`, `navi://` |
+| `jupiter` | Jupiter | `money.jupiter` | `jupiter://`, `jupitermoney://` |
+| `supermoney` | super.money | `com.supermoney` | `supermoney://` |
+
+**Detection:** `upi.apps.ts` calls `Linking.canOpenURL()` per scheme. **iOS requires** `LSApplicationQueriesSchemes` and **Android requires** `queries` package list in `app.json` — without these, detection silently fails.
+
+**Pay URL format:**
+
+```
+upi://pay?pa=quickmaid@razorpay&pn=QuickMaid&am=499&cu=INR&tn=Booking&tr=ord_xxx
+```
+
+### Coupon sources (two systems)
+
+| Source | File | Codes | Used when |
+|--------|------|-------|-----------|
+| **Wallet catalog** | `coupons/lib/coupon.catalog.ts` | `FIRST20`, `FIRST10`, `QM50`, `CLEAN15`, `PLUS10` | User redeems in Coupon Wallet |
+| **Checkout inline** | `payment/constants/gateway.ts` `CHECKOUT_COUPONS` | Payment-screen quick offers | `PaymentOffersStrip` on checkout |
+
+Redeemed coupons flow: `setPendingCheckoutCoupon()` → `consumePendingCheckoutCoupon()` on payment screen → `markCouponUsed()` after order.
+
+### Plus payment reuse
+
+`PlusSubscribePaymentScreen` reuses the same `completePayment()` + gateway modals as checkout, via `plus.subscribe.ts` → `processPlusSubscription()`.
+
+---
+
+## 18. Booking lifecycle & state machine
+
+### Status model
+
+```mermaid
+stateDiagram-v2
+  [*] --> upcoming: processPaymentAndPlaceOrder()
+  upcoming --> upcoming: rescheduleBookingById()
+  upcoming --> cancelled: cancelBookingById()
+  upcoming --> completed: verifyMaidCompletionOtp()
+  completed --> completed: submitBookingReview()
+  cancelled --> [*]
+  completed --> [*]
+```
+
+| Status | Meaning | UI surfaces |
+|--------|---------|-------------|
+| `upcoming` | Confirmed, not yet completed | Track, reschedule, cancel, invoice |
+| `completed` | OTP verified by customer | Rate, receipt, rebook |
+| `cancelled` | User cancelled | Refund status, receipt if refunded |
+
+### Create booking (checkout → storage)
+
+`CheckoutContext.processPaymentAndPlaceOrder()` orchestrates:
+
+1. `validatePayment()` + `completePayment()`
+2. `autoAssignMaid(favoriteMaidName)` from `maid.assign.ts`
+3. `addStoredBooking(order)` — merges into `@qm/user_bookings`
+4. `addWalletTransaction()` if wallet used
+5. `addPaymentRecord()` if gateway success
+6. `markCouponUsed()` if coupon applied
+7. `addNotification()` — "Booking confirmed" with `action: { type: 'booking', id }`
+
+**Assigned on order:** `maidId`, `maidName`, `maidRating`, `maidJobs`, `completionOtp` (6-digit), `maidAssignedAt`.
+
+### Maid assignment pool (`maid.assign.ts`)
+
+| Pro | Rating | Jobs | Notes |
+|-----|--------|------|-------|
+| Pool of 6 demo pros | 4.7–4.9 | 120–340 | Prefers `bookingPrefs.favoriteMaidName` if in pool |
+| Fallback | Highest rated | — | When favorite unavailable |
+
+Extended bios in `maid.profile.ts` (~300 lines) power `ProProfileScreen` — separate from assignment pool IDs.
+
+### Reschedule (`booking.reschedule.ts` + `rescheduleBookingById`)
+
+- Patches `visitDate`, `visitDateLabel`, `slotId`, `slotLabel`, `rescheduledAt`
+- Shows `BookingRescheduleSuccessModal` on success
+- Notification: "Visit rescheduled"
+
+### Cancel (`booking.cancel.ts` + `cancelBookingById`)
+
+- Reason required from predefined list
+- `computeRefundBreakdown()` — wallet credit vs gateway refund
+- Sets `status: cancelled`, `cancelledAt`, `cancelReason`, `refundTxnId`
+- Wallet credit via `addWalletTransaction(kind: 'credit')`
+
+### Completion OTP flow
+
+```mermaid
+sequenceDiagram
+  participant Pro as Assigned pro (demo)
+  participant Card as BookingCompletionOtpCard
+  participant Lib as booking.completion.ts
+  participant Modal as BookingVisitCompleteModal
+
+  Note over Card: OTP shown on detail screen (Share via RN Share API)
+  Card->>Lib: verifyMaidCompletionOtp(bookingId, otp)
+  Lib->>Lib: completeBookingById() if OTP matches
+  Lib->>Lib: setPendingVisitComplete()
+  Modal->>Modal: BookingsScreen / BookingDetailScreen polls queue
+  Modal->>Modal: Prompt rate visit
+```
+
+| Item | Detail |
+|------|--------|
+| OTP length | 6 digits, generated at booking creation |
+| Demo seed booking `b1` | OTP `482916` (in `DEMO_BOOKINGS`) |
+| Share | `Share.share()` with visit-complete message |
+| Pending queue | `@qm/pending_visit_complete` — consumed by `usePendingVisitComplete` |
+
+### Review (`submitBookingReview`)
+
+- Star 1–5, tag chips from `booking.review.ts`, optional comment
+- Sets `reviewRating`, `reviewTags`, `reviewComment`, `reviewedAt`
+- `BookingRateSuccessModal` on submit
+
+### Documents (`booking.document.ts` + `booking.documentPdf.ts`)
+
+| Document | Visible when (`canViewDocument`) | Export |
+|----------|----------------------------------|--------|
+| Invoice | `upcoming` or `completed` | HTML → `expo-print` → `expo-sharing` PDF |
+| Receipt | `completed`, or `cancelled` with refund | Same pipeline |
+| Plain text fallback | Always | `documentToShareText()` |
+
+### Booking UI composition (sub-components)
+
+`BookingsScreen` is assembled from **20+ section components** — not a single monolith:
+
+| Component | Role |
+|-----------|------|
+| `BookingsHeader` | Gradient header, greeting, stats |
+| `BookingsFilterRail` | All / upcoming / past / cancelled |
+| `BookingsSummaryBanner` | Total visits |
+| `BookingsInsightsStrip` | Savings, visit metrics |
+| `BookingsQuickActions` | Track, reschedule shortcuts |
+| `BookingsRebookRail` | Rebook from history |
+| `BookingsInvoiceRail` | Recent invoices |
+| `BookingsTrackStrip` | Active visit promo |
+| `BookingsVisitPrep` | Pre-visit checklist |
+| `BookingsTrustSection` | Guarantee copy |
+| `BookingsEmptyState` | CTA to home |
+| `BookingsFooterCta` | Book again |
+| `BookingCard` | List row |
+| `BookingUpcomingHero` | Next visit hero on detail |
+| `BookingMaidDetailSheet` | Pro summary bottom sheet |
+| `BookingVisitCompleteModal` | Post-OTP rate prompt |
+| `BookingRescheduleSuccessModal` | Reschedule confirm |
+| `BookingCancelConfirmModal` | Cancel confirm |
+| `BookingCancelSuccessModal` | Cancel done |
+| `BookingRateSuccessModal` | Review submitted |
+| `BookingRefundStatusCard` | Refund processing UI |
+| `BookingDocumentPaper` | Invoice/receipt preview |
+
+---
+
+## 19. Plus membership engine
+
+### Plans (`constants/demo.ts` → `plus.plans.ts`)
+
+| Plan ID | Name | Price | Visits/mo | Subscription? |
+|---------|------|-------|-----------|---------------|
+| `plus` | QuickMaid Plus | ₹1,199/mo | 12 | Yes |
+| `flex` | Flex 6 | ₹699/mo | 6 | Yes |
+| `onetime` | Pay per visit | ₹149/visit | 0 | No (per-booking) |
+
+### Subscribe flow
+
+```mermaid
+flowchart LR
+  A["PlusScreen / PlusStickyCta"] --> B["/plus/subscribe"]
+  B --> C["PlusSubscribePaymentScreen"]
+  C --> D["processPlusSubscription()"]
+  D --> E["activatePlusMembership()"]
+  E --> F["/plus/success"]
+```
+
+| Step | Function | Side effects |
+|------|----------|--------------|
+| Validate | `validatePlusPayment()` | Same rules as checkout |
+| Pay | `completePayment()` | Gateway or wallet |
+| Activate | `activatePlusMembership()` | Updates `profile.membership` |
+| Record | `savePlusSubscription()` | `@qm/plus_last_subscription` |
+| Ledger | `addPaymentRecord()`, `addWalletTransaction()` | Finance history |
+| Share | `plusSubscribeShareMessage()` | Post-success text share |
+
+### Membership fields (`profile.membership`)
+
+| Field | Purpose |
+|-------|---------|
+| `isPlusMember` | Active subscription flag |
+| `planType` | `instant` / `monthly` / `annual` |
+| `plusVisitsLeft` | Remaining visits this cycle |
+| `plusRenewDate` | Next billing date |
+| `memberSince` | Join date |
+| `plusPaused` | Pause flag |
+| `plusPausedUntil` | Auto-resume date (30 days) |
+
+### Manage actions (`plus.membership.ts`)
+
+| Action | Effect |
+|--------|--------|
+| **Pause** | `plusPaused: true`, appends `(Paused)` to plan label, sets `plusPausedUntil` +30d |
+| **Resume** | Clears pause flags |
+| **Cancel** | `isPlusMember: false`, `planType: instant`, zeros visits |
+
+### Plus UI building blocks
+
+| Component | Purpose |
+|-----------|---------|
+| `PlusBody` | Composes all Plus tab sections |
+| `PlusPlanPicker` | Swipeable plan cards |
+| `PlusPerksGrid` | Member benefits |
+| `PlusCompareSection` | Cost-per-visit comparison table |
+| `PlusFaqSection` | Accordion FAQ (`PLUS_FAQ_ITEMS`) |
+| `PlusSocialProof` | Member testimonials |
+| `PlusSavingsTicker` | Animated savings counter |
+| `PlusUpgradeNudge` | Non-member upsell |
+| `PlusValueBanner` | ROI headline |
+| `PlusHowItWorks` | 3-step explainer |
+| `PlusCoverageStrip` | Raipur zones covered |
+| `PlusMemberTrust` | Trust badges |
+
+---
+
+## 20. Profile system
+
+### Default seed account (`profile.storage.ts` → `DEFAULT_ACCOUNT`)
+
+First launch seeds `@qm/profile_account` with:
+
+| Domain | Seed values |
+|--------|-------------|
+| **Addresses** | 2 — Home (Shankar Nagar, default), Office (Telibandha) |
+| **Payments** | Google Pay UPI (default), Visa card `•••• 4242` |
+| **Wallet** | ₹150 balance |
+| **Membership** | Active Plus member, 8 visits left |
+| **Referral** | Code `PRIYA100` |
+| **Booking prefs** | Mon–Sat · 8–11 AM, favorite maid from pool |
+| **Notifications** | All toggles on |
+| **Language** | `en` |
+| **Communication** | WhatsApp opt-in true |
+
+### Profile completeness (`profile.completion.ts`)
+
+14 tracked fields → percentage shown in `ProfileCompletenessStrip`:
+
+| # | Field key | Label |
+|---|-----------|-------|
+| 1 | `photo` | Profile photo |
+| 2 | `name` | Full name |
+| 3 | `email` | Email |
+| 4 | `locality` | Locality |
+| 5 | `zone` | Service zone |
+| 6 | `gender` | Gender |
+| 7 | `homeType` | Home type |
+| 8 | `address` | Full address (street + pincode + zone) |
+| 9 | `payment` | Non-wallet payment method |
+| 10 | `slot` | Preferred slot |
+| 11 | `emergency` | Emergency contact (name + 10-digit phone) |
+| 12 | `gate` | Gate code or visit instructions |
+| 13 | `whatsapp` | WhatsApp updates enabled |
+
+### Profile sections (render order in `ProfileBody`)
+
+| # | Section component | Opens / links |
+|---|-------------------|---------------|
+| 1 | `ProfileIdentityCard` | `ProfileEditProfileModal` |
+| 2 | `ProfileCompletenessStrip` | Missing field hints |
+| 3 | `ProfileCrmStatsStrip` | Visits, referrals, CSAT |
+| 4 | `ProfileMembershipBanner` | `/plus/manage` or `/plus/subscribe` |
+| 5 | `ProfileWalletSection` + `ProfileWalletPass` | `/account/wallet-transactions` |
+| 6 | `ProfileCouponWalletCard` | `/account/coupon-wallet` |
+| 7 | `ProfilePaymentHistorySection` | `/payments/[id]` |
+| 8 | `ProfileAddressesSection` | `ProfileEditAddressModal`, `/account/address-picker` |
+| 9 | `ProfileSavedServicesSection` | `/account/saved-services` |
+| 10 | `ProfilePreferencesSection` | Notification toggles |
+| 11 | `ProfileCommunicationSection` | WhatsApp/SMS/call channel |
+| 12 | `ProfileServiceDetailsSection` | Booking prefs + visit access modals |
+| 13 | `ProfilePermissionsSection` | Location + push (dynamic `expo-notifications` import) |
+| 14 | `ProfileSecuritySection` | `/account/app-lock`, `/account/delete` |
+| 15 | `ProfileReferralCard` | `/account/referrals` |
+| 16 | `ProfileActivitySection` | Bookings, saved, tickets shortcuts |
+| 17 | `ProfileSupportSection` | Help, chat, legal |
+| 18 | Logout button | `clearSession()` → login |
+
+### Profile modals (`ProfileSheet` discriminated union)
+
+| `sheet.type` | Modal component | Editable fields |
+|--------------|-----------------|-----------------|
+| `profile` | `ProfileEditProfileModal` | name, email, gender, homeType, locality, zone, avatar |
+| `address` | `ProfileEditAddressModal` | Full address form (add/edit by `id`) |
+| `payment` | `ProfileEditPaymentModal` | UPI or card label + detail |
+| `wallet` | `ProfileWalletTopUpModal` | Demo top-up amount |
+| `language` | `ProfileLanguageModal` | `en` / `hi` |
+| `bookingPrefs` | `ProfileEditBookingPrefsModal` | preferred slot, favorite maid |
+| `emergency` | `ProfileEditEmergencyModal` | name, phone, relation |
+| `visitAccess` | `ProfileEditVisitAccessModal` | gate code, pets, parking, instructions |
+
+### Address map picker (`AddressMapPickerScreen`)
+
+| Concern | Implementation |
+|---------|----------------|
+| Permission | `expo-location` foreground |
+| Zones | Static `MAP_ZONES` in `address.map.ts` (Raipur sectors) |
+| Snap | `nearestMapZone(lat, lng)` — not live geocoding API |
+| Center | `RAIPUR_CENTER` coordinates |
+| Save | `patchProfileAccount()` → updates addresses array |
+
+### Avatar picker (`profile.photo.ts`)
+
+- `expo-image-picker` — library permission, aspect 1:1, quality 0.85
+- Stores local `file://` URI in `UserProfile.avatarUri`
+- Phase 3: upload to `POST /customers/me/avatar`
+
+### Logout vs delete account
+
+| Action | Function | Keys removed | Keys kept |
+|--------|----------|--------------|-----------|
+| **Logout** | `clearSession()` | `authComplete`, `userProfile` | Bookings, profile account, wallet, all history |
+| **Delete** | `deleteUserAccount()` | 15+ keys including bookings, payments, tickets | Nothing — full local wipe |
+
+---
+
+## 21. Navigation hooks (`useOpen*`)
+
+Thin routing abstraction — every hook wraps `router.push()` + optional haptics. **Convention:** screens never hardcode paths; they call these hooks.
+
+| Hook | Target route | Params | Used by |
+|------|--------------|--------|---------|
+| `useOpenServiceDetail` | `/service/[id]` | `id` | Home rails, catalogue, search |
+| `useStartBooking` | `/checkout` | via `CheckoutContext` | Service detail CTA |
+| `useOpenBookingDetail` | `/booking/[id]` | `id` | Booking cards, notifications |
+| `useOpenReschedule` | `/booking/reschedule/[id]` | `id` | Detail quick actions |
+| `useOpenCancelBooking` | `/booking/cancel/[id]` | `id` | Detail quick actions |
+| `useOpenRateBooking` | `/booking/rate/[id]` | `id` | Completion modal |
+| `useOpenTrackBooking` | `/booking/track/[id]` | `id` | Track strip, cards |
+| `useOpenBookingDocument` | `/booking/invoice/[id]` or `receipt` | `id`, `kind` | Invoice rail |
+| `useRebookBooking` | `/checkout` | Re-seeds from past order | Rebook rail |
+| `useOpenPlusSubscribe` | `/plus/subscribe` | — | Plus CTAs |
+| `useOpenNotifications` | `/notifications` | — | Home bell |
+| `useNotificationNavigation` | varies | `NotificationAction` | Notification detail CTA |
+| `useOpenSupport` | `/support/chat` or `tickets` | `topic?` | Help centre |
+| `useOpenSupportChat` | `/support/chat` | `ticketId?` | Profile support |
+| `useOpenBookingDispute` | `/booking/dispute/[id]` | `id` | Booking detail |
+| `useOpenLegal` | `/legal` or `/legal/[doc]` | `doc?` | Help policy bento |
+| `useOpenProProfile` | `/pro/[id]` | `id` | Home top pros, maid sheet |
+
+### Deep link & query param reference
+
+| Mechanism | Example | Handler |
+|-----------|---------|---------|
+| URL scheme | `quickmaid://booking/abc123` | Expo Router typed routes |
+| Catalogue query | `/catalogue?category=deep&sort=price` | `buildCatalogueHref()` in `home.catalogue.ts` |
+| Help topic | `/(tabs)/support?topic=cancel` | `HelpScreen` reads `useLocalSearchParams` |
+| Notification action | `{ type: 'booking', id: 'x' }` | `useNotificationNavigation` |
+| Partner store | `BecomePartnerBanner` | `openPartnerAppStore()` → Play/App Store |
+
+### Notification action routing
+
+| `action.type` | Navigation |
+|---------------|------------|
+| `booking` + `id` | `/booking/[id]` |
+| `bookings` | `/(tabs)/bookings` |
+| `plans` | `/(tabs)/plans` |
+| `service` + `id` | `/service/[id]` |
+| `home` | `/(tabs)/` |
+| `profile` | `/(tabs)/profile` |
+| `pro` + `id` | `/pro/[id]` |
+
+---
+
+## 22. Native modules reference
+
+| Package | Primary files | Purpose |
+|---------|---------------|---------|
+| `expo-router` | `app/**` | File-based navigation, typed routes |
+| `expo-font` | `hooks/useAppFonts.ts` | Plus Jakarta Sans loading gate |
+| `expo-splash-screen` | `app/_layout.tsx`, `app/index.tsx` | Native splash until custom ready |
+| `expo-status-bar` | `app/_layout.tsx` | Light status bar |
+| `expo-haptics` | `QmButton`, tab buttons, cards | Tap feedback |
+| `expo-linear-gradient` | Headers, Plus, auth heroes | Brand gradients |
+| `expo-image` | `HomePhoto`, `ProfileAvatar`, `FeaturedCard` | Cached remote images |
+| `expo-image-picker` | `profile.photo.ts` | Avatar from gallery |
+| `expo-location` | `AddressMapPickerScreen`, `permissions.tsx` | Foreground location permission |
+| `expo-local-authentication` | `AppLockOverlay`, settings | Face ID / fingerprint |
+| `expo-clipboard` | `BookingDetailScreen`, `CouponWalletScreen` | Copy OTP, referral code |
+| `expo-print` | `booking.documentPdf.ts` | HTML → PDF file |
+| `expo-sharing` | `booking.documentPdf.ts` | Share PDF sheet |
+| `expo-linking` | `upi.apps.ts`, `openPartnerStore.ts` | UPI deep links, store URLs |
+| `expo-notifications` | `ProfilePermissionsSection.tsx` only | Permission request — **no push inbox wired** |
+| `expo-constants` | Installed | Not referenced in `src/` yet |
+| `react-native-reanimated` | `AppSplashScreen`, modals | Animations (babel plugin required) |
+| `react-native-svg` | `WaveShape`, `BookingTrackMap` | Vector graphics |
+| `@expo/vector-icons` | Throughout | Ionicons icon set |
+
+### `app.json` native config (critical for payments)
+
+- **iOS** `LSApplicationQueriesSchemes`: `upi`, `tez`, `gpay`, `phonepe`, `paytm`, … (10+ schemes)
+- **Android** `queries`: intent filter for `upi://` + package names for each UPI app
+- Without these entries, `useInstalledUpiApps` returns empty on device
+
+---
+
+## 23. Demo & seed data catalog
+
+### Bookings (`constants/demo.ts`)
+
+| ID | Service | Status | Special |
+|----|---------|--------|---------|
+| `b1` | Deep clean | `upcoming` | OTP `482916`, assigned pro |
+| `b2` | Regular clean | `completed` | Has review |
+| `b3` | Kitchen clean | `cancelled` | Refund txn |
+| `b4` | Bathroom clean | `upcoming` | Track-eligible |
+
+User-placed orders append to `@qm/user_bookings` via checkout.
+
+### Services (`constants/services.ts`)
+
+- `CATEGORIES` — room, deep, regular, kitchen, bathroom, move, office
+- `HOME_SERVICES` — full catalogue (~900 lines, prices ₹149–₹2,499)
+- `FEATURED_SERVICES` — home rails subset
+
+### Coupons (`coupon.catalog.ts`)
+
+| Code | Discount | Min order | Category |
+|------|----------|-----------|----------|
+| `FIRST20` | 20% (max ₹200) | ₹299 | booking |
+| `FIRST10` | 10% | — | booking |
+| `QM50` | ₹50 flat | ₹399 | booking |
+| `CLEAN15` | 15% weekend | — | booking |
+| `PLUS10` | 10% | — | plus |
+
+### Notifications (`demo.notifications.ts`)
+
+~8 seeded items covering booking, offers, pro, plans categories with mixed read/unread state.
+
+### Legal (`legal.content.ts`)
+
+| Doc ID | Title |
+|--------|-------|
+| `terms` | Terms of Service |
+| `privacy` | Privacy Policy |
+| `cancellation` | Cancellation & Refund Policy |
+| `membership` | Membership Terms |
+
+### Support (`demo.ts`)
+
+- `SUPPORT_CONTACT` — phone, email, WhatsApp
+- `FAQ_ITEMS` — general FAQ for help tab
+- `PLUS_FAQ_ITEMS` — Plus-specific FAQ
+
+### Partner cross-promotion (`constants/links.ts`)
+
+```ts
+PARTNER_APP.androidPackage = 'in.quickmaid.partner'
+PARTNER_APP.playStoreUrl    = 'https://play.google.com/store/apps/details?id=in.quickmaid.partner'
+PARTNER_APP.appStoreUrl      = 'https://apps.apple.com/app/quickmaid-partner/id0000000000' // placeholder
+```
+
+`BecomePartnerBanner` on login screen → `openPartnerAppStore()`.
+
+### Storage key notes
+
+| Key | Status |
+|-----|--------|
+| `@qm/checkout_draft` | **Defined but unused** — draft lives in `CheckoutContext` React state only |
+| All other 19 keys | Actively read/written |
+
+---
+
+## 24. i18n reference & coverage
+
+### Architecture
+
+```
+profile.account.language → LanguageProvider → t('key') → en.ts | hi.ts
+                              ↑
+                    subscribeProfileAccount()
+```
+
+| API | Signature | Example |
+|-----|-----------|---------|
+| `t(key, vars?)` | Dot-path lookup + `{{var}}` interpolation | `t('bookings.filterUpcoming')` |
+| `greeting(name?)` | Time-based | `t('greeting.morning')` + name |
+| `locale` | `'en' \| 'hi'` | From profile prefs |
+
+### Translation namespaces
+
+| Namespace | Keys (sample) | EN | HI |
+|-----------|---------------|----|----|
+| `tabs.*` | `home`, `bookings`, `catalogue`, `plus`, `help` | ✅ | ✅ |
+| `greeting.*` | `morning`, `afternoon`, `evening` | ✅ | ✅ |
+| `home.*` | `deliverTo`, `topProsTitle`, `searchPlaceholder` | ✅ | ✅ |
+| `bookings.*` | `filterUpcoming`, `emptyCta`, `visits` | ✅ | ✅ |
+| `help.*` | `title`, `subtitle` | ✅ | ✅ |
+| `plus.*` | `statSavings`, `memberSince` | ✅ | ✅ |
+| `profile.*` | `languageModalTitle`, `appLockSub`, notification labels | ✅ | ✅ |
+| `common.*` | `save`, `cancel`, `done` | ✅ | ✅ |
+
+### Not translated (hardcoded English)
+
+| Area | Files |
+|------|-------|
+| Auth wizard | `app/(auth)/*.tsx` |
+| Checkout flow | `Checkout*Screen.tsx` |
+| Service PDP | `ServiceDetailScreen.tsx` |
+| Profile section labels | Most `Profile*Section.tsx` (except prefs/security) |
+| Notifications | `NotificationsScreen.tsx` |
+| Legal documents | `legal.content.ts` |
+| Payment modals | `Razorpay*Modal.tsx` |
+| Support chat copy | `SupportChatScreen.tsx` |
+
+### Adding a new translation
+
+1. Add key to `src/i18n/en.ts` and `src/i18n/hi.ts` under same path
+2. Use `const { t } = useTranslation()` in component
+3. For tab/header labels, follow `BookingsHeader.tsx` pattern
+
+---
+
+## 25. Auth flow specification
+
+### Screen-by-screen
+
+```mermaid
+flowchart TD
+  S[Splash / index] --> G{getInitialRoute}
+  G -->|no onboarding| ONB[onboarding.tsx]
+  G -->|onboarding done| LOGIN[login.tsx]
+  G -->|auth complete| TABS["(tabs)"]
+  ONB --> CITY[city.tsx]
+  CITY --> LOGIN
+  LOGIN --> OTP[otp.tsx]
+  OTP -->|returning user| TABS
+  OTP -->|new user| SIGN[signup.tsx]
+  SIGN --> PERM[permissions.tsx]
+  PERM --> TABS
+```
+
+| Screen | Layout | Validation | Persistence |
+|--------|--------|------------|-------------|
+| `onboarding.tsx` | Custom FlatList pager | — | `setOnboardingDone()` |
+| `city.tsx` | `AuthScreenLayout` | City required | `AuthFlow.setCity` |
+| `login.tsx` | **Custom** hero + bottom sheet | 10-digit phone | `AuthFlow.setPhone` |
+| `otp.tsx` | **Custom** hero + sheet | 6-digit, must equal `DEMO_OTP` | Returning → `signInExistingUser()` |
+| `signup.tsx` | `AuthScreenLayout` | Name min 2 chars, email regex | `AuthFlow` fields |
+| `permissions.tsx` | `AuthScreenLayout` | Optional location/notifications | `completeRegistration()` |
+
+### Returning vs new user (`otp.tsx`)
+
+| Path | Condition | Action |
+|------|-----------|--------|
+| Returning | Phone in `@qm/registered_users` with name | `signInExistingUser()` → `/(tabs)` |
+| New | Phone not registered | `/(auth)/signup` |
+
+### Auth layout note
+
+Login and OTP use a **custom split hero + bottom sheet** — not `AuthScreenLayout`. City, signup, permissions use `AuthScreenLayout`.
+
+---
+
+## 26. Config & build files
+
+| File | Purpose |
+|------|---------|
+| `package.json` | Deps, scripts: `start`, `android`, `ios`, `web` — no `test` script |
+| `app.json` | Expo config, bundle IDs, plugins, UPI schemes, EAS project ID |
+| `eas.json` | EAS Build profiles — see below |
+| `babel.config.js` | `babel-preset-expo` + **`react-native-reanimated/plugin` (must be last)** |
+| `tsconfig.json` | `strict: true`, path alias `@/*` → `src/*` |
+| **No** `metro.config.js` | Expo default Metro |
+| **No** `app.config.ts` | Static JSON only — no dynamic env |
+| **No** `.env` | All secrets/URLs hardcoded for demo |
+
+### EAS build profiles (`eas.json`)
+
+| Profile | Distribution | Android output | Use case |
+|---------|--------------|------------------|----------|
+| `preview` | internal | APK | QA / stakeholder testing |
+| `production` | store | AAB (App Bundle) | Play Store release |
+
+```bash
+eas build --profile preview --platform android
+eas build --profile production --platform android
+eas build --profile production --platform ios
+```
+
+### Security note (app lock)
+
+- PIN is **4 digits** (`PIN_LENGTH = 4` in `appLock.utils.ts`)
+- Hash uses demo djb2 algorithm — **not production-safe**; replace with bcrypt/argon2 + server-side in Phase 3
+
+---
+
+## 27. Appendix: feature file index
+
+### File counts by feature
+
+| Feature | Components | Hooks | Lib/utils | Types/constants |
+|---------|------------|-------|-----------|-----------------|
+| `bookings/` | 34 | 9 | 10 | 1 + demo types |
+| `home/` | 33 | 3 | 3 | 3 |
+| `profile/` | 28 | 1 | 6 | 1 |
+| `plus/` | 18 | 1 | 5 | 1 |
+| `checkout/` | 11 | 1 | 4 | 1 |
+| `help/` | 12 | 1 | — | — |
+| `payment/` | 7 | 1 | 5 | 1 |
+| `notifications/` | 3 | 3 | 2 | 1 |
+| `support/` | 4 | 2 | 2 | 1 |
+| `security/` | 4 | — | 2 | 1 |
+| `service/` | 1 | 1 | 3 | 1 |
+| `coupons/` | 1 | — | 3 | 1 |
+| `wallet/` | 1 | — | 2 | 1 |
+| `referral/` | 1 | — | 1 | 1 |
+| `legal/` | 2 | 1 | 1 | 1 |
+| `pro/` | 3 | 1 | — | — |
+| `saved-services/` | 2 | 1 | 1 | — |
+
+### All hooks (30)
+
+**App-level:** `useAppFonts`, `usePagination`, `useLayoutMetrics`
+
+**Feature:** `useHomeDeliveryAddress`, `useHomeProfile`, `useHomeSearch`, `useStartBooking`, `useOpenServiceDetail`, `useUserBookings`, `useOpenBookingDetail`, `useOpenReschedule`, `useOpenCancelBooking`, `useOpenRateBooking`, `useOpenTrackBooking`, `useOpenBookingDocument`, `useRebookBooking`, `usePendingVisitComplete`, `useOpenPlusSubscribe`, `useProfileAccount`, `useInstalledUpiApps`, `useNotifications`, `useOpenNotifications`, `useNotificationNavigation`, `useOpenSupport`, `useOpenSupportChat`, `useOpenBookingDispute`, `useOpenLegal`, `useOpenProProfile`, `useSavedServices`
+
+**Context:** `useAuthFlow`, `useCheckout`, `useTranslation`
+
+### All types files
+
+| File | Key types |
+|------|-----------|
+| `profile.types.ts` | `ProfileAccountData`, `SavedAddress`, `PaymentMethod`, `ProfileSheet` |
+| `checkout.types.ts` | `CheckoutDraft`, `PlacedOrder`, `PaymentMode`, `CartItem` |
+| `payment.types.ts` | `PaymentRecord`, `GatewayPaymentResult`, `GatewayOrder` |
+| `notification.types.ts` | `AppNotification`, `NotificationAction` |
+| `coupon.types.ts` | `CouponDefinition`, `SavedCoupon` |
+| `wallet.types.ts` | `WalletTransaction` |
+| `support.types.ts` | `SupportTicket`, `BookingDispute` |
+| `referral.types.ts` | `ReferralEvent`, `ReferralSummary` |
+| `legal.types.ts` | `LegalDocId`, `LegalDocument` |
+| `appLock.types.ts` | `AppLockSettings` |
+| `plus.subscription.types.ts` | `PlusSubscriptionRecord` |
+
+### Forms & validation reality
+
+| Form | Validation approach |
+|------|---------------------|
+| Home search | **Zod** `homeSearchSchema` + RHF `zodResolver` |
+| Auth phone/OTP | Inline length + `DEMO_OTP` equality |
+| Signup | Inline name/email regex |
+| Checkout payment | `validatePayment()` string errors |
+| Plus subscribe | `validatePlusPayment()` |
+| Profile modals | Per-field inline checks in components |
+| Razorpay gateway | `chargeRazorpayGateway()` demo rules (CVV length, VPA format) |
+| Dispute form | Min 12 characters on description |
+
+### Zod schema (only one)
+
+```ts
+// src/features/home/schemas/home-search.schema.ts
+export const homeSearchSchema = z.object({
+  query: z.string().trim().max(60),
+});
+```
 
 ---
 
