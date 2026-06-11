@@ -60,12 +60,10 @@ export function computeOrderSummary(draft: CheckoutDraft, account: ProfileAccoun
   };
 }
 
-export function generateBookingRef(priceNum: number): string {
-  const d = new Date();
-  const mon = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'][d.getMonth()];
-  const day = d.getDate();
-  const rand = Math.random().toString(36).slice(2, 5).toUpperCase();
-  return `QM-${day}${mon}-${priceNum}-${rand}`;
+/** Booking ID: QM-7 + 7 random digits */
+export function generateBookingRef(_priceNum?: number): string {
+  const digits = Math.floor(1_000_000 + Math.random() * 9_000_000);
+  return `QM-7${digits}`;
 }
 
 export function slotToTime(slotId?: string): string {

@@ -50,7 +50,7 @@ export const DEMO_BOOKINGS: DemoBooking[] = [
     price: '₹499',
     status: 'upcoming',
     address: 'Sector 5, Shankar Nagar, Raipur',
-    bookingRef: 'QM-8JUN-499',
+    bookingRef: 'QM-74829163',
     duration: '3–4 hrs',
     maidId: 'm_sunita',
     maidRating: 4.92,
@@ -68,7 +68,7 @@ export const DEMO_BOOKINGS: DemoBooking[] = [
     price: '₹149',
     status: 'completed',
     address: 'Sector 5, Shankar Nagar, Raipur',
-    bookingRef: 'QM-27MAY-149',
+    bookingRef: 'QM-72734501',
     duration: '2 hrs',
   },
   {
@@ -81,7 +81,7 @@ export const DEMO_BOOKINGS: DemoBooking[] = [
     price: '₹299',
     status: 'completed',
     address: 'Sector 5, Shankar Nagar, Raipur',
-    bookingRef: 'QM-15MAY-299',
+    bookingRef: 'QM-71534502',
     duration: '1.5 hrs',
   },
   {
@@ -94,7 +94,7 @@ export const DEMO_BOOKINGS: DemoBooking[] = [
     price: '₹199',
     status: 'cancelled',
     address: 'Sector 5, Shankar Nagar, Raipur',
-    bookingRef: 'QM-02MAY-199',
+    bookingRef: 'QM-70234503',
     duration: '1 hr',
   },
 ];

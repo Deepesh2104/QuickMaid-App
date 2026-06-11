@@ -1,0 +1,43 @@
+{
+  "cli": {
+    "version": ">= 16.0.0",
+    "appVersionSource": "local"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_APP_ENV": "development"
+      }
+    },
+    "test": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_APP_ENV": "test",
+        "EXPO_PUBLIC_API_BASE_URL": "https://api-test.quickmaid.in/api/v1"
+      }
+    },
+    "beta": {
+      "distribution": "store",
+      "channel": "beta",
+      "env": {
+        "EXPO_PUBLIC_APP_ENV": "beta",
+        "EXPO_PUBLIC_API_BASE_URL": "https://api-beta.quickmaid.in/api/v1"
+      }
+    },
+    "production": {
+      "android": {
+        "buildType": "app-bundle"
+      },
+      "channel": "production",
+      "env": {
+        "EXPO_PUBLIC_APP_ENV": "production",
+        "EXPO_PUBLIC_API_BASE_URL": "https://api.quickmaid.in/api/v1"
+      }
+    }
+  }
+}

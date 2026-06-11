@@ -23,7 +23,7 @@ export const DEMO_NOTIFICATIONS: AppNotification[] = [
     id: 'n2',
     category: 'booking',
     title: 'Completion OTP ready',
-    body: 'Share OTP with your pro when the job is done · Ref QM-8JUN-499',
+    body: 'Share OTP with your pro when the job is done · Ref QM-74829163',
     detail:
       'Your visit completion OTP is active. Share it only when the service is fully done. This OTP confirms job completion and releases payment to your verified pro.',
     createdAt: hours(3),
