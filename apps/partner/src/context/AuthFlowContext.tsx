@@ -3,14 +3,21 @@ import { createContext, useContext, useMemo, useState, type ReactNode } from 're
 interface AuthFlowState {
   phone: string;
   setPhone: (phone: string) => void;
+  /** Referral code entered during new-partner signup (optional) */
+  referralCode: string;
+  setReferralCode: (code: string) => void;
 }
 
 const AuthFlowContext = createContext<AuthFlowState | null>(null);
 
 export function AuthFlowProvider({ children }: { children: ReactNode }) {
   const [phone, setPhone] = useState('');
+  const [referralCode, setReferralCode] = useState('');
 
-  const value = useMemo(() => ({ phone, setPhone }), [phone]);
+  const value = useMemo(
+    () => ({ phone, setPhone, referralCode, setReferralCode }),
+    [phone, referralCode],
+  );
 
   return <AuthFlowContext.Provider value={value}>{children}</AuthFlowContext.Provider>;
 }

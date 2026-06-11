@@ -35,8 +35,13 @@ export function validateDateOfBirth(dob: string): string | null {
   return null;
 }
 
-/** Maid ID: MD-{6-digit timestamp} e.g. MD-482916 */
+/** Maid ID: MD-{7-digit timestamp} e.g. MD-4829163 */
 export function isValidMaidId(publicId: string): boolean {
+  return /^MD-\d{7}$/.test(publicId.trim());
+}
+
+/** Pre-2026 demo format — migrate on next profile normalize */
+export function isLegacyShortMaidId(publicId: string): boolean {
   return /^MD-\d{6}$/.test(publicId.trim());
 }
 
@@ -48,13 +53,13 @@ export function isLegacyMaidId(publicId: string): boolean {
 let maidIdSequence = 0;
 
 function maidTimestampDigits(at: Date, bump = 0): string {
-  const raw = (at.getTime() + bump) % 1_000_000;
-  return String(raw).padStart(6, '0');
+  const raw = (at.getTime() + bump) % 10_000_000;
+  return String(raw).padStart(7, '0');
 }
 
 /**
- * Maid ID: MD-{6-digit timestamp} — unique per registration moment.
- * Example: MD-482916
+ * Maid ID: MD-{7-digit timestamp} — unique per registration moment.
+ * Example: MD-4829163
  */
 export function generateMaidId(
   _firstName?: string,

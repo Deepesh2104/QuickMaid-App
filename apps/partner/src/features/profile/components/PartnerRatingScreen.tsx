@@ -1,20 +1,27 @@
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
+import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { PartnerStackShell } from '@/components/ui/PartnerStackShell';
 import { usePartner } from '@/context/PartnerContext';
 import { PartnerRequestsSectionHeader } from '@/features/jobs/components/PartnerRequestsSections';
+import { usePartnerJobs } from '@/features/jobs/hooks/usePartnerJobs';
 import {
   RATING_BADGES,
   RATING_BREAKDOWN,
   RATING_OVERVIEW,
   RATING_RECENT_REVIEWS,
 } from '@/features/profile/constants/rating.premium';
+import {
+  completedJobsForRating,
+  ratingPerformanceStats,
+} from '@/features/profile/lib/rating.utils';
 import { fonts } from '@/theme/fonts';
 import { colors } from '@/theme/colors';
-import { radius, spacing } from '@/theme/spacing';
+import { radius, shadow, spacing } from '@/theme/spacing';
 
 function Stars({ count, size = 14 }: { count: number; size?: number }) {
   return (
@@ -31,15 +38,38 @@ function Stars({ count, size = 14 }: { count: number; size?: number }) {
   );
 }
 
+function ReviewAvatar({ name }: { name: string }) {
+  const letter = name.replace(/[^A-Za-z]/g, '').charAt(0).toUpperCase() || '?';
+  return (
+    <LinearGradient colors={['#FFFBEB', '#FEF3C7']} style={styles.reviewAvatar}>
+      <Text style={styles.reviewAvatarText}>{letter}</Text>
+    </LinearGradient>
+  );
+}
+
 export function PartnerRatingScreen() {
   const router = useRouter();
-  const { profile } = usePartner();
+  const { profile, state } = usePartner();
+  const { completed } = usePartnerJobs();
+
+  const perf = useMemo(
+    () => ratingPerformanceStats(completed.length, state.weekJobs),
+    [completed.length, state.weekJobs],
+  );
+  const completedList = useMemo(() => completedJobsForRating(completed), [completed]);
 
   const headerExtra = (
     <View style={styles.scoreHero}>
-      <Text style={styles.scoreValue}>{RATING_OVERVIEW.score}</Text>
-      <Stars count={5} size={16} />
-      <Text style={styles.scoreMeta}>{RATING_OVERVIEW.totalReviews} customer reviews</Text>
+      <LinearGradient colors={['rgba(255,255,255,0.12)', 'rgba(255,255,255,0)']} style={styles.scoreGlow} />
+      <Text style={styles.scoreValue}>{perf.score.toFixed(1)}</Text>
+      <Stars count={5} size={18} />
+      <Text style={styles.scoreMeta}>
+        {RATING_OVERVIEW.totalReviews} reviews · {perf.completedVisits} visits completed
+      </Text>
+      <View style={styles.trendPill}>
+        <Ionicons name="trending-up" size={12} color={colors.partnerGold} />
+        <Text style={styles.trendText}>{perf.trendLabel}</Text>
+      </View>
     </View>
   );
 
@@ -53,29 +83,57 @@ export function PartnerRatingScreen() {
     <PartnerStackShell
       eyebrow="PERFORMANCE"
       title="Partner rating"
-      subtitle={`${profile?.name ?? 'Partner'} · verified score`}
+      subtitle={`${profile?.name ?? 'Partner'} · customer trust score`}
       icon="star"
       stats={stats}
       headerExtra={headerExtra}
     >
       <Animated.View entering={FadeInDown.duration(260)} style={styles.statGrid}>
         {[
-          { label: 'On-time', value: `${RATING_OVERVIEW.onTimeRate}%`, icon: 'time-outline' as const },
-          { label: 'Repeat customers', value: `${RATING_OVERVIEW.repeatCustomers}%`, icon: 'heart-outline' as const },
-          { label: '5-star visits', value: `${RATING_OVERVIEW.fiveStarPercent}%`, icon: 'star-outline' as const },
+          { label: 'On-time', value: `${RATING_OVERVIEW.onTimeRate}%`, icon: 'time-outline' as const, grad: ['#E6F4F2', '#FFF'] },
+          { label: 'Repeat customers', value: `${RATING_OVERVIEW.repeatCustomers}%`, icon: 'heart-outline' as const, grad: ['#FEF3F2', '#FFF'] },
+          { label: 'Your visits', value: String(perf.completedVisits), icon: 'checkmark-done-outline' as const, grad: ['#FFFBEB', '#FFF'] },
         ].map((s) => (
-          <View key={s.label} style={styles.statCard}>
-            <Ionicons name={s.icon} size={16} color={colors.primary} />
+          <LinearGradient key={s.label} colors={s.grad as [string, string]} style={styles.statCard}>
+            <View style={styles.statIcon}>
+              <Ionicons name={s.icon} size={16} color={colors.primaryDark} />
+            </View>
             <Text style={styles.statValue}>{s.value}</Text>
             <Text style={styles.statLabel}>{s.label}</Text>
-          </View>
+          </LinearGradient>
         ))}
       </Animated.View>
+
+      {completedList.length > 0 ? (
+        <Animated.View entering={FadeInDown.delay(30).duration(280)} style={styles.block}>
+          <PartnerRequestsSectionHeader
+            eyebrow="Live"
+            title="Rated visits"
+            subtitle="Completed jobs in your account"
+            icon="briefcase-outline"
+            compact
+          />
+          <View style={styles.visitCard}>
+            {completedList.slice(0, 4).map((job, i) => (
+              <View key={job.id} style={[styles.visitRow, i < Math.min(4, completedList.length) - 1 && styles.visitBorder]}>
+                <Ionicons name="star" size={12} color={colors.partnerGold} />
+                <View style={styles.visitCopy}>
+                  <Text style={styles.visitTitle} numberOfLines={1}>
+                    {job.customerName} · {job.service}
+                  </Text>
+                  <Text style={styles.visitSub}>{job.bookingRef} · {job.visitDate}</Text>
+                </View>
+                <Text style={styles.visitStar}>5★</Text>
+              </View>
+            ))}
+          </View>
+        </Animated.View>
+      ) : null}
 
       <Animated.View entering={FadeInDown.delay(50).duration(280)} style={styles.block}>
         <PartnerRequestsSectionHeader
           eyebrow="Breakdown"
-          title="Rating breakdown"
+          title="Star distribution"
           icon="bar-chart-outline"
           compact
         />
@@ -84,7 +142,12 @@ export function PartnerRatingScreen() {
             <View key={row.stars} style={styles.barRow}>
               <Text style={styles.barStars}>{row.stars}★</Text>
               <View style={styles.barTrack}>
-                <View style={[styles.barFill, { width: `${row.percent}%` }]} />
+                <LinearGradient
+                  colors={['#F59E0B', '#FBBF24']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={[styles.barFill, { width: `${row.percent}%` }]}
+                />
               </View>
               <Text style={styles.barPct}>{row.percent}%</Text>
             </View>
@@ -96,13 +159,17 @@ export function PartnerRatingScreen() {
         <PartnerRequestsSectionHeader eyebrow="Achievements" title="Your badges" icon="ribbon-outline" compact />
         <View style={styles.badgeGrid}>
           {RATING_BADGES.map((badge) => (
-            <View key={badge.label} style={styles.badgeCard}>
+            <LinearGradient
+              key={badge.label}
+              colors={['#FFFBEB', '#FFFFFF']}
+              style={styles.badgeCard}
+            >
               <View style={styles.badgeIcon}>
                 <Ionicons name={badge.icon} size={16} color={colors.partnerGold} />
               </View>
               <Text style={styles.badgeLabel}>{badge.label}</Text>
               <Text style={styles.badgeSub}>{badge.sub}</Text>
-            </View>
+            </LinearGradient>
           ))}
         </View>
       </Animated.View>
@@ -113,11 +180,18 @@ export function PartnerRatingScreen() {
           {RATING_RECENT_REVIEWS.map((review, i) => (
             <View key={review.id} style={[styles.reviewRow, i < RATING_RECENT_REVIEWS.length - 1 && styles.reviewBorder]}>
               <View style={styles.reviewHead}>
-                <Text style={styles.reviewCustomer}>{review.customer}</Text>
-                <Text style={styles.reviewDate}>{review.date}</Text>
+                <View style={styles.reviewHeadLeft}>
+                  <ReviewAvatar name={review.customer} />
+                  <View>
+                    <Text style={styles.reviewCustomer}>{review.customer}</Text>
+                    <Text style={styles.reviewDate}>{review.date}</Text>
+                  </View>
+                </View>
+                <Stars count={review.stars} size={11} />
               </View>
-              <Stars count={review.stars} size={12} />
-              <Text style={styles.reviewService}>{review.service}</Text>
+              <View style={styles.servicePill}>
+                <Text style={styles.reviewService}>{review.service}</Text>
+              </View>
               <Text style={styles.reviewText}>{review.text}</Text>
             </View>
           ))}
@@ -132,20 +206,45 @@ export function PartnerRatingScreen() {
 }
 
 const styles = StyleSheet.create({
-  scoreHero: { alignItems: 'center', gap: 4, marginTop: spacing.xs },
-  scoreValue: { fontFamily: fonts.extraBold, fontSize: 40, color: colors.partnerGold, letterSpacing: -1 },
-  scoreMeta: { fontFamily: fonts.medium, fontSize: 11, color: 'rgba(255,255,255,0.65)' },
+  scoreHero: { alignItems: 'center', gap: 6, marginTop: spacing.xs, overflow: 'hidden' },
+  scoreGlow: {
+    position: 'absolute',
+    top: -20,
+    width: 160,
+    height: 80,
+    borderRadius: 40,
+  },
+  scoreValue: { fontFamily: fonts.extraBold, fontSize: 44, color: colors.partnerGold, letterSpacing: -1 },
+  scoreMeta: { fontFamily: fonts.medium, fontSize: 11, color: 'rgba(255,255,255,0.7)', textAlign: 'center' },
+  trendPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderRadius: radius.pill,
+  },
+  trendText: { fontFamily: fonts.bold, fontSize: 10, color: colors.partnerGold },
   starsRow: { flexDirection: 'row', gap: 2 },
   statGrid: { flexDirection: 'row', gap: spacing.sm },
   statCard: {
     flex: 1,
-    backgroundColor: colors.white,
     borderRadius: radius.xl,
     padding: spacing.md,
     alignItems: 'center',
     gap: 4,
     borderWidth: 1,
     borderColor: 'rgba(15,20,25,0.06)',
+    ...shadow.sm,
+  },
+  statIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   statValue: { fontFamily: fonts.extraBold, fontSize: 16, color: colors.ink },
   statLabel: { fontFamily: fonts.regular, fontSize: 9, color: colors.muted, textAlign: 'center' },
@@ -157,22 +256,35 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     borderWidth: 1,
     borderColor: 'rgba(15,20,25,0.06)',
+    ...shadow.sm,
   },
+  visitCard: {
+    backgroundColor: colors.white,
+    borderRadius: radius.xl,
+    padding: spacing.md,
+    borderWidth: 1,
+    borderColor: 'rgba(252,211,77,0.2)',
+  },
+  visitRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.sm },
+  visitBorder: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.divider },
+  visitCopy: { flex: 1, minWidth: 0 },
+  visitTitle: { fontFamily: fonts.semiBold, fontSize: 12, color: colors.ink },
+  visitSub: { fontFamily: fonts.regular, fontSize: 10, color: colors.muted },
+  visitStar: { fontFamily: fonts.bold, fontSize: 11, color: colors.partnerGold },
   barRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   barStars: { width: 28, fontFamily: fonts.semiBold, fontSize: 11, color: colors.muted },
   barTrack: {
     flex: 1,
-    height: 8,
-    borderRadius: 4,
+    height: 10,
+    borderRadius: 5,
     backgroundColor: '#F2F4F7',
     overflow: 'hidden',
   },
-  barFill: { height: '100%', borderRadius: 4, backgroundColor: colors.partnerGold },
+  barFill: { height: '100%', borderRadius: 5 },
   barPct: { width: 32, fontFamily: fonts.semiBold, fontSize: 10, color: colors.muted, textAlign: 'right' },
   badgeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   badgeCard: {
     width: '48%',
-    backgroundColor: colors.white,
     borderRadius: radius.lg,
     padding: spacing.md,
     gap: 4,
@@ -183,18 +295,36 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#FFFBEB',
+    backgroundColor: colors.white,
     alignItems: 'center',
     justifyContent: 'center',
   },
   badgeLabel: { fontFamily: fonts.bold, fontSize: 12, color: colors.ink },
   badgeSub: { fontFamily: fonts.regular, fontSize: 10, color: colors.muted, lineHeight: 14 },
-  reviewRow: { gap: spacing.xs, paddingVertical: spacing.sm },
+  reviewRow: { gap: spacing.sm, paddingVertical: spacing.sm },
   reviewBorder: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.divider },
   reviewHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  reviewHeadLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  reviewAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(245,158,11,0.25)',
+  },
+  reviewAvatarText: { fontFamily: fonts.extraBold, fontSize: 14, color: colors.partnerGold },
   reviewCustomer: { fontFamily: fonts.bold, fontSize: 13, color: colors.ink },
   reviewDate: { fontFamily: fonts.medium, fontSize: 10, color: colors.muted },
-  reviewService: { fontFamily: fonts.semiBold, fontSize: 10, color: colors.primary },
+  servicePill: {
+    alignSelf: 'flex-start',
+    backgroundColor: colors.primaryLight,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
+    borderRadius: radius.pill,
+  },
+  reviewService: { fontFamily: fonts.bold, fontSize: 10, color: colors.primaryDark },
   reviewText: { fontFamily: fonts.regular, fontSize: 12, color: colors.muted, lineHeight: 18 },
   backLink: { alignItems: 'center', paddingVertical: spacing.sm },
   backLinkText: { fontFamily: fonts.semiBold, fontSize: 13, color: colors.primary },

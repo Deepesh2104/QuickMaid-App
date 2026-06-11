@@ -1,7 +1,8 @@
 # QuickMaid Partner App — Blueprint
 
 > **Full documentation:** [`../README.md`](../README.md) (setup, routing, API plan, KYC, jobs, testing)  
-> **Data contract:** [`PARTNER_DATA.md`](./PARTNER_DATA.md)
+> **Data contract:** [`PARTNER_DATA.md`](./PARTNER_DATA.md)  
+> **Feature specs (FSD):** [`FSD/README.md`](./FSD/README.md) — per-feature API + component call sites
 
 Premium partner (maid) app at `apps/partner`. Shares monorepo with Customer; separate Play Store listing (`in.quickmaid.partner`).
 

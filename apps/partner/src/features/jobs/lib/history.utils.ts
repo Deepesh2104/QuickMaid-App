@@ -1,7 +1,7 @@
 import type { JobStatus, PartnerJob } from '@/constants/demo';
 import { netEarningPaise } from '@/features/home/lib/home.greeting';
 
-export type HistoryFilter = 'completed' | 'all';
+export type HistoryFilter = 'completed' | 'declined' | 'all';
 
 const HISTORY_STATUSES: JobStatus[] = ['completed', 'declined'];
 
@@ -9,6 +9,9 @@ export function historyJobs(jobs: PartnerJob[], filter: HistoryFilter): PartnerJ
   const pool = jobs.filter((j) => HISTORY_STATUSES.includes(j.status));
   if (filter === 'completed') {
     return pool.filter((j) => j.status === 'completed');
+  }
+  if (filter === 'declined') {
+    return pool.filter((j) => j.status === 'declined');
   }
   return pool;
 }

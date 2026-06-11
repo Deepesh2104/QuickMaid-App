@@ -1,6 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { LinearGradient } from 'expo-linear-gradient';
 import { type Href, useRouter } from 'expo-router';
+import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { PartnerProfile } from '@/constants/app';
@@ -13,7 +15,9 @@ import {
   ZONE_DEMAND_LABEL,
   type PartnerJob,
 } from '@/constants/demo';
+import { earningsWeekNet, mergeEarningsLedger } from '@/features/earnings/lib/earnings.utils';
 import { formatRs } from '@/features/home/lib/home.greeting';
+import { usePartnerJobs } from '@/features/jobs/hooks/usePartnerJobs';
 import { PartnerJobHistoryCard } from '@/features/jobs/components/PartnerJobHistoryCard';
 import { fonts } from '@/theme/fonts';
 import { colors } from '@/theme/colors';
@@ -28,7 +32,9 @@ export function PartnerZoneStrip({ zone }: { zone?: string }) {
 
   return (
     <View style={styles.zone}>
+      <LinearGradient colors={['#FFFFFF', '#F4FBFA']} style={StyleSheet.absoluteFill} />
       <View style={styles.zoneIcon}>
+        <LinearGradient colors={['#E6F4F2', '#D4EDE9']} style={StyleSheet.absoluteFill} />
         <Ionicons name="map" size={18} color={colors.primary} />
       </View>
       <View style={styles.zoneCopy}>
@@ -36,6 +42,7 @@ export function PartnerZoneStrip({ zone }: { zone?: string }) {
         <Text style={styles.zoneSub}>{demand.jobs} open requests nearby today</Text>
       </View>
       <View style={[styles.demandPill, { backgroundColor: `${demandColor}18` }]}>
+        <View style={[styles.demandDot, { backgroundColor: demandColor }]} />
         <Text style={[styles.demandText, { color: demandColor }]}>{demandLabel}</Text>
       </View>
     </View>
@@ -43,19 +50,30 @@ export function PartnerZoneStrip({ zone }: { zone?: string }) {
 }
 
 export function PartnerWeeklyGoal() {
-  const weekCredits = DEMO_EARNINGS.filter((e) => e.kind === 'credit').reduce((s, e) => s + e.amountPaise, 0);
+  const { jobs } = usePartnerJobs();
+  const ledger = useMemo(() => mergeEarningsLedger(DEMO_EARNINGS, jobs), [jobs]);
+  const weekCredits = earningsWeekNet(ledger);
   const pct = Math.min(100, Math.round((weekCredits / WEEKLY_EARNING_GOAL_PAISE) * 100));
 
   return (
     <View style={styles.goal}>
+      <LinearGradient colors={['#FFFFFF', '#FAFCFB']} style={StyleSheet.absoluteFill} />
       <View style={styles.goalHead}>
-        <Text style={styles.goalTitle}>Weekly target</Text>
+        <View style={styles.goalTitleRow}>
+          <Ionicons name="trophy-outline" size={14} color={colors.partnerGold} />
+          <Text style={styles.goalTitle}>Weekly target</Text>
+        </View>
         <Text style={styles.goalAmt}>
           {formatRs(weekCredits)} / {formatRs(WEEKLY_EARNING_GOAL_PAISE)}
         </Text>
       </View>
       <View style={styles.goalTrack}>
-        <View style={[styles.goalFill, { width: `${pct}%` }]} />
+        <LinearGradient
+          colors={['#084F4A', '#0B6E67', '#12A598']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={[styles.goalFill, { width: `${Math.max(pct, 4)}%` }]}
+        />
       </View>
       <Text style={styles.goalSub}>{pct}% of ₹1,500 weekly goal · Payout every Monday</Text>
     </View>
@@ -64,10 +82,35 @@ export function PartnerWeeklyGoal() {
 
 export function PartnerTodayTimeline({ jobs }: { jobs: PartnerJob[] }) {
   const router = useRouter();
-  if (jobs.length === 0) return null;
+
+  if (jobs.length === 0) {
+    return (
+      <View style={styles.timelineEmpty}>
+        <LinearGradient colors={['#FFFFFF', '#EFF8F7']} style={StyleSheet.absoluteFill} />
+        <View style={styles.timelineEmptyIcon}>
+          <Ionicons name="calendar-outline" size={22} color={colors.primary} />
+        </View>
+        <Text style={styles.timelineEmptyTitle}>No visits today</Text>
+        <Text style={styles.timelineEmptySub}>
+          Accept a job from Requests — today&apos;s schedule shows up here
+        </Text>
+        <Pressable
+          style={styles.timelineEmptyBtn}
+          onPress={() => {
+            Haptics.selectionAsync();
+            router.push('/(tabs)/schedule' as Href);
+          }}
+        >
+          <Text style={styles.timelineEmptyBtnText}>Open schedule</Text>
+          <Ionicons name="arrow-forward" size={14} color={colors.primary} />
+        </Pressable>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.timeline}>
+      <LinearGradient colors={['#FFFFFF', '#F8FDFC']} style={StyleSheet.absoluteFill} />
       <Text style={styles.timelineTitle}>Today&apos;s visits</Text>
       {jobs.map((job, i) => (
         <Pressable
@@ -210,6 +253,7 @@ export function PartnerKycBannerPressable({ profile }: { profile: PartnerProfile
         router.push('/kyc' as Href);
       }}
     >
+      <LinearGradient colors={['#FFFBEB', '#FFF7ED']} style={StyleSheet.absoluteFill} />
       <View style={styles.kycIcon}>
         <Ionicons name="shield-half-outline" size={20} color={colors.warning} />
       </View>
@@ -227,50 +271,97 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    backgroundColor: colors.white,
     borderRadius: radius.xl,
     padding: spacing.lg,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: 'rgba(11,110,103,0.12)',
     marginTop: spacing.lg,
+    overflow: 'hidden',
     ...shadow.sm,
   },
   zoneIcon: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: colors.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
   zoneCopy: { flex: 1, gap: 2 },
   zoneTitle: { fontFamily: fonts.bold, fontSize: 14, color: colors.ink },
   zoneSub: { fontFamily: fonts.regular, fontSize: 12, color: colors.muted },
-  demandPill: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: radius.pill },
+  demandPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: radius.pill,
+  },
+  demandDot: { width: 6, height: 6, borderRadius: 3 },
   demandText: { fontFamily: fonts.bold, fontSize: 10 },
   goal: {
-    backgroundColor: colors.white,
     borderRadius: radius.xl,
     padding: spacing.lg,
     marginTop: spacing.md,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: 'rgba(11,110,103,0.1)',
     gap: spacing.sm,
+    overflow: 'hidden',
+    ...shadow.sm,
   },
   goalHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  goalTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   goalTitle: { fontFamily: fonts.bold, fontSize: 14, color: colors.ink },
   goalAmt: { fontFamily: fonts.bold, fontSize: 12, color: colors.primary },
   goalTrack: { height: 8, backgroundColor: colors.bgMuted, borderRadius: 4, overflow: 'hidden' },
-  goalFill: { height: '100%', backgroundColor: colors.primary, borderRadius: 4 },
+  goalFill: { height: '100%', borderRadius: 4 },
   goalSub: { fontFamily: fonts.regular, fontSize: 11, color: colors.muted },
-  timeline: {
-    marginTop: spacing.lg,
-    backgroundColor: colors.white,
+  timelineEmpty: {
     borderRadius: radius.xl,
     padding: spacing.lg,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: 'rgba(11,110,103,0.1)',
+    alignItems: 'center',
+    gap: spacing.sm,
+    overflow: 'hidden',
+    ...shadow.sm,
+  },
+  timelineEmptyIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  timelineEmptyTitle: { fontFamily: fonts.bold, fontSize: 15, color: colors.ink },
+  timelineEmptySub: {
+    fontFamily: fonts.regular,
+    fontSize: 12,
+    color: colors.muted,
+    textAlign: 'center',
+    lineHeight: 17,
+  },
+  timelineEmptyBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: spacing.xs,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.pill,
+    backgroundColor: colors.primaryLight,
+  },
+  timelineEmptyBtnText: { fontFamily: fonts.semiBold, fontSize: 12, color: colors.primary },
+  timeline: {
+    borderRadius: radius.xl,
+    padding: spacing.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(11,110,103,0.1)',
     gap: spacing.md,
+    overflow: 'hidden',
+    ...shadow.sm,
   },
   timelineTitle: { fontFamily: fonts.bold, fontSize: 15, color: colors.ink },
   timelineRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md },
@@ -342,12 +433,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    backgroundColor: colors.warningBg,
     borderRadius: radius.xl,
     padding: spacing.lg,
     borderWidth: 1,
     borderColor: 'rgba(180,71,8,0.18)',
     marginTop: spacing.md,
+    overflow: 'hidden',
+    ...shadow.sm,
   },
   kycIcon: {
     width: 44,

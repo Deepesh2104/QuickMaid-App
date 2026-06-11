@@ -337,12 +337,73 @@ export function PartnerEarningsSupportCard() {
   );
 }
 
-export function PartnerEarningsFilterEmpty({ filterLabel }: { filterLabel: string }) {
+const EMPTY_FILTER_COPY: Record<
+  string,
+  { icon: keyof typeof Ionicons.glyphMap; title: string; sub: string; cta: string; route: Href }
+> = {
+  all: {
+    icon: 'layers-outline',
+    title: 'No activity yet',
+    sub: 'Complete visits — job credits and Monday payouts show up here',
+    cta: 'Open schedule',
+    route: '/(tabs)/schedule',
+  },
+  credits: {
+    icon: 'add-circle-outline',
+    title: 'No job credits yet',
+    sub: 'Finish a visit with OTP — net earning credits after the 10% fee',
+    cta: 'View requests',
+    route: '/(tabs)/requests',
+  },
+  payouts: {
+    icon: 'arrow-up-circle-outline',
+    title: 'No payouts yet',
+    sub: 'First Monday transfer after KYC approval and completed week',
+    cta: 'Complete KYC',
+    route: '/kyc',
+  },
+  this_week: {
+    icon: 'calendar-outline',
+    title: 'Quiet week so far',
+    sub: 'Go online and accept jobs — this week filter updates live',
+    cta: 'Go to requests',
+    route: '/(tabs)/requests',
+  },
+};
+
+export function PartnerEarningsFilterEmpty({
+  filterLabel,
+  filter = 'all',
+}: {
+  filterLabel: string;
+  filter?: string;
+}) {
+  const router = useRouter();
+  const copy = EMPTY_FILTER_COPY[filter] ?? {
+    icon: 'wallet-outline' as const,
+    title: `No ${filterLabel.toLowerCase()} yet`,
+    sub: 'Complete jobs to see credits and payouts here',
+    cta: 'Open schedule',
+    route: '/(tabs)/schedule' as Href,
+  };
+
   return (
     <View style={styles.filterEmpty}>
-      <Ionicons name="wallet-outline" size={24} color={colors.muted} />
-      <Text style={styles.filterEmptyTitle}>No {filterLabel.toLowerCase()} yet</Text>
-      <Text style={styles.filterEmptySub}>Complete jobs to see credits and payouts here</Text>
+      <LinearGradient colors={['#E6F4F2', '#FFFFFF']} style={styles.filterEmptyIcon}>
+        <Ionicons name={copy.icon} size={26} color={colors.primary} />
+      </LinearGradient>
+      <Text style={styles.filterEmptyTitle}>{copy.title}</Text>
+      <Text style={styles.filterEmptySub}>{copy.sub}</Text>
+      <Pressable
+        style={styles.filterEmptyBtn}
+        onPress={() => {
+          Haptics.selectionAsync();
+          router.push(copy.route);
+        }}
+      >
+        <Text style={styles.filterEmptyBtnText}>{copy.cta}</Text>
+        <Ionicons name="arrow-forward" size={14} color={colors.white} />
+      </Pressable>
     </View>
   );
 }
@@ -574,9 +635,44 @@ const styles = StyleSheet.create({
   supportTitle: { fontFamily: fonts.bold, fontSize: 13, color: colors.ink },
   supportSub: { fontFamily: fonts.regular, fontSize: 11, color: colors.muted },
 
-  filterEmpty: { alignItems: 'center', paddingVertical: spacing.xl, gap: spacing.xs },
-  filterEmptyTitle: { fontFamily: fonts.bold, fontSize: 14, color: colors.ink },
-  filterEmptySub: { fontFamily: fonts.regular, fontSize: 12, color: colors.muted, textAlign: 'center' },
+  filterEmpty: {
+    alignItems: 'center',
+    paddingVertical: spacing.xl,
+    paddingHorizontal: spacing.md,
+    gap: spacing.sm,
+    backgroundColor: colors.white,
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: 'rgba(15,20,25,0.06)',
+  },
+  filterEmptyIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  filterEmptyTitle: { fontFamily: fonts.extraBold, fontSize: 15, color: colors.ink },
+  filterEmptySub: {
+    fontFamily: fonts.regular,
+    fontSize: 12,
+    color: colors.muted,
+    textAlign: 'center',
+    lineHeight: 17,
+    maxWidth: 280,
+  },
+  filterEmptyBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: spacing.xs,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm + 2,
+    borderRadius: radius.pill,
+    backgroundColor: colors.primaryDark,
+  },
+  filterEmptyBtnText: { fontFamily: fonts.bold, fontSize: 12, color: colors.white },
 
   trustWrap: { gap: spacing.md, marginTop: spacing.sm },
   footer: { alignItems: 'center', gap: 4, paddingBottom: spacing.sm },

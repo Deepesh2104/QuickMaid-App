@@ -1,3 +1,54 @@
+import type { PartnerAppPreferences } from '@/features/settings/types/settings.types';
+
+export const PREFERENCE_LANGUAGE_OPTIONS = [
+  { id: 'en' as const, label: 'English', sub: 'Default' },
+  { id: 'hi' as const, label: 'हिंदी', sub: 'Hindi UI (demo)' },
+] as const;
+
+type BooleanPreferenceKey = 'jobAlerts' | 'payoutAlerts' | 'kycAlerts' | 'hapticFeedback';
+
+export const PREFERENCE_TOGGLES: Array<{
+  key: BooleanPreferenceKey;
+  label: string;
+  sub: string;
+  icon: 'briefcase-outline' | 'wallet-outline' | 'shield-checkmark-outline' | 'phone-portrait-outline';
+  tone: string;
+  ink: string;
+}> = [
+  {
+    key: 'jobAlerts',
+    label: 'Job requests',
+    sub: 'New offers & visit reminders in inbox',
+    icon: 'briefcase-outline',
+    tone: '#E6F4F2',
+    ink: '#084F4A',
+  },
+  {
+    key: 'payoutAlerts',
+    label: 'Payout updates',
+    sub: 'Monday UPI transfer confirmations',
+    icon: 'wallet-outline',
+    tone: '#EEF4FF',
+    ink: '#175CD3',
+  },
+  {
+    key: 'kycAlerts',
+    label: 'KYC status',
+    sub: 'Verification & document updates',
+    icon: 'shield-checkmark-outline',
+    tone: '#FFFBEB',
+    ink: '#B45309',
+  },
+  {
+    key: 'hapticFeedback',
+    label: 'Haptic feedback',
+    sub: 'Light vibration on taps & toggles',
+    icon: 'phone-portrait-outline',
+    tone: '#F4F3FF',
+    ink: '#6D28D9',
+  },
+];
+
 export const SETTINGS_STATS = [
   { value: 'v1.0', label: 'App version' },
   { value: 'Raipur', label: 'City' },
@@ -96,6 +147,13 @@ export const SETTINGS_SECTIONS = [
         sub: 'Service agreement & payouts',
         icon: 'document-text-outline' as const,
         route: '/legal/partner-terms' as const,
+      },
+      {
+        id: 'referral-policy',
+        label: 'Referral policy',
+        sub: '₹500 bonus rules & eligibility',
+        icon: 'gift-outline' as const,
+        route: '/legal/referral-policy' as const,
       },
     ],
   },

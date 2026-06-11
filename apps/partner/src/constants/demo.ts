@@ -441,6 +441,8 @@ export interface PartnerNotification {
   createdAt: string;
   kind: PartnerNotificationKind;
   jobId?: string;
+  /** Earnings ledger payout row id — links to /payout/[id] */
+  payoutId?: string;
 }
 
 export const DEMO_NOTIFICATIONS: PartnerNotification[] = [
@@ -468,9 +470,11 @@ export const DEMO_NOTIFICATIONS: PartnerNotification[] = [
     id: 'n3',
     title: 'Weekly payout sent',
     body: '₹1,280 credited to your UPI',
+    detail: 'Batch QM-PAY-0603 · 5 completed jobs included after platform fee.',
     time: 'Yesterday',
     createdAt: new Date(Date.now() - 24 * 60 * 60_000).toISOString(),
     kind: 'payout',
+    payoutId: 'e5',
   },
   {
     id: 'n4',
@@ -600,7 +604,7 @@ export const DEFAULT_PARTNER_PROFILE: PartnerProfile = {
   ],
   kycStatus: 'verified',
   preferredSlotIds: ['morning', 'afternoon', 'sunday'],
-  publicId: 'MD-903210',
+  publicId: 'MD-9032107',
   memberSince: 'Jan 2025',
   upiId: 'demo.partner@okaxis',
 };

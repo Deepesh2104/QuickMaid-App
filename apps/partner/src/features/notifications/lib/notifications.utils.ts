@@ -111,12 +111,20 @@ export function groupNotificationsByDay(items: AppNotification[]) {
 }
 
 export function hasAction(notification: AppNotification) {
-  return Boolean(notification.jobId);
+  return Boolean(notification.jobId || notification.payoutId || notification.kind === 'kyc');
 }
 
-export function getActionLabel(kind: PartnerNotificationKind, hasJob: boolean) {
-  if (hasJob) return 'View job';
-  if (kind === 'payout') return 'View payout';
-  if (kind === 'kyc') return 'Complete KYC';
+export function getActionLabel(notification: AppNotification) {
+  if (notification.jobId) return 'View job';
+  if (notification.payoutId || notification.kind === 'payout') return 'View payout';
+  if (notification.kind === 'kyc') return 'Complete KYC';
   return 'Got it';
+}
+
+export function notificationActionHref(notification: AppNotification): string {
+  if (notification.jobId) return `/job/${notification.jobId}`;
+  if (notification.payoutId) return `/payout/${notification.payoutId}`;
+  if (notification.kind === 'payout') return '/payout/upcoming';
+  if (notification.kind === 'kyc') return '/kyc';
+  return '/notifications';
 }

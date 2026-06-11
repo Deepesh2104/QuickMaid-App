@@ -35,6 +35,7 @@ const SHEET_BG = '#EFF8F7';
 
 const FILTERS: { id: HistoryFilter; label: string; shortLabel: string; icon: keyof typeof Ionicons.glyphMap }[] = [
   { id: 'completed', label: 'Completed', shortLabel: 'Done', icon: 'checkmark-circle-outline' },
+  { id: 'declined', label: 'Declined', shortLabel: 'No', icon: 'close-circle-outline' },
   { id: 'all', label: 'All history', shortLabel: 'All', icon: 'archive-outline' },
 ];
 
@@ -179,7 +180,9 @@ export function PartnerJobHistoryScreen() {
           ) : (
             <View style={styles.list}>
               <View style={styles.listHead}>
-                <Text style={styles.listTitle}>{filter === 'completed' ? 'Completed' : 'All history'}</Text>
+                <Text style={styles.listTitle}>
+                  {filter === 'completed' ? 'Completed' : filter === 'declined' ? 'Declined' : 'All history'}
+                </Text>
                 <Text style={styles.listCount}>{sorted.length} record{sorted.length === 1 ? '' : 's'}</Text>
               </View>
               {visibleItems.map((job, i) => (

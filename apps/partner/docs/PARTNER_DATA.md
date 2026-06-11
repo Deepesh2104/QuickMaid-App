@@ -128,13 +128,26 @@ Platform fee: ~10% deducted in UI (`netEarningPaise`).
 | `status` | open / resolved |
 | `messages[]` | `{ role, body, at }` |
 
+## Account deletion (7-day purge window)
+
+| Field | Notes |
+|-------|-------|
+| `deletionRequestedAt` | ISO timestamp on `PartnerProfile` when user requests delete |
+| `ACCOUNT_DELETION_GRACE_DAYS` | `7` — login within window auto-restores account |
+
+**Flow:** soft delete (logout) → grace period → permanent purge if no login. See [`FSD/17-ACCOUNT.md`](./FSD/17-ACCOUNT.md).
+
 ## Referral (demo — API future)
 
 | Field | Notes |
 |-------|-------|
 | `code` | Derived from `publicId` → `QM-{id}` |
-| `rewardPaise` | ₹500 per successful referral |
+| `rewardPaise` | ₹500 referrer / ₹200 new partner (welcome) |
 | `referrals[]` | Name, status, bonus — `referral.demo.ts` |
+| `referredByCode` | On `PartnerProfile` — code entered at signup |
+| Policy doc | `/legal/referral-policy` |
+
+**Auth routing:** new phone → `/(auth)/refer-welcome` → apply. Returning → `/(tabs)/requests`.
 
 ## Storage keys (demo)
 
@@ -176,4 +189,5 @@ Platform fee: ~10% deducted in UI (`netEarningPaise`).
 | `notifications.storage.ts` | `GET /maids/me/notifications` |
 | `support.storage.ts` | `GET/POST /maids/me/tickets` |
 
-See [`README.md`](../README.md) § API & data layer for full endpoint tables.
+See [`README.md`](../README.md) § API & data layer for summary tables.  
+**Per-feature API call sites:** [`FSD/README.md`](./FSD/README.md) (17 feature FSDs + architecture).

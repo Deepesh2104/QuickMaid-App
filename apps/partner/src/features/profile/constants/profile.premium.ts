@@ -76,4 +76,11 @@ export const PROFILE_LEGAL_LINKS = [
     icon: 'document-text-outline' as const,
     route: '/legal/partner-terms' as const,
   },
+  {
+    id: 'referral-policy',
+    label: 'Referral policy',
+    sub: '₹500 bonus rules & eligibility',
+    icon: 'gift-outline' as const,
+    route: '/legal/referral-policy' as const,
+  },
 ] as const;

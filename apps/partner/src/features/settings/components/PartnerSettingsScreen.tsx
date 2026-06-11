@@ -8,6 +8,7 @@ import { PartnerStackShell } from '@/components/ui/PartnerStackShell';
 import { usePartner } from '@/context/PartnerContext';
 import { APP_VERSION } from '@/features/profile/constants/profile.premium';
 import { PartnerRequestsSectionHeader } from '@/features/jobs/components/PartnerRequestsSections';
+import { PartnerSettingsPreferences } from '@/features/settings/components/PartnerSettingsPreferences';
 import { SETTINGS_SECTIONS, SETTINGS_STATS } from '@/features/settings/constants/settings.premium';
 import { fonts } from '@/theme/fonts';
 import { colors } from '@/theme/colors';
@@ -18,7 +19,6 @@ export function PartnerSettingsScreen() {
   const { profile } = usePartner();
 
   const stats = [
-    { value: `v${APP_VERSION}`, label: 'Version' },
     { value: profile?.city ?? 'Raipur', label: 'City' },
     { value: profile?.publicId ?? 'MD-—', label: 'Maid ID' },
   ];
@@ -31,6 +31,8 @@ export function PartnerSettingsScreen() {
       icon="settings-outline"
       stats={stats}
     >
+      <PartnerSettingsPreferences />
+
       {SETTINGS_SECTIONS.map((section, sIdx) => (
         <Animated.View
           key={section.id}
@@ -79,7 +81,7 @@ export function PartnerSettingsScreen() {
             <Ionicons name="trash-outline" size={18} color={colors.error} />
             <View style={styles.dangerCopy}>
               <Text style={styles.dangerRowText}>Delete account</Text>
-              <Text style={styles.dangerSub}>Permanent — cannot undo</Text>
+              <Text style={styles.dangerSub}>7-day restore window · then permanent purge</Text>
             </View>
             <Ionicons name="chevron-forward" size={16} color={colors.error} />
           </Pressable>

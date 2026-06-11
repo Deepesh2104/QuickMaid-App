@@ -1,5 +1,8 @@
 export const DEMO_OTP = '123456';
 
+/** Grace period before partner data is permanently purged after delete request */
+export const ACCOUNT_DELETION_GRACE_DAYS = 7;
+
 export const STORAGE_KEYS = {
   onboardingDone: '@qmp/onboarding_done',
   authComplete: '@qmp/auth_complete',
@@ -11,6 +14,7 @@ export const STORAGE_KEYS = {
   notificationsInbox: '@qmp/partner_notifications_inbox',
   partnerJobs: '@qmp/partner_jobs',
   kycDraft: '@qmp/partner_kyc_draft',
+  partnerPreferences: '@qmp/partner_preferences',
 } as const;
 
 export type KycStatus = 'pending' | 'under_review' | 'verified' | 'rejected';
@@ -68,6 +72,10 @@ export interface PartnerProfile {
   memberSince?: string;
   /** Local profile photo URI */
   photoUri?: string;
+  /** ISO timestamp when user requested delete; data kept for ACCOUNT_DELETION_GRACE_DAYS */
+  deletionRequestedAt?: string;
+  /** Referral code used at signup (QM-XXXXXX) */
+  referredByCode?: string;
 }
 
 export interface PartnerRuntimeState {

@@ -1,14 +1,15 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import type { PartnerGender, PartnerProfile, PartnerRuntimeState } from '../constants/app';
+import { ACCOUNT_DELETION_GRACE_DAYS, STORAGE_KEYS } from '../constants/app';
 import { DEFAULT_PARTNER_PROFILE } from '../constants/demo';
-import { STORAGE_KEYS } from '../constants/app';
 import { fillPartnerProfileGaps, profileSnapshotChanged } from './profile-fill';
 import {
   dobFromMaidId,
   fullNameFromParts,
   generateMaidId,
   isLegacyMaidId,
+  isLegacyShortMaidId,
   isValidMaidId,
 } from './quickmaid-ids';
 
@@ -19,6 +20,17 @@ const DEFAULT_STATE: PartnerRuntimeState = {
   todayEarningsPaise: 44900,
   weekJobs: 6,
 };
+
+const DELETION_GRACE_MS = ACCOUNT_DELETION_GRACE_DAYS * 24 * 60 * 60 * 1000;
+
+export function accountDeletionPurgeAt(requestedAt: string): Date {
+  return new Date(new Date(requestedAt).getTime() + DELETION_GRACE_MS);
+}
+
+export function isWithinDeletionGracePeriod(profile: PartnerProfile): boolean {
+  if (!profile.deletionRequestedAt) return false;
+  return Date.now() < accountDeletionPurgeAt(profile.deletionRequestedAt).getTime();
+}
 
 async function getRegisteredMap(): Promise<RegisteredMap> {
   const raw = await AsyncStorage.getItem(STORAGE_KEYS.registeredPartners);
@@ -56,10 +68,10 @@ function normalizePartnerProfile(raw: PartnerProfile): PartnerProfile {
     dateOfBirth = dobFromMaidId(filled.publicId) ?? '';
   }
   let publicId = filled.publicId?.trim();
-  if (publicId && isLegacyMaidId(publicId)) {
-    publicId = generateMaidId();
+  if (publicId && (isLegacyMaidId(publicId) || isLegacyShortMaidId(publicId))) {
+    publicId = generateMaidId(firstName, lastName, dateOfBirth);
   } else if (!publicId || !isValidMaidId(publicId)) {
-    publicId = publicId && /^MD-/.test(publicId) ? publicId : generateMaidId();
+    publicId = generateMaidId(firstName, lastName, dateOfBirth);
   }
   return {
     ...filled,
@@ -107,10 +119,34 @@ export async function resetPartnerKycToPending(): Promise<PartnerProfile | null>
   return updated;
 }
 
+async function purgePartnerAccountPermanently(phone: string): Promise<void> {
+  const map = await getRegisteredMap();
+  delete map[phone];
+  await AsyncStorage.setItem(STORAGE_KEYS.registeredPartners, JSON.stringify(map));
+  await AsyncStorage.multiRemove([
+    STORAGE_KEYS.authComplete,
+    STORAGE_KEYS.partnerProfile,
+    STORAGE_KEYS.partnerState,
+    STORAGE_KEYS.kycDraft,
+    STORAGE_KEYS.partnerJobs,
+    STORAGE_KEYS.supportTickets,
+    STORAGE_KEYS.notificationsRead,
+    STORAGE_KEYS.notificationsInbox,
+  ]);
+}
+
+async function purgeExpiredDeletionIfNeeded(phone: string, profile: PartnerProfile): Promise<boolean> {
+  if (!profile.deletionRequestedAt) return false;
+  if (isWithinDeletionGracePeriod(profile)) return false;
+  await purgePartnerAccountPermanently(phone);
+  return true;
+}
+
 export async function getRegisteredPartner(phone: string): Promise<PartnerProfile | null> {
   const map = await getRegisteredMap();
   const profile = map[phone];
   if (!profile) return null;
+  if (await purgeExpiredDeletionIfNeeded(phone, profile)) return null;
   const normalized = normalizePartnerProfile(profile);
   if (profileSnapshotChanged(profile, normalized)) {
     map[phone] = normalized;
@@ -133,9 +169,18 @@ export async function registerPartner(profile: PartnerProfile): Promise<void> {
 export async function signInExistingPartner(phone: string): Promise<PartnerProfile | null> {
   const profile = await getRegisteredPartner(phone);
   if (!profile) return null;
-  await savePartnerProfile(profile);
+
+  let activeProfile = profile;
+  if (profile.deletionRequestedAt && isWithinDeletionGracePeriod(profile)) {
+    activeProfile = { ...profile, deletionRequestedAt: undefined };
+    const map = await getRegisteredMap();
+    map[phone] = activeProfile;
+    await AsyncStorage.setItem(STORAGE_KEYS.registeredPartners, JSON.stringify(map));
+  }
+
+  await savePartnerProfile(activeProfile);
   await setAuthComplete();
-  return profile;
+  return activeProfile;
 }
 
 export async function completePartnerRegistration(profile: PartnerProfile): Promise<void> {
@@ -162,21 +207,30 @@ export async function clearSession(): Promise<void> {
   await AsyncStorage.multiRemove([STORAGE_KEYS.authComplete, STORAGE_KEYS.partnerProfile]);
 }
 
-/** Permanently removes partner data for the signed-in phone (demo self-serve delete). */
+/**
+ * Soft-delete: marks account for purge after ACCOUNT_DELETION_GRACE_DAYS.
+ * Session cleared immediately; login within grace period auto-restores the account.
+ */
 export async function deletePartnerAccount(phone: string): Promise<void> {
   const map = await getRegisteredMap();
-  delete map[phone];
+  const sessionProfile = await getPartnerProfile();
+  const profile = map[phone] ?? (sessionProfile?.phone === phone ? sessionProfile : null);
+  if (!profile) {
+    await clearSession();
+    return;
+  }
+
+  const marked: PartnerProfile = {
+    ...profile,
+    deletionRequestedAt: new Date().toISOString(),
+  };
+  map[phone] = marked;
   await AsyncStorage.setItem(STORAGE_KEYS.registeredPartners, JSON.stringify(map));
-  await AsyncStorage.multiRemove([
-    STORAGE_KEYS.authComplete,
-    STORAGE_KEYS.partnerProfile,
-    STORAGE_KEYS.partnerState,
-    STORAGE_KEYS.kycDraft,
-    STORAGE_KEYS.partnerJobs,
-    STORAGE_KEYS.supportTickets,
-    STORAGE_KEYS.notificationsRead,
-    STORAGE_KEYS.notificationsInbox,
-  ]);
+
+  const state = await getPartnerState();
+  await savePartnerState({ ...state, isOnline: false });
+
+  await clearSession();
 }
 
 export async function getInitialRoute(): Promise<'/(auth)/onboarding' | '/(auth)/login' | '/(tabs)'> {
@@ -208,6 +262,7 @@ export function seedProfileFromApply(input: {
   emergencyContact?: PartnerProfile['emergencyContact'];
   upiId?: string;
   preferredSlotIds?: string[];
+  referredByCode?: string;
 }): PartnerProfile {
   const zone = input.zone.trim();
   const firstName = input.firstName.trim();
@@ -250,5 +305,6 @@ export function seedProfileFromApply(input: {
       : ['morning', 'afternoon', 'sunday'],
     publicId: generateMaidId(firstName, lastName, input.dateOfBirth, registeredAt),
     memberSince: registeredAt.toLocaleDateString('en-IN', { month: 'short', year: 'numeric' }),
+    referredByCode: input.referredByCode?.trim() || undefined,
   };
 }

@@ -18,6 +18,7 @@ import {
   PartnerDualRoleCard,
   PartnerHomeCompletedStrip,
   PartnerKycBannerPressable,
+  PartnerSkillsRow,
   PartnerTodayTimeline,
   PartnerWeeklyGoal,
   PartnerZoneStrip,
@@ -159,6 +160,10 @@ export function PartnerHomeScreen() {
 
           <Animated.View entering={FadeInDown.delay(160).duration(320)}>
             <PartnerWeeklyGoal />
+          </Animated.View>
+
+          <Animated.View entering={FadeInDown.delay(170).duration(320)}>
+            <PartnerSkillsRow skills={profile?.skills} />
           </Animated.View>
 
           <Animated.View entering={FadeInDown.delay(180).duration(320)}>

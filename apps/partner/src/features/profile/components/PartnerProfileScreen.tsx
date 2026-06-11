@@ -15,6 +15,10 @@ import { usePartnerAlert } from '@/context/PartnerAlertContext';
 import { usePartner } from '@/context/PartnerContext';
 import { PartnerEditProfileModal } from '@/features/profile/components/PartnerEditProfileModal';
 import {
+  PartnerProfileLegalHub,
+  PartnerProfileQuickHub,
+} from '@/features/profile/components/PartnerProfileHubPremium';
+import {
   PartnerProfileMaidDossier,
   PartnerProfilePageHero,
 } from '@/features/profile/components/PartnerProfilePremiumSections';
@@ -37,6 +41,7 @@ import {
 } from '@/features/profile/lib/profile.utils';
 import { usePartnerJobs } from '@/features/jobs/hooks/usePartnerJobs';
 import { useLayoutMetrics } from '@/hooks/useLayoutMetrics';
+import { copyToClipboard } from '@/lib/clipboard';
 import { syncMaidId } from '@/lib/quickmaid-ids';
 import { colors } from '@/theme/colors';
 import { layout, spacing } from '@/theme/spacing';
@@ -91,14 +96,17 @@ export function PartnerProfileScreen() {
   };
 
   const copyPartnerId = () => {
-    Haptics.selectionAsync();
-    alert({
-      title: 'Maid ID',
-      message: profile?.publicId ?? 'MD-—',
-      variant: 'teal',
-      icon: 'id-card-outline',
-      hint: 'Share this ID with partner support when you need help',
-      buttons: [{ text: 'Got it' }],
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    const id = profile?.publicId ?? '';
+    void copyToClipboard(id).then((ok) => {
+      alert({
+        title: ok ? 'Maid ID copied' : 'Maid ID',
+        message: id || 'MD-—',
+        variant: 'teal',
+        icon: 'id-card-outline',
+        hint: ok ? 'Support chat mein paste kar sakti ho' : 'Share this ID with partner support',
+        buttons: [{ text: 'Got it' }],
+      });
     });
   };
 
@@ -152,6 +160,8 @@ export function PartnerProfileScreen() {
         <PartnerProfileAvailabilityCard />
         <PartnerProfilePayoutCard upiId={profile?.upiId} kycVerified={kycVerified} onEdit={openEdit} />
         <PartnerProfileVerificationCard profile={profile} />
+        <PartnerProfileQuickHub />
+        <PartnerProfileLegalHub />
         <PartnerProfileSettingsCard />
         <PartnerProfileLogoutCard />
         <PartnerProfileFooter />

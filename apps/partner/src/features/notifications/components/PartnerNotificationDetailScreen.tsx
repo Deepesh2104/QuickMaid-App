@@ -14,6 +14,7 @@ import {
   getActionLabel,
   hasAction,
   kindMeta,
+  notificationActionHref,
 } from '@/features/notifications/lib/notifications.utils';
 import type { AppNotification } from '@/features/notifications/types/notification.types';
 import { fonts } from '@/theme/fonts';
@@ -107,22 +108,14 @@ export function PartnerNotificationDetailScreen() {
   }
 
   const meta = kindMeta(item.kind);
-  const showJob = hasAction(item);
-  const ctaLabel = getActionLabel(item.kind, showJob);
+  const actionable = hasAction(item);
+  const ctaLabel = getActionLabel(item);
   const tips = kindTips(item.kind);
 
   const onAction = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    if (showJob && item.jobId) {
-      router.push(`/job/${item.jobId}` as Href);
-      return;
-    }
-    if (item.kind === 'payout') {
-      router.push('/payout/e5' as Href);
-      return;
-    }
-    if (item.kind === 'kyc') {
-      router.push('/kyc' as Href);
+    if (actionable) {
+      router.push(notificationActionHref(item) as Href);
       return;
     }
     router.back();
@@ -208,6 +201,12 @@ export function PartnerNotificationDetailScreen() {
                     <Text style={styles.metaText}>Linked job</Text>
                   </View>
                 ) : null}
+                {item.payoutId ? (
+                  <View style={styles.metaChip}>
+                    <Ionicons name="wallet-outline" size={12} color={colors.primaryDark} />
+                    <Text style={styles.metaText}>Payout {item.payoutId}</Text>
+                  </View>
+                ) : null}
               </View>
             </View>
           </Animated.View>
@@ -240,9 +239,9 @@ export function PartnerNotificationDetailScreen() {
             <LinearGradient colors={['#084F4A', '#0B6E67']} style={StyleSheet.absoluteFill} />
             <Ionicons
               name={
-                showJob
+                item.jobId
                   ? 'briefcase-outline'
-                  : item.kind === 'payout'
+                  : item.payoutId || item.kind === 'payout'
                     ? 'wallet-outline'
                     : item.kind === 'kyc'
                       ? 'shield-outline'

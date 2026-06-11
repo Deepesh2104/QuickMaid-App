@@ -41,6 +41,7 @@ import {
   filterEarnings,
   findEarningForJob,
   groupEarningsByDay,
+  mergeEarningsLedger,
   nextPayoutEstimate,
   pendingFromJobs,
   scheduledEarnings,
@@ -82,9 +83,11 @@ export function PartnerEarningsScreen() {
     void getPartnerJobById(jobId).then(setFocusJob);
   }, [jobId, jobs]);
 
+  const ledger = useMemo(() => mergeEarningsLedger(DEMO_EARNINGS, jobs), [jobs]);
+
   const visitEarningRow = useMemo(
-    () => (focusJob ? findEarningForJob(focusJob, DEMO_EARNINGS) : null),
-    [focusJob],
+    () => (focusJob ? findEarningForJob(focusJob, ledger) : null),
+    [focusJob, ledger],
   );
   const visitBreakdown = useMemo(
     () => (focusJob ? jobEarningsBreakdown(focusJob) : null),
@@ -94,16 +97,16 @@ export function PartnerEarningsScreen() {
 
   const filtered = useMemo(() => {
     if (isVisitFocus && visitEarningRow) return [visitEarningRow];
-    return filterEarnings(DEMO_EARNINGS, filter);
-  }, [filter, isVisitFocus, visitEarningRow]);
+    return filterEarnings(ledger, filter);
+  }, [filter, isVisitFocus, visitEarningRow, ledger]);
   const { visibleItems, hasMore, loadMore, showing } = useListPagination(
     filtered,
     EARNINGS_PAGE_SIZE,
     filter,
   );
   const grouped = useMemo(() => groupEarningsByDay(visibleItems), [visibleItems]);
-  const creditTotal = useMemo(() => earningsCreditTotal(DEMO_EARNINGS), []);
-  const weekNetPaise = useMemo(() => earningsWeekNet(DEMO_EARNINGS), []);
+  const creditTotal = useMemo(() => earningsCreditTotal(ledger), [ledger]);
+  const weekNetPaise = useMemo(() => earningsWeekNet(ledger), [ledger]);
   const weekNet = useMemo(() => formatRs(weekNetPaise), [weekNetPaise]);
   const todayNet = useMemo(() => formatRs(state.todayEarningsPaise), [state.todayEarningsPaise]);
   const goalPct = useMemo(
@@ -166,7 +169,7 @@ export function PartnerEarningsScreen() {
             </Text>
           </View>
           <View style={styles.countPill}>
-            <Text style={styles.countText}>{isVisitFocus ? '1' : DEMO_EARNINGS.length}</Text>
+            <Text style={styles.countText}>{isVisitFocus ? '1' : ledger.length}</Text>
           </View>
         </View>
 
@@ -282,7 +285,7 @@ export function PartnerEarningsScreen() {
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterWrap}>
               {EARNINGS_FILTERS.map((f) => {
                 const on = filter === f.id;
-                const count = earningsFilterCount(DEMO_EARNINGS, f.id);
+                const count = earningsFilterCount(ledger, f.id);
                 const label = compact ? f.shortLabel : f.label;
 
                 return (
@@ -330,7 +333,10 @@ export function PartnerEarningsScreen() {
             />
 
             {filtered.length === 0 ? (
-              <PartnerEarningsFilterEmpty filterLabel={activeFilter?.label ?? 'activity'} />
+              <PartnerEarningsFilterEmpty
+                filterLabel={activeFilter?.label ?? 'activity'}
+                filter={filter}
+              />
             ) : (
               <>
                 <View style={styles.inboxHead}>

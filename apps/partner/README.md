@@ -44,6 +44,7 @@
 24. [Auth flow specification](#24-auth-flow-specification)
 25. [Config & build files](#25-config--build-files)
 26. [Appendix: feature file index](#26-appendix-feature-file-index)
+27. [Feature Specification Documents (FSD)](#27-feature-specification-documents-fsd)
 
 ---
 
@@ -227,7 +228,11 @@ apps/partner/
 ├── assets/                 # Icon, splash, adaptive icons
 ├── docs/
 │   ├── PARTNER_APP.md      # Short blueprint
-│   └── PARTNER_DATA.md     # API data contract
+│   ├── PARTNER_DATA.md     # API data contract
+│   └── FSD/                # Per-feature specs (API + call sites)
+│       ├── README.md       # FSD index
+│       ├── 00-ARCHITECTURE.md
+│       └── 01-AUTH.md … 17-ACCOUNT.md
 ├── src/
 │   ├── components/         # Shared UI + splash + PartnerStackShell
 │   ├── constants/          # app.ts, demo.ts
@@ -650,6 +655,7 @@ fix(partner): job accept badge count
 | Document | Location |
 |----------|----------|
 | Partner data contract | [`docs/PARTNER_DATA.md`](./docs/PARTNER_DATA.md) |
+| **Feature specs (FSD)** | [`docs/FSD/README.md`](./docs/FSD/README.md) — API + component call sites per feature |
 | Short blueprint | [`docs/PARTNER_APP.md`](./docs/PARTNER_APP.md) |
 | Environments | [`../../docs/ENVIRONMENTS.md`](../../docs/ENVIRONMENTS.md) |
 | Customer app README | [`../customer/README.md`](../customer/README.md) |
@@ -914,6 +920,35 @@ flowchart TD
 | Notifications | ✅ In-app inbox | ❌ Pending |
 | Push notifications | ❌ Removed | Optional later |
 | Play Store build | ⚙️ EAS ready | ❌ Not submitted |
+
+---
+
+## 27. Feature Specification Documents (FSD)
+
+In-depth per-feature documentation: screens, components, demo behaviour, **planned REST endpoints**, and **exact API call site matrices** (which component calls which hook/service).
+
+**Start here:** [`docs/FSD/README.md`](./docs/FSD/README.md)
+
+| FSD | Feature |
+|-----|---------|
+| [00-ARCHITECTURE](./docs/FSD/00-ARCHITECTURE.md) | Shared API client, contexts, migration order |
+| [01-AUTH](./docs/FSD/01-AUTH.md) | Splash, onboarding, login, OTP, apply |
+| [02-HOME](./docs/FSD/02-HOME.md) | Home dashboard |
+| [03-JOBS](./docs/FSD/03-JOBS.md) | Requests, job detail, visit, history |
+| [04-SCHEDULE](./docs/FSD/04-SCHEDULE.md) | Week schedule |
+| [05-EARNINGS](./docs/FSD/05-EARNINGS.md) | Earnings ledger |
+| [06-PAYOUT](./docs/FSD/06-PAYOUT.md) | Payout detail |
+| [07-KYC](./docs/FSD/07-KYC.md) | KYC wizard + verify APIs |
+| [08-PROFILE](./docs/FSD/08-PROFILE.md) | Profile, photo, rating, addresses |
+| [09-SETTINGS](./docs/FSD/09-SETTINGS.md) | Settings hub |
+| [10-SLOTS](./docs/FSD/10-SLOTS.md) | Work slots |
+| [11-NOTIFICATIONS](./docs/FSD/11-NOTIFICATIONS.md) | In-app inbox |
+| [12-SUPPORT](./docs/FSD/12-SUPPORT.md) | Support chat |
+| [13-HELP](./docs/FSD/13-HELP.md) | FAQ tab |
+| [14-REFERRAL](./docs/FSD/14-REFERRAL.md) | Referral program |
+| [15-BOOK-HOME](./docs/FSD/15-BOOK-HOME.md) | Dual-role customer handoff |
+| [16-LEGAL](./docs/FSD/16-LEGAL.md) | Legal policies |
+| [17-ACCOUNT](./docs/FSD/17-ACCOUNT.md) | Delete account |
 
 ---
 

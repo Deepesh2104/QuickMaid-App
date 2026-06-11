@@ -28,6 +28,7 @@ import { togglePreferredSlot } from '@/features/slots/lib/slots.utils';
 import { useAuthFlow } from '@/context/AuthFlowContext';
 import { usePartner } from '@/context/PartnerContext';
 import { validateDateOfBirth } from '@/lib/quickmaid-ids';
+import { normalizeReferralCode } from '@/features/referral/lib/referral.utils';
 import { completePartnerRegistration, seedProfileFromApply } from '@/lib/storage';
 import { fonts } from '@/theme/fonts';
 import { colors } from '@/theme/colors';
@@ -41,7 +42,7 @@ const GENDER_OPTIONS: { id: PartnerGender; label: string }[] = [
 
 export default function ApplyScreen() {
   const router = useRouter();
-  const { phone } = useAuthFlow();
+  const { phone, referralCode } = useAuthFlow();
   const { refresh } = usePartner();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -135,6 +136,7 @@ export default function ApplyScreen() {
       },
       upiId: upi,
       preferredSlotIds: slotIds,
+      referredByCode: normalizeReferralCode(referralCode) || undefined,
     });
     await completePartnerRegistration(profile);
     await refresh();
@@ -165,6 +167,15 @@ export default function ApplyScreen() {
           <Ionicons name="call-outline" size={14} color={colors.primaryDark} />
           <Text style={styles.phoneText}>{formatted}</Text>
         </View>
+
+        {normalizeReferralCode(referralCode) ? (
+          <View style={styles.referChip}>
+            <Ionicons name="gift-outline" size={14} color={colors.partnerGold} />
+            <Text style={styles.referText}>
+              Referral code · {normalizeReferralCode(referralCode)}
+            </Text>
+          </View>
+        ) : null}
 
         <View style={styles.fieldCard}>
           <Text style={styles.sectionTitle}>Personal details</Text>
@@ -510,6 +521,19 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   phoneText: { fontFamily: fonts.bold, fontSize: 12, color: colors.primaryDark },
+  referChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    alignSelf: 'flex-start',
+    backgroundColor: colors.partnerGoldBg,
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderWidth: 1,
+    borderColor: 'rgba(217,119,6,0.16)',
+  },
+  referText: { fontFamily: fonts.bold, fontSize: 12, color: colors.partnerGold },
   fieldCard: {
     backgroundColor: colors.white,
     borderRadius: radius.xl,

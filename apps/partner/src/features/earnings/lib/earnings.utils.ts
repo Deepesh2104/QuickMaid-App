@@ -118,3 +118,15 @@ export function findEarningForJob(job: PartnerJob, rows: EarningRow[]): EarningR
   if (job.status === 'completed') return earningRowFromJob(job);
   return null;
 }
+
+/** Merge demo ledger with credits from newly completed jobs (by booking ref). */
+export function mergeEarningsLedger(base: EarningRow[], jobs: PartnerJob[]): EarningRow[] {
+  const knownRefs = new Set(
+    base.filter((r) => r.kind === 'credit').map((r) => r.subtitle),
+  );
+  const extras = jobs
+    .filter((j) => j.status === 'completed' && !knownRefs.has(j.bookingRef))
+    .map(earningRowFromJob);
+  if (!extras.length) return base;
+  return [...extras, ...base];
+}

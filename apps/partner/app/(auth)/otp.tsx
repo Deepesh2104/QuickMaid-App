@@ -9,7 +9,10 @@ import { QmButton } from '@/components/ui/QmButton';
 import { DEMO_OTP } from '@/constants/app';
 import { PartnerAuthLayout } from '@/features/auth/components/PartnerAuthLayout';
 import { useAuthFlow } from '@/context/AuthFlowContext';
-import { kycPostAuthHref } from '@/features/kyc/lib/kyc.routing';
+import {
+  NEW_PARTNER_REFER_WELCOME_HREF,
+  RETURNING_PARTNER_JOBS_HREF,
+} from '@/features/auth/lib/auth.routing';
 import { isReturningPartner, signInExistingPartner } from '@/lib/storage';
 import { fonts } from '@/theme/fonts';
 import { colors } from '@/theme/colors';
@@ -55,14 +58,14 @@ export default function OtpScreen() {
 
     const returning = await isReturningPartner(phone);
     if (returning) {
-      const signedIn = await signInExistingPartner(phone);
+      await signInExistingPartner(phone);
       setLoading(false);
-      router.replace(kycPostAuthHref(signedIn?.kycStatus, false) as Href);
+      router.replace(RETURNING_PARTNER_JOBS_HREF as Href);
       return;
     }
 
     setLoading(false);
-    router.push('/(auth)/apply');
+    router.push(NEW_PARTNER_REFER_WELCOME_HREF as Href);
   };
 
   const resend = () => {

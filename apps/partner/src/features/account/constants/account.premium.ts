@@ -1,15 +1,15 @@
 import type { Ionicons } from '@expo/vector-icons';
 
 export const DELETE_WARNINGS = [
-  'Partner profile & maid ID remove ho jayega',
-  'Job history & earnings records clear',
-  'KYC draft & verification data delete',
-  'Dubara register karna padega same number se',
+  'Account turant logout ho jayega',
+  '7 din ke andar login karo toh account wapas active ho jayega',
+  '7 din ke baad data permanently purge hoga',
+  'Purge ke baad same number se dubara register karna padega',
 ] as const;
 
 export const DELETE_STATS = [
-  { value: 'Final', label: 'No undo' },
-  { value: '7 days', label: 'Data purge' },
+  { value: '7 days', label: 'Restore window' },
+  { value: 'Auto', label: 'Login restores' },
   { value: 'Support', label: 'Help first' },
 ] as const;
 
@@ -66,19 +66,19 @@ export const DELETE_TIMELINE: DeleteTimelineStep[] = [
     sub: 'Identity confirm karo — registered mobile match hona chahiye',
   },
   {
-    icon: 'trash-outline',
-    title: 'Permanent removal',
-    sub: 'Profile, jobs, KYC & wallet data local se wipe',
+    icon: 'log-out-outline',
+    title: 'Account deactivate',
+    sub: 'Turant logout — app access band, lekin data 7 din safe rahega',
   },
   {
     icon: 'time-outline',
-    title: '7-day purge window',
-    sub: 'Demo mode — production mein server backup policy apply hogi',
+    title: '7-day restore window',
+    sub: 'Is period mein same number + OTP se login = account automatic restore',
   },
   {
-    icon: 'log-in-outline',
-    title: 'Fresh registration',
-    sub: 'Same number se dubara partner onboarding complete karna padega',
+    icon: 'trash-outline',
+    title: 'Permanent purge',
+    sub: '7 din ke baad bina login ke data permanently delete ho jayega',
   },
 ];
 
