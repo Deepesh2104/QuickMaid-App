@@ -5,7 +5,8 @@ Native mobile apps for the QuickMaid platform — **Customer** and **Partner** (
 | | |
 |---|---|
 | **Status** | UI-DEMO complete — both apps ready for Phase 4 API |
-| **Docs hub** | **[docs/README.md](./docs/README.md)** — start here for everything |
+| **Full platform doc** | **[docs/QUICKMAID-PLATFORM.md](./docs/QUICKMAID-PLATFORM.md)** — Customer + Partner + API + Admin |
+| **Docs hub** | **[docs/README.md](./docs/README.md)** — index of all docs |
 | **Demo login** | Phone `9876543210` · OTP `123456` |
 
 ---
@@ -88,6 +89,12 @@ QuickMaid-App/
 ## Documentation
 
 **Master index:** **[docs/README.md](./docs/README.md)**
+
+### Complete platform guide (start here for stakeholders)
+
+| Document | What it covers |
+|----------|----------------|
+| **[QUICKMAID-PLATFORM](./docs/QUICKMAID-PLATFORM.md)** | **Overview · FSD · System Design · Data Flow · Architecture · Best Practices** |
 
 ### Core specs
 
@@ -230,13 +237,14 @@ git add docs/ shared/     # cross-cutting docs & bridge
 ## Reading order (new developer)
 
 ```
-1. docs/README.md              ← Hub
-2. docs/SRS.md                 ← What to build
-3. docs/SYSTEM-DESIGN-CLIENT.md ← Architecture
-4. docs/TDD.md                 ← How it's coded
-5. docs/API-CONTRACT.md        ← Backend contract
-6. apps/*/docs/FSD/            ← Screen-by-screen detail
-7. docs/DEMO_E2E_CHECKLIST.md  ← Verify demo works
+1. docs/QUICKMAID-PLATFORM.md  ← Complete combined guide
+2. docs/README.md              ← Hub / index
+3. docs/SRS.md                 ← What to build
+4. docs/SYSTEM-DESIGN-CLIENT.md ← Architecture
+5. docs/TDD.md                 ← How it's coded
+6. docs/API-CONTRACT.md        ← Backend contract
+7. apps/*/docs/FSD/            ← Screen-by-screen detail
+8. docs/DEMO_E2E_CHECKLIST.md  ← Verify demo works
 ```
 
 ---

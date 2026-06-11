@@ -2,12 +2,16 @@
 
 **Read this first.** One place to understand the entire Customer + Partner mobile platform before coding, QA, or backend work.
 
+> **Complete combined guide (Customer + Partner + API + Admin):**  
+> **[QUICKMAID-PLATFORM.md](./QUICKMAID-PLATFORM.md)** — Overview, FSD, System Design, Data Flow, Architecture, Best Practices
+
 ---
 
 ## Quick start (5 minutes)
 
 | I want to… | Read |
 |------------|------|
+| **Everything in one document** | **[QUICKMAID-PLATFORM](./QUICKMAID-PLATFORM.md)** |
 | Understand **what the product does** | [SRS](./SRS.md) |
 | Understand **how the apps are built** | [TDD](./TDD.md) |
 | See **architecture diagrams** (client) | [SYSTEM-DESIGN-CLIENT](./SYSTEM-DESIGN-CLIENT.md) |
@@ -26,6 +30,7 @@
 ```
 docs/
 ├── README.md                    ← You are here (master index)
+├── QUICKMAID-PLATFORM.md        ★ Complete combined platform doc
 ├── SRS.md                       Software Requirements Specification
 ├── TDD.md                       Technical Design Document
 ├── SYSTEM-DESIGN-CLIENT.md      Client-side system design & diagrams
