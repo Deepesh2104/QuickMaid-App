@@ -10,5 +10,6 @@ dist/
 web-build/
 .env
 .expo-test-build/
+.expo-export-test/
 .DS_Store
 *.log
