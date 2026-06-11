@@ -10,6 +10,7 @@ import { PartnerAlertProvider } from '@/context/PartnerAlertContext';
 import { PartnerProvider } from '@/context/PartnerContext';
 import { PartnerJobsProvider } from '@/features/jobs/context/PartnerJobsContext';
 import { useAppFonts } from '@/hooks/useAppFonts';
+import { initObservability } from '@/lib/observability';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -17,6 +18,8 @@ export default function RootLayout() {
   const { loaded: fontsLoaded, error: fontsError } = useAppFonts();
 
   if (!fontsLoaded && !fontsError) return null;
+
+  void initObservability();
 
   return (
     <SafeAreaProvider>

@@ -8,7 +8,7 @@ import type { PartnerProfile } from '@/constants/app';
 import { PartnerNotificationBell } from '@/features/notifications/components/PartnerNotificationBell';
 import { HOME_PREMIUM } from '@/features/home/constants/home.premium';
 import { partnerGreeting } from '@/features/home/lib/home.greeting';
-import { PARTNER_RATING } from '@/features/profile/constants/profile.premium';
+import { usePartnerDisplayRating } from '@/features/profile/hooks/usePartnerDisplayRating';
 import { fonts } from '@/theme/fonts';
 import { colors } from '@/theme/colors';
 import { layout, radius, spacing } from '@/theme/spacing';
@@ -43,6 +43,7 @@ export function PartnerHomeHeader({
   onWorkAddressPress,
 }: PartnerHomeHeaderProps) {
   const router = useRouter();
+  const { ratingLabel } = usePartnerDisplayRating();
   const firstName = profile?.name?.split(' ')[0];
   const title = partnerGreeting(firstName) || `Hello, ${firstName ?? 'Partner'}`;
 
@@ -115,7 +116,7 @@ export function PartnerHomeHeader({
         </View>
         <View style={styles.ratingPill}>
           <Ionicons name="star" size={11} color={colors.partnerGold} />
-          <Text style={styles.ratingText}>{PARTNER_RATING}</Text>
+          <Text style={styles.ratingText}>{ratingLabel}</Text>
         </View>
       </View>
 

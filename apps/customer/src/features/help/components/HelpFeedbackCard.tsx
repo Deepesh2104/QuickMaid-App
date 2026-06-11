@@ -71,7 +71,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
     overflow: 'hidden',
-    marginBottom: spacing.section,
+    marginBottom: spacing.lg,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(15,20,25,0.06)',
   },

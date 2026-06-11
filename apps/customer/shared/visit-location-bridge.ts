@@ -1,5 +1,4 @@
-/** Keep in sync with QuickMaid-App/shared/visit-location-bridge.ts */
-
+/** Keep in sync with QuickMaid-App/shared/visit-location-bridge.ts — run: npm run sync:shared */
 export const VISIT_LOCATION_BRIDGE_KEY = '@qm/visit_location_bridge_v1';
 
 export interface VisitLocationBridgeEntry {

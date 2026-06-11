@@ -68,16 +68,18 @@ export function AppLockOverlay({ visible, settings, onUnlock }: AppLockOverlayPr
 
   useEffect(() => {
     if (pin.length < PIN_LENGTH) return;
-    if (verifyPin(pin, settings.pinHash)) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    void (async () => {
+      if (await verifyPin(pin, settings.pinHash)) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        setPin('');
+        setError('');
+        onUnlock();
+        return;
+      }
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      setError('Incorrect PIN. Try again.');
       setPin('');
-      setError('');
-      onUnlock();
-      return;
-    }
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-    setError('Incorrect PIN. Try again.');
-    setPin('');
+    })();
   }, [onUnlock, pin, settings.pinHash]);
 
   const showBio = settings.biometricEnabled && bioReady;

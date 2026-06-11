@@ -67,7 +67,7 @@ export function HomeHelpCta() {
 const GAP = spacing.md;
 
 const styles = StyleSheet.create({
-  block: { marginBottom: spacing.section },
+  block: { marginBottom: spacing.lg },
   row: {
     flexDirection: 'row',
     gap: GAP,

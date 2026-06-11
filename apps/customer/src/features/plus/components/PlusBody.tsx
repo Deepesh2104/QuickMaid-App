@@ -59,8 +59,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
     marginHorizontal: layout.pad,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.xs,
+    paddingTop: spacing.xs,
+    paddingBottom: 0,
   },
   footerBrand: {
     fontFamily: fonts.extraBold,

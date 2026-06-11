@@ -9,7 +9,8 @@ export type BookingStatusBridgeEvent =
   | 'partner_completed'
   | 'partner_declined'
   | 'customer_cancelled'
-  | 'customer_rescheduled';
+  | 'customer_rescheduled'
+  | 'customer_rated';
 
 export interface BookingStatusBridgeEntry {
   bookingRef: string;
@@ -23,6 +24,12 @@ export interface BookingStatusBridgeEntry {
   slotLabel?: string;
   time?: string;
   cancelReason?: string;
+  /** Set when event is customer_rated */
+  reviewRating?: number;
+  reviewText?: string;
+  reviewTags?: string[];
+  customerName?: string;
+  service?: string;
 }
 
 export type BookingStatusBridgeStore = Record<string, BookingStatusBridgeEntry>;

@@ -12,7 +12,7 @@ import {
   completeBookingById,
   getAllBookings,
   patchBookingById,
-} from '@/features/checkout/lib/bookings.storage';
+} from '@/features/checkout/lib/bookings.core.storage';
 import { setPendingVisitComplete } from '@/features/bookings/lib/booking.completion';
 
 async function readStore(): Promise<BookingStatusBridgeStore> {

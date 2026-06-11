@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLayoutMetrics } from '@/hooks/useLayoutMetrics';
 import { useHomeProfile } from '@/features/home/hooks/useHomeProfile';
 import { colors } from '@/theme/colors';
-import { radius, spacing } from '@/theme/spacing';
+import { spacing } from '@/theme/spacing';
 
 import { useOpenRateBooking } from '../hooks/useOpenRateBooking';
 import { useOpenNotifications } from '@/features/notifications/hooks/useOpenNotifications';
@@ -21,6 +21,12 @@ import { BookingsBody } from './BookingsBody';
 import { BookingVisitCompleteModal } from './BookingVisitCompleteModal';
 import { BookingsFilterRail, type BookingFilter } from './BookingsFilterRail';
 import { BookingListSkeleton } from '@/components/ui/Skeleton';
+import {
+  BOOKINGS_HEADER_TAIL,
+  BOOKINGS_SHEET_BRIDGE_HEIGHT,
+  BOOKINGS_SHEET_OVERLAP,
+  BOOKINGS_SHEET_RADIUS,
+} from '../constants/bookings.sheet';
 import { BookingsHeader } from './BookingsHeader';
 
 export function BookingsScreen() {
@@ -84,7 +90,7 @@ export function BookingsScreen() {
       <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
-        contentContainerStyle={{ paddingBottom: tabScrollPad }}
+        contentContainerStyle={{ paddingBottom: tabScrollPad + spacing.sm }}
       >
         <BookingsHeader
           paddingTop={insets.top}
@@ -97,7 +103,7 @@ export function BookingsScreen() {
 
         <View style={styles.canvas}>
           <View style={styles.sheetBridge} pointerEvents="none" />
-          <View style={[styles.lowerSheet, { paddingBottom: insets.bottom + spacing.md }]}>
+          <View style={styles.lowerSheet}>
             <View style={styles.sheetHandle} />
             <BookingsFilterRail active={filter} counts={counts} onSelect={setFilter} />
             <BookingPartnerSyncBanner
@@ -139,29 +145,27 @@ export function BookingsScreen() {
   );
 }
 
-const SHEET_OVERLAP = 18;
-const HEADER_TAIL = '#0F1419';
-
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
   canvas: {
     backgroundColor: colors.bg,
-    marginTop: -SHEET_OVERLAP,
-    paddingTop: SHEET_OVERLAP,
+    marginTop: -BOOKINGS_SHEET_OVERLAP,
+    paddingTop: BOOKINGS_SHEET_OVERLAP,
   },
   sheetBridge: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
-    height: SHEET_OVERLAP + radius.xxl + 8,
-    backgroundColor: HEADER_TAIL,
+    height: BOOKINGS_SHEET_BRIDGE_HEIGHT,
+    backgroundColor: BOOKINGS_HEADER_TAIL,
     zIndex: 0,
   },
   lowerSheet: {
     backgroundColor: colors.bg,
-    borderTopLeftRadius: radius.xxl + 4,
-    borderTopRightRadius: radius.xxl + 4,
+    borderTopLeftRadius: BOOKINGS_SHEET_RADIUS,
+    borderTopRightRadius: BOOKINGS_SHEET_RADIUS,
+    marginTop: 0,
     paddingTop: spacing.md,
     borderWidth: StyleSheet.hairlineWidth,
     borderBottomWidth: 0,

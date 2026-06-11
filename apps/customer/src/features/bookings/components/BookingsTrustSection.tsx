@@ -44,7 +44,7 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     gap: spacing.md,
     overflow: 'hidden',
-    marginBottom: spacing.lg,
+    marginBottom: spacing.sm,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(11,110,103,0.12)',
   },

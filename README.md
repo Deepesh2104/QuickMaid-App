@@ -30,7 +30,7 @@ Native mobile apps for the QuickMaid platform — **Customer** and **Partner** (
 
 |-----|--------|-----------------|--------|
 
-| Customer | `apps/customer` | `in.quickmaid.customer` | In progress |
+| Customer | `apps/customer` | `in.quickmaid.customer` | **UI complete** (demo) — [README](apps/customer/README.md) |
 
 | Partner | `apps/partner` | `in.quickmaid.partner` | **UI complete** (demo) — [README](apps/partner/README.md) |
 
@@ -283,12 +283,30 @@ Full guide: **[docs/ENVIRONMENTS.md](./docs/ENVIRONMENTS.md)**
 | beta | `eas build --profile beta` | api-beta | Closed testing |
 | prod | `eas build --profile production` | api.quickmaid.in | Production |
 
-## Related docs
+## Documentation (read everything here)
 
-- **Customer app (full):** [apps/customer/README.md](./apps/customer/README.md)
-- **Partner app (full):** [apps/partner/README.md](./apps/partner/README.md)
-- **Partner data contract:** [apps/partner/docs/PARTNER_DATA.md](./apps/partner/docs/PARTNER_DATA.md)
-- **Environments:** [docs/ENVIRONMENTS.md](./docs/ENVIRONMENTS.md)
+**Start:** **[docs/README.md](./docs/README.md)** — master index for all documentation.
+
+| Document | What it covers |
+|----------|----------------|
+| [SRS](./docs/SRS.md) | Software Requirements Specification |
+| [TDD](./docs/TDD.md) | Technical Design Document |
+| [SYSTEM-DESIGN-CLIENT](./docs/SYSTEM-DESIGN-CLIENT.md) | Client architecture & diagrams |
+| [API-CONTRACT](./docs/API-CONTRACT.md) | REST API contract (Phase 4) |
+| [TEST-STRATEGY](./docs/TEST-STRATEGY.md) | Testing approach |
+| [CONTRIBUTING](./docs/CONTRIBUTING.md) | Dev workflow |
+| [FSD index](./docs/FSD/README.md) | Feature specs (35 features) |
+| [DEMO_STATUS](./docs/DEMO_STATUS.md) | What's done vs deferred |
+| [DEMO_E2E_CHECKLIST](./docs/DEMO_E2E_CHECKLIST.md) | Manual QA steps |
+| [ENVIRONMENTS](./docs/ENVIRONMENTS.md) | Dev / test / beta / prod |
+
+### App-specific docs
+
+- **Customer:** [README](./apps/customer/README.md) · [FSD](./apps/customer/docs/FSD/README.md) · [Data contract](./apps/customer/docs/CUSTOMER_DATA.md)
+- **Partner:** [README](./apps/partner/README.md) · [FSD](./apps/partner/docs/FSD/README.md) · [Data contract](./apps/partner/docs/PARTNER_DATA.md)
+
+### Platform (other repos)
+
 - DB schema: `../QuickMaid/docs/database/quickmaid.schema.dbml`
 - Platform overview: `../QuickMaid/docs/PLATFORM.md`
 - API plan: `../QuickMaid/docs/PHASE3_BACKEND.md`

@@ -170,7 +170,7 @@ const styles = StyleSheet.create({
     gap: 4,
     marginHorizontal: layout.pad,
     paddingTop: spacing.sm,
-    paddingBottom: spacing.xs,
+    paddingBottom: spacing.sm,
   },
   footerBrand: {
     fontFamily: fonts.extraBold,

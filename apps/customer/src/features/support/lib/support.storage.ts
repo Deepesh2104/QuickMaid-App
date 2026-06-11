@@ -10,7 +10,7 @@ import type {
   SupportTicket,
   SupportTopic,
 } from '../types/support.types';
-import { generateDisputeId, generateTicketId, welcomeMessage } from './support.utils';
+import { demoAgentAutoReply, generateDisputeId, generateTicketId, welcomeMessage } from './support.utils';
 
 async function readTickets(): Promise<SupportTicket[]> {
   const raw = await AsyncStorage.getItem(STORAGE_KEYS.supportTickets);
@@ -128,6 +128,15 @@ export async function appendTicketMessage(
     ...ticket.messages,
     { id: `m-${Date.now()}`, from, text, at: now },
   ];
+  if (from === 'user') {
+    ticket.messages.push({
+      id: `m-agent-${Date.now()}`,
+      from: 'agent',
+      text: demoAgentAutoReply(text, ticket.topic),
+      at: new Date(Date.now() + 1).toISOString(),
+    });
+    ticket.status = 'open';
+  }
   ticket.updatedAt = now;
   tickets[idx] = ticket;
   await writeTickets(tickets);

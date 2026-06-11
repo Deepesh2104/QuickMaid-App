@@ -38,14 +38,14 @@ export function HelpScreen() {
     <View style={styles.root}>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[styles.scroll, { paddingBottom: tabScrollPad }]}
+        contentContainerStyle={[styles.scroll, { paddingBottom: tabScrollPad + spacing.sm }]}
         keyboardShouldPersistTaps="handled"
       >
         <HelpHeader paddingTop={insets.top} />
 
         <View style={styles.canvas}>
           <View style={styles.sheetBridge} pointerEvents="none" />
-          <View style={[styles.lowerSheet, { paddingBottom: insets.bottom + spacing.md }]}>
+          <View style={styles.lowerSheet}>
             <View style={styles.sheetHandle} />
             <HelpBody
               onOpenChat={(nextTopic) =>
@@ -110,8 +110,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
     marginHorizontal: layout.pad,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.xs,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.sm,
   },
   footerBrand: {
     fontFamily: fonts.extraBold,

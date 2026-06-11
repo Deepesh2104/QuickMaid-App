@@ -37,7 +37,7 @@ export function PartnerVisitOtpUnifiedCard({
             <Text style={styles.title}>Auth + visit completion</Text>
           </View>
           <View style={styles.badge}>
-            <Text style={styles.badgeText}>123456</Text>
+            <Text style={styles.badgeText}>{expectedOtp}</Text>
           </View>
         </View>
 

@@ -46,6 +46,17 @@ Production replaces this with QuickMaid-API dispatch webhooks and real-time loca
 | `partner_declined` | Partner decline | Customer → reassignment notification |
 | `customer_cancelled` | Customer cancel | Partner → decline job |
 | `customer_rescheduled` | Customer reschedule | Partner → patch visit date/slot |
+| `customer_rated` | Customer rate visit | Partner → review storage, rating score, notification |
+
+### Shared module sync
+
+After editing `QuickMaid-App/shared/*.ts`, run from either app:
+
+```bash
+npm run sync:shared
+```
+
+Copies canonical modules into `apps/customer/shared/` and `apps/partner/shared/`.
 
 ## Flow — customer order → partner job
 

@@ -10,6 +10,7 @@ import {
   railCardWidth,
   serviceCardWidth,
   tabBarTotalHeight,
+  plusStickyScrollPadding,
   tabScrollPadding,
   threeColWidth,
   twoColWidth,
@@ -38,7 +39,7 @@ export function useLayoutMetrics() {
       serviceCardW: serviceCardWidth(width),
       tabBarH: tabBarTotalHeight(insets.bottom),
       tabScrollPad: tabScrollPadding(insets.bottom),
-      tabScrollPadLg: tabScrollPadding(insets.bottom, 100),
+      plusStickyScrollPad: plusStickyScrollPadding(insets.bottom),
     }),
     [width, height, insets.bottom, insets.top],
   );

@@ -11,7 +11,10 @@ import type { KycStatus } from '@/constants/app';
 import { PartnerRequestsSectionHeader } from '@/features/jobs/components/PartnerRequestsSections';
 import { usePartnerJobs } from '@/features/jobs/hooks/usePartnerJobs';
 import { syncCustomerBookingBridge } from '@/features/jobs/lib/booking-partner-bridge';
-import { syncJobsFromCustomerStatusBridge } from '@/features/jobs/lib/booking-status-bridge.storage';
+import {
+  syncCustomerRatingsFromStatusBridge,
+  syncJobsFromCustomerStatusBridge,
+} from '@/features/jobs/lib/booking-status-bridge.storage';
 import {
   resetAcceptDeclineTestJobs,
   resetPartnerJobsToDemo,
@@ -23,7 +26,7 @@ import { radius, shadow, spacing } from '@/theme/spacing';
 export function PartnerSettingsDemoTools() {
   const { profile, updateProfile } = usePartner();
   const { refresh } = usePartnerJobs();
-  const [busy, setBusy] = useState<'none' | 'all' | 'test' | 'bridge' | 'kyc' | 'status'>('none');
+  const [busy, setBusy] = useState<'none' | 'all' | 'test' | 'bridge' | 'kyc' | 'status' | 'ratings'>('none');
 
   const toggleKycDemo = async () => {
     setBusy('kyc');
@@ -33,12 +36,13 @@ export function PartnerSettingsDemoTools() {
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
-  const run = async (kind: 'all' | 'test' | 'bridge' | 'status') => {
+  const run = async (kind: 'all' | 'test' | 'bridge' | 'status' | 'ratings') => {
     setBusy(kind);
     if (kind === 'all') await resetPartnerJobsToDemo();
     else if (kind === 'test') await resetAcceptDeclineTestJobs();
     else if (kind === 'bridge') await syncCustomerBookingBridge();
-    else await syncJobsFromCustomerStatusBridge();
+    else if (kind === 'status') await syncJobsFromCustomerStatusBridge();
+    else await syncCustomerRatingsFromStatusBridge();
     await refresh();
     setBusy('none');
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -96,6 +100,16 @@ export function PartnerSettingsDemoTools() {
             <Ionicons name="sync-outline" size={14} color="#93C5FD" />
             <Text style={[styles.bridgeBtnText, styles.bridgeBtnTextAlt]}>
               {busy === 'status' ? 'Syncing…' : 'Pull cancel/reschedule'}
+            </Text>
+          </Pressable>
+          <Pressable
+            style={[styles.bridgeBtn, styles.bridgeBtnAlt]}
+            onPress={() => void run('ratings')}
+            disabled={busy !== 'none'}
+          >
+            <Ionicons name="star-outline" size={14} color="#FCD34D" />
+            <Text style={[styles.bridgeBtnText, styles.bridgeBtnTextAlt]}>
+              {busy === 'ratings' ? 'Syncing…' : 'Pull customer ratings'}
             </Text>
           </Pressable>
         </View>
@@ -224,9 +238,10 @@ const styles = StyleSheet.create({
     color: '#FCD34D',
     lineHeight: 15,
   },
-  bridgeActions: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xs },
+  bridgeActions: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.xs },
   bridgeBtn: {
-    flex: 1,
+    flexGrow: 1,
+    flexBasis: '46%',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',

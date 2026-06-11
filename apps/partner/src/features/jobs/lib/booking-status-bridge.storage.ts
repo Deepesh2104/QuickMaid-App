@@ -10,6 +10,7 @@ import {
 } from '../../../../shared/booking-status-bridge';
 import { appendPartnerNotification } from '@/features/notifications/lib/notifications.storage';
 import { getPartnerJobs, patchPartnerJob, updatePartnerJobStatus } from '@/features/jobs/lib/jobs.storage';
+import { appendPartnerCustomerReview } from '@/features/profile/lib/partner-reviews.storage';
 
 async function readStore(): Promise<BookingStatusBridgeStore> {
   try {
@@ -47,7 +48,10 @@ export async function getBookingStatusForRef(
 export async function getCustomerBridgeEvents(): Promise<BookingStatusBridgeEntry[]> {
   const store = await readStore();
   return Object.values(store).filter(
-    (e) => e.event === 'customer_cancelled' || e.event === 'customer_rescheduled',
+    (e) =>
+      e.event === 'customer_cancelled' ||
+      e.event === 'customer_rescheduled' ||
+      e.event === 'customer_rated',
   );
 }
 
@@ -135,6 +139,45 @@ export async function syncJobsFromCustomerStatusBridge(): Promise<number> {
       }
       nextApplied[`partner:${job.bookingRef}`] = entry.updatedAt;
     }
+  }
+
+  if (changes) await writeApplied(nextApplied);
+  return changes;
+}
+
+/** Apply customer rating events to partner reviews + notifications. */
+export async function syncCustomerRatingsFromStatusBridge(): Promise<number> {
+  const [store, applied] = await Promise.all([readStore(), readApplied()]);
+  let changes = 0;
+  const nextApplied = { ...applied };
+
+  for (const entry of Object.values(store)) {
+    if (entry.event !== 'customer_rated' || !entry.reviewRating) continue;
+    const appliedKey = `partner-rated:${entry.bookingRef}`;
+    if (nextApplied[appliedKey] === entry.updatedAt) continue;
+
+    await appendPartnerCustomerReview({
+      bookingRef: entry.bookingRef,
+      customerName: entry.customerName ?? 'Customer',
+      service: entry.service ?? 'Visit',
+      stars: entry.reviewRating,
+      text: entry.reviewText,
+      tags: entry.reviewTags,
+      createdAt: entry.updatedAt,
+    });
+
+    await appendPartnerNotification({
+      id: `cust-rated-${entry.bookingRef}-${entry.updatedAt}`,
+      kind: 'system',
+      title: 'Naya customer review',
+      body: `${entry.customerName ?? 'Customer'} ne ${entry.reviewRating}★ diya`,
+      detail: entry.reviewText?.trim() || `${entry.service ?? 'Visit'} · Ref ${entry.bookingRef}`,
+      time: 'Just now',
+      createdAt: entry.updatedAt,
+    });
+
+    nextApplied[appliedKey] = entry.updatedAt;
+    changes += 1;
   }
 
   if (changes) await writeApplied(nextApplied);

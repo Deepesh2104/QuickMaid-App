@@ -1,4 +1,10 @@
+import { getGooglePlacesKey } from '@/config/env';
 import { RAIPUR_ZONES } from '@/constants/customer.zones';
+
+/** Google Places activates when EXPO_PUBLIC_GOOGLE_PLACES_KEY is set at build time. */
+export function hasGooglePlacesIntegration(): boolean {
+  return getGooglePlacesKey().length > 0;
+}
 
 export interface MapZone {
   value: string;

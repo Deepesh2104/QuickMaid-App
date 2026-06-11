@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { type Href, useRouter } from 'expo-router';
+import Constants from 'expo-constants';
 import { Alert, Linking, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 
 import { useOpenLegal } from '@/features/legal/hooks/useOpenLegal';
@@ -19,12 +20,13 @@ export function ProfileSupportSection() {
     if (id === 'help') router.push('/(tabs)/support' as Href);
     else if (id === 'terms') openLegal('hub');
     else if (id === 'about') {
-      Alert.alert('QuickMaid', 'Customer app demo · v1.0.0\nBuilt with Expo Router & Razorpay.');
-    }     else if (id === 'rate') {
+      const version = Constants.expoConfig?.version ?? '1.0.0';
+      Alert.alert('QuickMaid', `Customer app · v${version}\nUI demo · Expo SDK 56`);
+    } else if (id === 'rate') {
       void Share.share({
         message: 'Loving QuickMaid for home cleaning in Raipur! ⭐⭐⭐⭐⭐ https://quickmaid.app',
       });
-      void Linking.openURL('market://details?id=com.quickmaid.app').catch(() => {
+      void Linking.openURL('market://details?id=in.quickmaid.customer').catch(() => {
         Alert.alert('Rate QuickMaid', 'Thanks! Play Store link opens in production build.');
       });
     }

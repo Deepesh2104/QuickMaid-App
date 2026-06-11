@@ -10,6 +10,7 @@ import { syncCustomerBookingBridge } from '@/features/jobs/lib/booking-partner-b
 import {
   partnerStatusFromJob,
   publishPartnerBookingStatus,
+  syncCustomerRatingsFromStatusBridge,
   syncJobsFromCustomerStatusBridge,
 } from '@/features/jobs/lib/booking-status-bridge.storage';
 import { subscribeDispatchEvents } from '@/features/jobs/lib/dispatch.events';
@@ -48,6 +49,7 @@ export function PartnerJobsProvider({ children }: { children: ReactNode }) {
   const refresh = useCallback(async () => {
     await syncCustomerBookingBridge();
     await syncJobsFromCustomerStatusBridge();
+    await syncCustomerRatingsFromStatusBridge();
     await expireStalePendingOffers();
     const all = await getPartnerJobs();
     setJobs(all);

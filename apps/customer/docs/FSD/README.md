@@ -39,6 +39,7 @@ Each document follows the same sections:
 
 ## Related docs
 
+- [Documentation Hub](../../../../docs/README.md) — SRS, TDD, System Design, API Contract  
 - [Customer README](../../README.md) — setup, architecture, testing  
 - [CUSTOMER_DATA.md](../CUSTOMER_DATA.md) — field-level data contract  
 - [Partner FSD](../../../partner/docs/FSD/README.md) — mirror structure for maid app  

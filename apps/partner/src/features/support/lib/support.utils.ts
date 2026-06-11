@@ -23,6 +23,18 @@ export function normalizeSupportTopic(raw?: string): PartnerSupportTopic {
   return 'other';
 }
 
+export function demoPartnerAgentAutoReply(userText: string, topic: PartnerSupportTopic): string {
+  const trimmed = userText.trim();
+  if (trimmed.length < 4) return 'Please add booking ref or a short description.';
+  const lead =
+    topic === 'payout'
+      ? 'Payouts team notified.'
+      : topic === 'safety'
+        ? 'Safety desk escalated.'
+        : 'Partner ops notified.';
+  return `${lead} We typically reply within 5 minutes in demo mode.`;
+}
+
 export function welcomeMessage(topic: PartnerSupportTopic, context?: string) {
   const base = `Hi! I'm from QuickMaid Partner Ops. ${TOPIC_GREETINGS[topic]}`;
   if (context?.trim()) {

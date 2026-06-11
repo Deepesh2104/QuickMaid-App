@@ -47,6 +47,7 @@ Each document follows the same sections:
 
 ## Related docs
 
+- [Documentation Hub](../../../../docs/README.md) — SRS, TDD, System Design, API Contract  
 - [Partner README](../../README.md) — setup, architecture, testing  
 - [PARTNER_DATA.md](../PARTNER_DATA.md) — field-level data contract  
 - [PARTNER_APP.md](../PARTNER_APP.md) — short blueprint  

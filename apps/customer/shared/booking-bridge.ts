@@ -1,5 +1,4 @@
-/** Keep in sync with QuickMaid-App/shared/booking-bridge.ts */
-
+/** Keep in sync with QuickMaid-App/shared/booking-bridge.ts — run: npm run sync:shared */
 export const BOOKING_PARTNER_BRIDGE_KEY = '@qm/booking_partner_bridge_v1';
 
 export interface BookingPartnerBridgePayload {

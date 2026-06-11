@@ -17,7 +17,8 @@ import {
 } from '@/features/profile/lib/profile.utils';
 import { resolveDateOfBirth } from '@/lib/quickmaid-ids';
 import { resolvePreferredSlotIds, slotsSummaryLabel } from '@/features/slots/lib/slots.utils';
-import { PARTNER_RATING, profilePremium } from '@/features/profile/constants/profile.premium';
+import { usePartnerDisplayRating } from '@/features/profile/hooks/usePartnerDisplayRating';
+import { profilePremium } from '@/features/profile/constants/profile.premium';
 import { fonts } from '@/theme/fonts';
 import { colors } from '@/theme/colors';
 import { layout, radius, spacing } from '@/theme/spacing';
@@ -50,10 +51,11 @@ export function PartnerProfilePageHero({
   onCopyId: () => void;
 }) {
   const router = useRouter();
+  const { ratingLabel } = usePartnerDisplayRating();
   const name = profile?.name ?? 'Partner';
   const maidId = profile?.publicId ?? 'MD-—';
   const kyc = kycMeta(profile?.kycStatus);
-  const subline = [profile?.zone ?? 'Raipur', `★ ${PARTNER_RATING}`, kyc.label].join(' · ');
+  const subline = [profile?.zone ?? 'Raipur', `★ ${ratingLabel}`, kyc.label].join(' · ');
 
   return (
     <LinearGradient

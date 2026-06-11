@@ -9,6 +9,7 @@ import { HOME_IMAGES } from '@/features/home/constants/unsplash.images';
 import { useTranslation } from '@/i18n/LanguageProvider';
 import { fonts } from '@/theme/fonts';
 import { colors } from '@/theme/colors';
+import { BOOKINGS_SHEET_OVERLAP } from '../constants/bookings.sheet';
 import { layout, radius, spacing } from '@/theme/spacing';
 
 interface BookingsHeaderProps {
@@ -89,7 +90,7 @@ const fill: ViewStyle = StyleSheet.absoluteFill;
 const styles = StyleSheet.create({
   wrap: {
     minHeight: 300,
-    paddingBottom: 28,
+    paddingBottom: BOOKINGS_SHEET_OVERLAP,
     overflow: 'hidden',
     backgroundColor: '#0F1419',
   },
@@ -164,6 +165,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.14)',
     paddingVertical: spacing.md,
+    marginBottom: spacing.sm,
   },
   stat: { flex: 1, alignItems: 'center', gap: 3 },
   statSep: { borderLeftWidth: 1, borderLeftColor: 'rgba(255,255,255,0.12)' },

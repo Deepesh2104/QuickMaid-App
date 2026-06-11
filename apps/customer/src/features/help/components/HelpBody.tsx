@@ -70,7 +70,7 @@ export function HelpBody({ onOpenChat }: HelpBodyProps) {
 }
 
 const styles = StyleSheet.create({
-  block: { marginBottom: spacing.section },
+  block: { marginBottom: 0 },
   chatHero: {
     marginHorizontal: layout.pad,
     borderRadius: radius.xxl,

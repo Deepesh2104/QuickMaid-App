@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { STORAGE_KEYS } from '@/constants/app';
 
 import type { PartnerSupportTopic, SupportChatMessage, SupportTicket } from '../types/support.types';
-import { generateTicketId, welcomeMessage } from './support.utils';
+import { demoPartnerAgentAutoReply, generateTicketId, welcomeMessage } from './support.utils';
 
 async function readTickets(): Promise<SupportTicket[]> {
   const raw = await AsyncStorage.getItem(STORAGE_KEYS.supportTickets);
@@ -90,6 +90,14 @@ export async function appendTicketMessage(
   const now = new Date().toISOString();
   const ticket = { ...tickets[idx] };
   ticket.messages = [...ticket.messages, { id: `m-${Date.now()}`, from, text, at: now }];
+  if (from === 'user') {
+    ticket.messages.push({
+      id: `m-agent-${Date.now()}`,
+      from: 'agent',
+      text: demoPartnerAgentAutoReply(text, ticket.topic),
+      at: new Date(Date.now() + 1).toISOString(),
+    });
+  }
   ticket.updatedAt = now;
   tickets[idx] = ticket;
   await writeTickets(tickets);

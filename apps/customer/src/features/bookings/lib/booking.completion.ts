@@ -6,7 +6,7 @@ import {
   type VisitCompleteBridgePayload,
 } from '../../../../shared/visit-complete-bridge';
 
-import { completeBookingById, getBookingById } from '@/features/checkout/lib/bookings.storage';
+import { completeBookingById, getBookingById } from '@/features/checkout/lib/bookings.core.storage';
 
 export type VisitCompletePayload = VisitCompleteBridgePayload;
 

@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { UserProfile } from '@/constants/app';
 import { getUserProfile, registerUser, saveUserProfile } from '@/lib/storage';
 
+import { simulatePayment } from '@/features/checkout/lib/checkout.payment';
 import { addWalletTransaction } from '@/features/wallet/lib/wallet.storage';
 import { invalidateSavedServicesCache } from '@/features/saved-services/hooks/useSavedServices';
 import { toggleSavedServiceIds } from '@/features/saved-services/lib/saved.services';
@@ -114,13 +115,15 @@ export function useProfileAccount() {
   const topUpWallet = useCallback(
     async (amount: number) => {
       if (!account || amount <= 0) return;
+      const result = await simulatePayment('upi', amount, 'Wallet top-up · Razorpay demo', () => {});
+      if (!result.success) return;
       await persistAccount({ ...account, walletBalance: account.walletBalance + amount });
       await addWalletTransaction({
         kind: 'credit',
         source: 'topup',
         amount,
         title: 'Wallet top-up',
-        subtitle: 'Instant credit · No expiry',
+        subtitle: `Razorpay demo · ${result.txnId}`,
       });
     },
     [account, persistAccount],

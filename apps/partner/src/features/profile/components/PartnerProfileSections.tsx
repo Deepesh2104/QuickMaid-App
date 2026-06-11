@@ -15,9 +15,9 @@ import {
   type ProfileCompleteness,
   type ProfilePerformanceStats,
 } from '@/features/profile/lib/profile.utils';
+import { usePartnerDisplayRating } from '@/features/profile/hooks/usePartnerDisplayRating';
 import {
   APP_VERSION,
-  PARTNER_RATING,
   PROFILE_ACTIONS,
   PROFILE_LEGAL_LINKS,
   profilePremium,
@@ -69,6 +69,7 @@ export function PartnerProfileHeroCard({
   onEdit: () => void;
   onCopyId: () => void;
 }) {
+  const { ratingLabel } = usePartnerDisplayRating();
   const name = profile?.name ?? 'Partner';
   const partnerId = profile?.publicId ?? 'MD-—';
   const dob = resolveDateOfBirth(profile?.dateOfBirth, profile?.publicId);
@@ -99,7 +100,7 @@ export function PartnerProfileHeroCard({
           <View style={styles.heroBadges}>
             <View style={styles.ratingBadge}>
               <Ionicons name="star" size={11} color={colors.partnerGold} />
-              <Text style={styles.ratingText}>{PARTNER_RATING}</Text>
+              <Text style={styles.ratingText}>{ratingLabel}</Text>
             </View>
             <Pressable style={styles.editBadge} onPress={() => { Haptics.selectionAsync(); onEdit(); }}>
               <Ionicons name="create-outline" size={11} color={colors.primary} />

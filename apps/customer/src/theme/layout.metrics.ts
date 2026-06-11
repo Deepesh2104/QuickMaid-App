@@ -14,9 +14,14 @@ export function tabBarTotalHeight(bottomInset: number): number {
   return TAB_BAR_CONTENT_HEIGHT + tabBarBottomInset(bottomInset) + TAB_BAR_TOP_PADDING;
 }
 
-/** Scroll content padding so last items clear the tab bar */
-export function tabScrollPadding(bottomInset: number, extra: number = spacing.md): number {
-  return tabBarTotalHeight(bottomInset) + extra;
+/** Small tail gap for tab scroll content. Tab scenes already sit above the tab bar. */
+export function tabScrollPadding(_bottomInset: number, extra: number = spacing.md): number {
+  return extra;
+}
+
+/** Clears the floating subscribe CTA on the Plus tab (tab bar is already in layout). */
+export function plusStickyScrollPadding(_bottomInset: number): number {
+  return 96 + spacing.md;
 }
 
 export function contentInnerWidth(screenWidth: number): number {

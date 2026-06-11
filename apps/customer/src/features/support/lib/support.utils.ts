@@ -33,6 +33,27 @@ export function normalizeSupportTopic(raw?: string): SupportTopic {
   return 'other';
 }
 
+const AUTO_REPLIES = [
+  'Thanks for reaching out — a support agent will follow up shortly. Average reply time is under 5 minutes in demo mode.',
+  'We have logged your message. For urgent booking issues, share your booking ref (QM-…) in the next message.',
+  'Got it! Our team reviews chats during 7am–10pm IST. You will see replies here in this thread.',
+];
+
+export function demoAgentAutoReply(userText: string, topic: SupportTopic): string {
+  const trimmed = userText.trim();
+  if (trimmed.length < 4) {
+    return 'Please share a few more details so we can help you faster.';
+  }
+  const hint =
+    topic === 'booking'
+      ? 'Booking team notified.'
+      : topic === 'payment'
+        ? 'Payments team notified.'
+        : 'Support team notified.';
+  const pick = AUTO_REPLIES[trimmed.length % AUTO_REPLIES.length];
+  return `${hint} ${pick}`;
+}
+
 export function welcomeMessage(topic: SupportTopic, context?: string) {
   const base = `Hi! I'm from QuickMaid Support. ${TOPIC_GREETINGS[topic]}`;
   if (context?.trim()) {

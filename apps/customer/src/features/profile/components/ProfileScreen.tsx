@@ -101,7 +101,7 @@ export function ProfileScreen() {
 
         <View style={styles.canvas}>
           <View style={styles.sheetBridge} pointerEvents="none" />
-          <View style={[styles.lowerSheet, { paddingBottom: insets.bottom + spacing.md }]}>
+          <View style={styles.lowerSheet}>
             <View style={styles.sheetHandle} />
             <ProfileBody
               profile={profile}

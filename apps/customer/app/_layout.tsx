@@ -8,6 +8,7 @@ import { CheckoutProvider } from '../src/context/CheckoutContext';
 import { AppLockGate } from '../src/features/security/components/AppLockGate';
 import { LanguageProvider } from '../src/i18n/LanguageProvider';
 import { useAppFonts } from '../src/hooks/useAppFonts';
+import { initObservability } from '../src/lib/observability';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -17,6 +18,8 @@ export default function RootLayout() {
   if (!fontsLoaded) {
     return null;
   }
+
+  void initObservability();
 
   return (
     <SafeAreaProvider>

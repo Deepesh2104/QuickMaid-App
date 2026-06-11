@@ -1,4 +1,3 @@
-import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useRef } from 'react';
 import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
@@ -6,154 +5,147 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { QmLogo } from '@/components/ui/QmLogo';
 import { fonts } from '@/theme/fonts';
-import { colors } from '@/theme/colors';
 import { layout, radius, spacing } from '@/theme/spacing';
 
-export const SPLASH_DELAY_MS = 2000;
-export const SPLASH_EXIT_MS = 480;
-
-const STATS = [
-  { value: '₹18k+', label: 'Avg monthly' },
-  { value: '4.9', label: 'Partner rating' },
-  { value: '2.4k', label: 'Active pros' },
-];
-
-const TRUST = [
-  { icon: 'shield-checkmark' as const, label: 'Verified payouts' },
-  { icon: 'calendar' as const, label: 'Flexible slots' },
-  { icon: 'trophy' as const, label: 'Top performer perks' },
-];
+export const SPLASH_DELAY_MS = 1400;
+export const SPLASH_EXIT_MS = 380;
 
 export function PartnerSplashScreen() {
   const insets = useSafeAreaInsets();
-  const fade = useRef(new Animated.Value(0)).current;
-  const rise = useRef(new Animated.Value(24)).current;
-  const shimmer = useRef(new Animated.Value(0)).current;
+  const opacity = useRef(new Animated.Value(0)).current;
+  const rise = useRef(new Animated.Value(10)).current;
+  const progress = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.parallel([
-      Animated.timing(fade, { toValue: 1, duration: 700, useNativeDriver: true }),
-      Animated.timing(rise, {
-        toValue: 0,
-        duration: 700,
+      Animated.timing(opacity, {
+        toValue: 1,
+        duration: 480,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
+      Animated.timing(rise, {
+        toValue: 0,
+        duration: 480,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(progress, {
+        toValue: 1,
+        duration: SPLASH_DELAY_MS,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: false,
+      }),
     ]).start();
+  }, [opacity, progress, rise]);
 
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(shimmer, { toValue: 1, duration: 1800, useNativeDriver: true }),
-        Animated.timing(shimmer, { toValue: 0, duration: 1800, useNativeDriver: true }),
-      ]),
-    ).start();
-  }, [fade, rise, shimmer]);
-
-  const glowOpacity = shimmer.interpolate({ inputRange: [0, 1], outputRange: [0.35, 0.75] });
+  const progressWidth = progress.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0%', '100%'],
+  });
 
   return (
     <View style={styles.root}>
-      <LinearGradient colors={['#032A28', '#084F4A', '#0B6E67', '#0D8A82']} style={StyleSheet.absoluteFill} />
+      <LinearGradient
+        colors={['#010F0E', '#032A28', '#084F4A']}
+        locations={[0, 0.5, 1]}
+        style={StyleSheet.absoluteFill}
+      />
 
-      <Animated.View style={[styles.glow, { opacity: glowOpacity }]} pointerEvents="none" />
+      <View style={styles.glow} pointerEvents="none" />
 
-      <View style={[styles.content, { paddingTop: insets.top + spacing.xxl, paddingBottom: insets.bottom + spacing.xl }]}>
-        <Animated.View style={{ opacity: fade, transform: [{ translateY: rise }] }}>
-          <QmLogo size="lg" light />
-          <Text style={styles.eyebrow}>PARTNER PROGRAM</Text>
-          <Text style={styles.title}>Earn with trust.{'\n'}Work on your terms.</Text>
-          <Text style={styles.sub}>Raipur&apos;s premium home-service network for verified professionals.</Text>
-        </Animated.View>
+      <View
+        style={[
+          styles.content,
+          {
+            paddingTop: insets.top + spacing.md,
+            paddingBottom: insets.bottom + spacing.lg,
+          },
+        ]}
+      >
+        <Animated.View
+          style={[styles.stack, { opacity, transform: [{ translateY: rise }] }]}
+        >
+          <QmLogo size="lg" light showText={false} />
+          <Text style={styles.brand}>QuickMaid Partner</Text>
+          <Text style={styles.tagline}>Earn with trust · Work on your terms</Text>
 
-        <Animated.View style={[styles.statsRow, { opacity: fade }]}>
-          {STATS.map((s) => (
-            <View key={s.label} style={styles.stat}>
-              <Text style={styles.statValue}>{s.value}</Text>
-              <Text style={styles.statLabel}>{s.label}</Text>
+          <View style={styles.bottom}>
+            <View style={styles.progressTrack}>
+              <Animated.View style={[styles.progressFill, { width: progressWidth }]} />
             </View>
-          ))}
+            <Text style={styles.footer}>Verified payouts · Flexible slots</Text>
+          </View>
         </Animated.View>
-
-        <Animated.View style={[styles.trustRow, { opacity: fade }]}>
-          {TRUST.map((t) => (
-            <View key={t.label} style={styles.trustPill}>
-              <Ionicons name={t.icon} size={14} color={colors.partnerGold} />
-              <Text style={styles.trustText}>{t.label}</Text>
-            </View>
-          ))}
-        </Animated.View>
-
-        <Text style={styles.footer}>QuickMaid Partner · Aadhaar verified · Weekly UPI payouts</Text>
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#032A28' },
+  root: {
+    flex: 1,
+    backgroundColor: '#010F0E',
+  },
   glow: {
     position: 'absolute',
-    top: '18%',
     alignSelf: 'center',
-    width: 280,
-    height: 280,
-    borderRadius: 140,
-    backgroundColor: 'rgba(217,119,6,0.18)',
+    top: '38%',
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    backgroundColor: 'rgba(252,211,77,0.07)',
   },
   content: {
     flex: 1,
     paddingHorizontal: layout.pad,
-    justifyContent: 'space-between',
-  },
-  eyebrow: {
-    fontFamily: fonts.bold,
-    fontSize: 11,
-    letterSpacing: 1.4,
-    color: 'rgba(255,255,255,0.55)',
-    marginTop: spacing.xxl,
-  },
-  title: {
-    fontFamily: fonts.extraBold,
-    fontSize: 30,
-    lineHeight: 38,
-    color: colors.white,
-    marginTop: spacing.sm,
-    letterSpacing: -0.6,
-  },
-  sub: {
-    fontFamily: fonts.regular,
-    fontSize: 15,
-    lineHeight: 22,
-    color: 'rgba(255,255,255,0.78)',
-    marginTop: spacing.md,
-    maxWidth: 320,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderRadius: radius.xl,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
-    paddingVertical: spacing.lg,
-  },
-  stat: { flex: 1, alignItems: 'center', gap: 4 },
-  statValue: { fontFamily: fonts.extraBold, fontSize: 18, color: colors.white },
-  statLabel: { fontFamily: fonts.medium, fontSize: 10, color: 'rgba(255,255,255,0.65)' },
-  trustRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  trustPill: {
-    flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
-    gap: 6,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    borderRadius: radius.pill,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
   },
-  trustText: { fontFamily: fonts.semiBold, fontSize: 11, color: 'rgba(255,255,255,0.9)' },
+  stack: {
+    alignItems: 'center',
+    width: '100%',
+    maxWidth: 320,
+    gap: spacing.sm,
+  },
+  brand: {
+    fontFamily: fonts.extraBold,
+    fontSize: 28,
+    color: '#FFFFFF',
+    letterSpacing: -0.6,
+    marginTop: spacing.xs,
+    textAlign: 'center',
+  },
+  tagline: {
+    fontFamily: fonts.medium,
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.72)',
+    textAlign: 'center',
+    letterSpacing: 0.2,
+    marginBottom: spacing.lg,
+  },
+  bottom: {
+    width: '100%',
+    maxWidth: 220,
+    alignSelf: 'center',
+    gap: spacing.sm,
+  },
+  progressTrack: {
+    height: 3,
+    borderRadius: radius.pill,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: radius.pill,
+    backgroundColor: '#FCD34D',
+  },
   footer: {
     fontFamily: fonts.medium,
     fontSize: 11,
-    color: 'rgba(255,255,255,0.45)',
+    color: 'rgba(255,255,255,0.4)',
     textAlign: 'center',
+    letterSpacing: 0.4,
   },
 });

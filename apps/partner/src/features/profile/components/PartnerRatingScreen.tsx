@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
-import { useMemo } from 'react';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { useCallback, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
@@ -17,8 +17,14 @@ import {
 } from '@/features/profile/constants/rating.premium';
 import {
   completedJobsForRating,
+  mergeRecentReviews,
   ratingPerformanceStats,
 } from '@/features/profile/lib/rating.utils';
+import {
+  getPartnerCustomerReviews,
+  type PartnerCustomerReview,
+} from '@/features/profile/lib/partner-reviews.storage';
+import { syncCustomerRatingsFromStatusBridge } from '@/features/jobs/lib/booking-status-bridge.storage';
 import { fonts } from '@/theme/fonts';
 import { colors } from '@/theme/colors';
 import { radius, shadow, spacing } from '@/theme/spacing';
@@ -51,12 +57,26 @@ export function PartnerRatingScreen() {
   const router = useRouter();
   const { profile, state } = usePartner();
   const { completed } = usePartnerJobs();
+  const [bridgeReviews, setBridgeReviews] = useState<PartnerCustomerReview[]>([]);
+
+  useFocusEffect(
+    useCallback(() => {
+      void (async () => {
+        await syncCustomerRatingsFromStatusBridge();
+        setBridgeReviews(await getPartnerCustomerReviews());
+      })();
+    }, []),
+  );
 
   const perf = useMemo(
-    () => ratingPerformanceStats(completed, state.weekJobs),
-    [completed, state.weekJobs],
+    () => ratingPerformanceStats(completed, state.weekJobs, bridgeReviews),
+    [completed, state.weekJobs, bridgeReviews],
   );
   const completedList = useMemo(() => completedJobsForRating(completed), [completed]);
+  const recentReviews = useMemo(
+    () => mergeRecentReviews(bridgeReviews, RATING_RECENT_REVIEWS),
+    [bridgeReviews],
+  );
 
   const headerExtra = (
     <View style={styles.scoreHero}>
@@ -177,8 +197,8 @@ export function PartnerRatingScreen() {
       <Animated.View entering={FadeInDown.delay(130).duration(280)} style={styles.block}>
         <PartnerRequestsSectionHeader eyebrow="Feedback" title="Recent reviews" icon="chatbox-outline" compact />
         <View style={styles.card}>
-          {RATING_RECENT_REVIEWS.map((review, i) => (
-            <View key={review.id} style={[styles.reviewRow, i < RATING_RECENT_REVIEWS.length - 1 && styles.reviewBorder]}>
+          {recentReviews.map((review, i) => (
+            <View key={review.id} style={[styles.reviewRow, i < recentReviews.length - 1 && styles.reviewBorder]}>
               <View style={styles.reviewHead}>
                 <View style={styles.reviewHeadLeft}>
                   <ReviewAvatar name={review.customer} />

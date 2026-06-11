@@ -14,9 +14,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   const suffix = isStore ? '' : appEnv === 'development' ? '.dev' : `.${appEnv}`;
 
   const names: Record<AppEnv, string> = {
-    development: 'QM Partner Dev',
-    test: 'QM Partner Test',
-    beta: 'QuickMaid Partner Beta',
+    development: 'QuickMaid Partner',
+    test: 'QuickMaid Partner',
+    beta: 'QuickMaid Partner',
     production: 'QuickMaid Partner',
   };
 
@@ -61,7 +61,11 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     extra: {
       appEnv,
       apiBaseUrl: process.env.EXPO_PUBLIC_API_BASE_URL ?? '',
+      sentryDsn: process.env.EXPO_PUBLIC_SENTRY_DSN ?? '',
       router: {},
+      eas: {
+        projectId: 'b7a2e1f0-3c4d-5e6f-8a9b-0c1d2e3f4a5b',
+      },
     },
   };
 };

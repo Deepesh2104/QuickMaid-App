@@ -1,16 +1,21 @@
 import type { Ionicons } from '@expo/vector-icons';
 
-export const PAYMENT_GATEWAY = {
-  id: 'razorpay' as const,
-  name: 'Razorpay',
-  merchant: 'QuickMaid Services',
-  currency: 'INR',
-  /** Demo merchant VPA — replace with live Razorpay VPA in production */
-  merchantVpa: 'quickmaid@razorpay',
-  /** Replace with live key from env / API in production */
-  keyId: 'rzp_test_QuickMaid',
-  theme: '#0B6E67',
-} as const;
+import { getRazorpayKeyId } from '@/config/env';
+
+export function paymentGatewayConfig() {
+  return {
+    id: 'razorpay' as const,
+    name: 'Razorpay',
+    merchant: 'QuickMaid Services',
+    currency: 'INR',
+    merchantVpa: 'quickmaid@razorpay',
+    keyId: getRazorpayKeyId(),
+    theme: '#0B6E67',
+  };
+}
+
+/** @deprecated Use paymentGatewayConfig() for env-aware key */
+export const PAYMENT_GATEWAY = paymentGatewayConfig();
 
 export interface UpiAppDef {
   id: string;

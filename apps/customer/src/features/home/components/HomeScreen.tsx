@@ -165,9 +165,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 2,
     marginHorizontal: layout.pad,
-    marginBottom: 0,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.xs,
+    marginTop: 0,
+    paddingTop: spacing.xs,
+    paddingBottom: 0,
   },
   footerLine: {
     width: 48,

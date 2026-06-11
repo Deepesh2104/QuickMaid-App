@@ -119,37 +119,43 @@ export function AppLockSettingsScreen() {
         setPinStep('create');
         return;
       }
-      void persist({
-        enabled: true,
-        pinHash: hashPin(pin),
-        biometricEnabled: settings?.biometricEnabled ?? false,
-      });
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      resetPinFlow();
+      void (async () => {
+        await persist({
+          enabled: true,
+          pinHash: await hashPin(pin),
+          biometricEnabled: settings?.biometricEnabled ?? false,
+        });
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        resetPinFlow();
+      })();
       return;
     }
 
     if (pinStep === 'verify_disable') {
-      if (!verifyPin(pin, settings?.pinHash)) {
-        setPinError('Incorrect PIN.');
-        setPin('');
-        return;
-      }
-      void persist({ enabled: false, pinHash: undefined, biometricEnabled: false });
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      resetPinFlow();
+      void (async () => {
+        if (!(await verifyPin(pin, settings?.pinHash))) {
+          setPinError('Incorrect PIN.');
+          setPin('');
+          return;
+        }
+        await persist({ enabled: false, pinHash: undefined, biometricEnabled: false });
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        resetPinFlow();
+      })();
       return;
     }
 
     if (pinStep === 'change_old') {
-      if (!verifyPin(pin, settings?.pinHash)) {
-        setPinError('Incorrect PIN.');
+      void (async () => {
+        if (!(await verifyPin(pin, settings?.pinHash))) {
+          setPinError('Incorrect PIN.');
+          setPin('');
+          return;
+        }
         setPin('');
-        return;
-      }
-      setPin('');
-      setPinError('');
-      setPinStep('change_new');
+        setPinError('');
+        setPinStep('change_new');
+      })();
       return;
     }
 
@@ -169,13 +175,15 @@ export function AppLockSettingsScreen() {
         setPinStep('change_new');
         return;
       }
-      void persist({
-        ...settings!,
-        pinHash: hashPin(pin),
-      });
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Alert.alert('PIN updated', 'Your new app lock PIN is active.');
-      resetPinFlow();
+      void (async () => {
+        await persist({
+          ...settings!,
+          pinHash: await hashPin(pin),
+        });
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        Alert.alert('PIN updated', 'Your new app lock PIN is active.');
+        resetPinFlow();
+      })();
     }
   }, [draftPin, persist, pin, pinStep, settings]);
 

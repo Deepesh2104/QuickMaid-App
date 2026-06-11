@@ -2,6 +2,19 @@
 
 Cross-app FSD index for the `QuickMaid-App` workspace.
 
+> **New here?** Start at the [Documentation Hub](../README.md) for SRS, TDD, System Design, and API Contract.
+
+## Core documentation (non-FSD)
+
+| Doc | Purpose |
+|-----|---------|
+| [SRS](../SRS.md) | Product requirements |
+| [TDD](../TDD.md) | Technical design |
+| [SYSTEM-DESIGN-CLIENT](../SYSTEM-DESIGN-CLIENT.md) | Architecture diagrams |
+| [API-CONTRACT](../API-CONTRACT.md) | REST endpoints (Phase 4) |
+| [TEST-STRATEGY](../TEST-STRATEGY.md) | QA approach |
+| [CONTRIBUTING](../CONTRIBUTING.md) | Dev workflow |
+
 ## App-specific FSD sets
 
 | App | Path | Scope |

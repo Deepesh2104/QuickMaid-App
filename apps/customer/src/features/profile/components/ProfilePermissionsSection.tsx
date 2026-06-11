@@ -4,6 +4,7 @@ import * as Location from 'expo-location';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { HomeSectionHeader } from '@/features/home/components/HomeSectionHeader';
+import { registerPushTokenIfPermitted } from '@/lib/push-token';
 import { fonts } from '@/theme/fonts';
 import { colors } from '@/theme/colors';
 import { layout, radius, spacing } from '@/theme/spacing';
@@ -27,7 +28,9 @@ export function ProfilePermissionsSection({ permissions, onChange }: ProfilePerm
     try {
       const Notifications = await import('expo-notifications');
       const { status } = await Notifications.requestPermissionsAsync();
-      await onChange({ notificationsGranted: status === 'granted' });
+      const granted = status === 'granted';
+      if (granted) await registerPushTokenIfPermitted();
+      await onChange({ notificationsGranted: granted });
     } catch {
       Alert.alert(
         'Demo mode',

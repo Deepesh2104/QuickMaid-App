@@ -25,7 +25,7 @@ import { PlusStickyCta } from './PlusStickyCta';
 export function PlusScreen() {
 
   const insets = useSafeAreaInsets();
-  const { tabScrollPadLg } = useLayoutMetrics();
+  const { plusStickyScrollPad } = useLayoutMetrics();
 
   const [selectedPlan, setSelectedPlan] = useState('plus');
 
@@ -37,7 +37,7 @@ export function PlusScreen() {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[styles.scroll, { paddingBottom: tabScrollPadLg }]}
+        contentContainerStyle={[styles.scroll, { paddingBottom: plusStickyScrollPad }]}
       >
 
         <PlusHeader paddingTop={insets.top} />
@@ -48,7 +48,7 @@ export function PlusScreen() {
 
           <View style={styles.sheetBridge} pointerEvents="none" />
 
-          <View style={[styles.lowerSheet, { paddingBottom: insets.bottom + spacing.md }]}>
+          <View style={styles.lowerSheet}>
 
             <View style={styles.sheetHandle} />
 
