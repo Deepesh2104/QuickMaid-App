@@ -64,9 +64,16 @@ export function PartnerVisitStartModal({
               Confirm you have arrived and started work at {job.customerName}&apos;s address.
             </Text>
 
-            <View style={styles.hint}>
-              <Ionicons name="notifications-outline" size={14} color={colors.primaryDark} />
-              <Text style={styles.hintText}>Customer ko live visit notification jayega</Text>
+            <View style={styles.bridgeCard}>
+              <LinearGradient colors={['#010F0E', '#084F4A']} style={styles.bridgeGrad}>
+                <View style={styles.bridgeRow}>
+                  <Ionicons name="git-network-outline" size={14} color="#6EE7B7" />
+                  <Text style={styles.bridgeTitle}>Customer bridge sync</Text>
+                </View>
+                <Text style={styles.bridgeSub}>
+                  Visit live mark hoga · GPS auto-share · customer track screen update
+                </Text>
+              </LinearGradient>
             </View>
           </View>
 
@@ -151,22 +158,21 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 18,
   },
-  hint: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.primaryLight,
-    borderRadius: radius.lg,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    marginTop: spacing.xs,
+  bridgeCard: {
     width: '100%',
+    marginTop: spacing.xs,
+    borderRadius: radius.lg,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(110,231,183,0.25)',
   },
-  hintText: {
-    flex: 1,
-    fontFamily: fonts.semiBold,
+  bridgeGrad: { padding: spacing.md, gap: 6 },
+  bridgeRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  bridgeTitle: { fontFamily: fonts.bold, fontSize: 11, color: '#6EE7B7' },
+  bridgeSub: {
+    fontFamily: fonts.medium,
     fontSize: 11,
-    color: colors.primaryDark,
+    color: 'rgba(255,255,255,0.78)',
     lineHeight: 15,
   },
   footer: {

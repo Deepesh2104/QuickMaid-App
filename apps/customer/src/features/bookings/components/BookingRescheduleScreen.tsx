@@ -14,9 +14,11 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { PREFERRED_SLOTS } from '@/constants/customer.zones';
+import { FormScreenSkeleton } from '@/components/ui/Skeleton';
 import type { DemoBooking } from '@/constants/demo';
 import { getVisitDates } from '@/features/checkout/lib/checkout.utils';
 import { rescheduleBookingById } from '@/features/checkout/lib/bookings.storage';
+import { publishCustomerBookingStatus } from '@/lib/booking-status-bridge.storage';
 import { getBookingById } from '../lib/booking.lookup';
 import {
   buildReschedulePatch,
@@ -24,6 +26,7 @@ import {
   timeToSlotId,
   type RescheduleSelection,
 } from '../lib/booking.reschedule';
+import { BookingChangeBridgeCard } from './BookingChangeBridgeCard';
 import { BookingRescheduleSuccessModal } from './BookingRescheduleSuccessModal';
 import { fonts } from '@/theme/fonts';
 import { colors } from '@/theme/colors';
@@ -91,16 +94,23 @@ export function BookingRescheduleScreen() {
     setSaving(false);
     if (!updated) return;
 
+    if (updated.bookingRef) {
+      await publishCustomerBookingStatus({
+        bookingRef: updated.bookingRef,
+        customerBookingId: updated.id,
+        event: 'customer_rescheduled',
+        visitDate: updated.visitDate,
+        slotLabel: updated.slotLabel,
+        time: updated.time,
+      });
+    }
+
     setUpdatedBooking(updated);
     setSuccessVisible(true);
   };
 
   if (loading) {
-    return (
-      <View style={[styles.loader, { paddingTop: insets.top }]}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
-    );
+    return <FormScreenSkeleton />;
   }
 
   if (!booking) {
@@ -164,6 +174,13 @@ export function BookingRescheduleScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 120 }]}
       >
+        <BookingChangeBridgeCard
+          booking={booking}
+          variant="reschedule"
+          previewDate={canSave ? visitDateLabel : undefined}
+          previewSlot={canSave ? slotLabel : undefined}
+        />
+
         <Text style={styles.sectionTitle}>Pick new date</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.dateRow}>
           {DATES.map((d) => {

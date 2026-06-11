@@ -8,6 +8,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useCheckout } from '@/context/CheckoutContext';
 import { BookingCompletionOtpCard } from '@/features/bookings/components/BookingCompletionOtpCard';
+import { CheckoutPartnerBridgeCard } from '@/features/checkout/components/CheckoutPartnerBridgeCard';
+import { CheckoutProAssignmentCard } from '@/features/checkout/components/CheckoutProAssignmentCard';
 import { formatInr } from '../lib/checkout.utils';
 import { fonts } from '@/theme/fonts';
 import { colors } from '@/theme/colors';
@@ -38,8 +40,10 @@ export function CheckoutSuccessScreen() {
     <View style={[styles.root, { paddingTop: insets.top }]}>
       <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + spacing.xl }]} showsVerticalScrollIndicator={false}>
         <View style={styles.hero}>
-          <LinearGradient colors={['#084F4A', '#0B6E67']} style={styles.checkCircle}>
-            <Ionicons name="checkmark" size={48} color={colors.white} />
+          <LinearGradient colors={['#010F0E', '#084F4A', '#0B6E67']} style={styles.heroGlow}>
+            <LinearGradient colors={['#12A598', '#0B6E67']} style={styles.checkCircle}>
+              <Ionicons name="checkmark" size={48} color={colors.white} />
+            </LinearGradient>
           </LinearGradient>
           <Text style={styles.title}>Order placed!</Text>
           <Text style={styles.sub}>
@@ -64,6 +68,9 @@ export function CheckoutSuccessScreen() {
 
         {order ? (
           <>
+            <CheckoutProAssignmentCard order={order} />
+            <CheckoutPartnerBridgeCard order={order} />
+
             <View style={styles.payCard}>
               <View style={styles.payRow}>
                 <Ionicons name="shield-checkmark" size={20} color="#059669" />
@@ -169,13 +176,22 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     paddingVertical: spacing.xl,
   },
+  heroGlow: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.sm,
+  },
   checkCircle: {
     width: 88,
     height: 88,
     borderRadius: 44,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing.sm,
+    borderWidth: 3,
+    borderColor: 'rgba(255,255,255,0.25)',
   },
   title: {
     fontFamily: fonts.extraBold,

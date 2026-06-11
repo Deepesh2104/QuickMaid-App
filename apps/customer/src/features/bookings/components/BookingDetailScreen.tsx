@@ -6,7 +6,6 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { useFocusEffect } from 'expo-router';
 import {
-  ActivityIndicator,
   Pressable,
   ScrollView,
   Share,
@@ -17,6 +16,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { BookingDetailSkeleton } from '@/components/ui/Skeleton';
 import type { BookingStatus, DemoBooking } from '@/constants/demo';
 import { formatInr } from '@/features/checkout/lib/checkout.utils';
 import { HomePhoto } from '@/features/home/components/HomePhoto';
@@ -28,13 +28,20 @@ import { useOpenBookingDocument } from '../hooks/useOpenBookingDocument';
 import { useOpenSupport } from '@/features/help/hooks/useOpenSupport';
 import { useOpenBookingDispute } from '@/features/support/hooks/useOpenBookingDispute';
 import { useOpenTrackBooking } from '../hooks/useOpenTrackBooking';
+import { usePartnerLivePing } from '../hooks/usePartnerLivePing';
 import { usePendingVisitComplete } from '../hooks/usePendingVisitComplete';
 import { useRebookBooking } from '../hooks/useRebookBooking';
+import {
+  getBookingStatusForRef,
+  syncBookingsFromPartnerStatusBridge,
+} from '@/lib/booking-status-bridge.storage';
+import type { BookingStatusBridgeEntry } from '../../../../shared/booking-status-bridge';
 import { getBookingById } from '../lib/booking.lookup';
+import { buildLiveTimeline, timelineProgress } from '../lib/booking.timeline';
 import { resolveMaidProfile } from '../lib/maid.profile';
 import { getBookingImageId } from '../utils/bookings.utils';
-import { BookingCompletionOtpCard } from './BookingCompletionOtpCard';
 import { BookingLiveLocationCard } from './BookingLiveLocationCard';
+import { BookingPartnerDeclinedCard } from './BookingPartnerDeclinedCard';
 import { useOpenProProfile } from '@/features/pro/hooks/useOpenProProfile';
 import { BookingRefundStatusCard } from './BookingRefundStatusCard';
 import { BookingReviewSubmittedCard } from './BookingReviewSubmittedCard';
@@ -53,28 +60,6 @@ const STATUS_THEME: Record<
   upcoming: { label: 'Upcoming visit', ink: '#175CD3', tone: '#EEF6FF', icon: 'time-outline', accent: '#3B82F6' },
   completed: { label: 'Visit completed', ink: '#027A48', tone: '#ECFDF5', icon: 'checkmark-circle', accent: '#10B981' },
   cancelled: { label: 'Cancelled', ink: '#D92D20', tone: '#FEF3F2', icon: 'close-circle', accent: '#EF4444' },
-};
-
-const TIMELINE: Record<
-  BookingStatus,
-  { icon: keyof typeof Ionicons.glyphMap; title: string; sub: string; done: boolean }[]
-> = {
-  upcoming: [
-    { icon: 'checkmark-circle', title: 'Booking confirmed', sub: 'Payment secured & slot locked', done: true },
-    { icon: 'person', title: 'Pro auto-assigned', sub: 'Verified maid matched to your visit', done: true },
-    { icon: 'key', title: 'Completion OTP ready', sub: 'Share when cleaning is finished', done: true },
-    { icon: 'navigate', title: 'Visit day', sub: 'Live tracking when pro is on the way', done: false },
-  ],
-  completed: [
-    { icon: 'checkmark-circle', title: 'Booking confirmed', sub: 'Payment secured', done: true },
-    { icon: 'person', title: 'Pro assigned', sub: 'Visit completed successfully', done: true },
-    { icon: 'key', title: 'OTP verified', sub: 'Job marked complete', done: true },
-    { icon: 'star', title: 'Rate your visit', sub: 'Tell us how it went', done: false },
-  ],
-  cancelled: [
-    { icon: 'close-circle', title: 'Booking cancelled', sub: 'No charge applied', done: true },
-    { icon: 'refresh', title: 'Rebook anytime', sub: 'Same service available in seconds', done: false },
-  ],
 };
 
 const ACTIONS: Record<
@@ -99,18 +84,6 @@ const ACTIONS: Record<
     { id: 'help', icon: 'chatbubble-ellipses-outline', label: 'Support', sub: '24×7 help' },
   ],
 };
-
-function getTimeline(booking: DemoBooking) {
-  const steps = [...TIMELINE[booking.status]];
-  if (booking.status === 'completed' && booking.reviewedAt && booking.reviewRating) {
-    steps[3] = {
-      ...steps[3],
-      done: true,
-      sub: `${booking.reviewRating}★ rating submitted`,
-    };
-  }
-  return steps;
-}
 
 function SectionBlock({
   eyebrow,
@@ -167,6 +140,7 @@ export function BookingDetailScreen() {
   const actionW = (width - layout.pad * 2 - spacing.sm) / 2;
   const { id } = useLocalSearchParams<{ id: string }>();
   const [booking, setBooking] = useState<DemoBooking | null>(null);
+  const [bridgeStatus, setBridgeStatus] = useState<BookingStatusBridgeEntry | null>(null);
   const [loading, setLoading] = useState(true);
   const { payload, visible, checkPending, dismiss } = usePendingVisitComplete();
   const openProProfile = useOpenProProfile();
@@ -174,6 +148,7 @@ export function BookingDetailScreen() {
   const openCancel = useOpenCancelBooking();
   const openRate = useOpenRateBooking();
   const openTrack = useOpenTrackBooking();
+  const livePing = usePartnerLivePing(booking?.bookingRef, booking?.status === 'upcoming');
   const openDocument = useOpenBookingDocument();
   const openSupport = useOpenSupport();
   const openDispute = useOpenBookingDispute();
@@ -182,10 +157,25 @@ export function BookingDetailScreen() {
   const loadBooking = useCallback(async () => {
     if (!id) return;
     setLoading(true);
+    await syncBookingsFromPartnerStatusBridge();
     const b = await getBookingById(id);
     setBooking(b ?? null);
+    if (b?.bookingRef) {
+      setBridgeStatus(await getBookingStatusForRef(b.bookingRef));
+    } else {
+      setBridgeStatus(null);
+    }
     setLoading(false);
   }, [id]);
+
+  useEffect(() => {
+    if (!booking?.bookingRef) return;
+    const poll = async () => {
+      setBridgeStatus(await getBookingStatusForRef(booking.bookingRef!));
+    };
+    const id = setInterval(() => void poll(), 8_000);
+    return () => clearInterval(id);
+  }, [booking?.bookingRef]);
 
   useEffect(() => {
     void loadBooking();
@@ -193,15 +183,12 @@ export function BookingDetailScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      void loadBooking();
-      void checkPending();
+      void (async () => {
+        await loadBooking();
+        await checkPending();
+      })();
     }, [loadBooking, checkPending]),
   );
-
-  const onOtpVerified = useCallback(async () => {
-    await loadBooking();
-    await checkPending();
-  }, [loadBooking, checkPending]);
 
   const copyRef = async (ref: string) => {
     await Clipboard.setStringAsync(ref);
@@ -209,12 +196,7 @@ export function BookingDetailScreen() {
   };
 
   if (loading) {
-    return (
-      <View style={styles.loader}>
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={styles.loaderText}>Loading booking…</Text>
-      </View>
-    );
+    return <BookingDetailSkeleton />;
   }
 
   if (!booking) {
@@ -235,20 +217,32 @@ export function BookingDetailScreen() {
   const theme = STATUS_THEME[booking.status];
   const maidProfile = resolveMaidProfile(booking);
   const imageId = getBookingImageId(booking.service);
-  const timeline = getTimeline(booking);
-  const doneSteps = timeline.filter((s) => s.done).length;
-  const progress = Math.round((doneSteps / timeline.length) * 100);
-  const actions = ACTIONS[booking.status].map((a) =>
-    a.id === 'rate' && booking.reviewedAt
-      ? { ...a, label: 'View review', sub: `${booking.reviewRating ?? ''}★ submitted`, icon: 'star' as const }
-      : a,
-  );
+  const timeline = buildLiveTimeline(booking, bridgeStatus, Boolean(livePing));
+  const progress = timelineProgress(timeline);
+  const needsRating = booking.status === 'completed' && !booking.reviewedAt;
+  const actions = ACTIONS[booking.status]
+    .map((a) =>
+      a.id === 'rate' && booking.reviewedAt
+        ? { ...a, label: 'View review', sub: `${booking.reviewRating ?? ''}★ submitted`, icon: 'star' as const }
+        : a,
+    )
+    .sort((a, b) => {
+      if (!needsRating) return 0;
+      if (a.id === 'rate') return -1;
+      if (b.id === 'rate') return 1;
+      return 0;
+    })
+    .map((a) =>
+      a.id === 'rate' && needsRating
+        ? { ...a, primary: true, rateHighlight: true as const }
+        : a,
+    );
 
   const onAction = (actionId: string) => {
     Haptics.selectionAsync();
     if (actionId === 'reschedule') openReschedule(booking.id);
     if (actionId === 'cancel') openCancel(booking.id);
-    if (actionId === 'rate') openRate(booking.id);
+    if (actionId === 'rate' && booking.status === 'completed') openRate(booking.id);
     if (actionId === 'track') openTrack(booking.id);
     if (actionId === 'invoice') openDocument(booking.id, 'invoice');
     if (actionId === 'receipt') openDocument(booking.id, 'receipt');
@@ -282,7 +276,19 @@ export function BookingDetailScreen() {
     }
   };
 
+  const shareOtp = async () => {
+    if (!booking.completionOtp) return;
+    try {
+      await Share.share({
+        message: `QuickMaid visit OTP for ${booking.maid}: ${booking.completionOtp}\nBooking ${booking.bookingRef ?? booking.id}`,
+      });
+    } catch {
+      // dismissed
+    }
+  };
+
   const hasPayment = booking.amountPaid !== undefined || booking.paymentLabel;
+  const showVisitOtp = booking.status === 'upcoming' && Boolean(booking.completionOtp);
 
   return (
     <View style={styles.root}>
@@ -375,21 +381,82 @@ export function BookingDetailScreen() {
                 <Text style={styles.summaryEyebrow}>BOOKING REFERENCE</Text>
                 <Text style={styles.summaryRef}>{booking.bookingRef ?? booking.id}</Text>
               </View>
-              <Pressable
-                style={styles.copyBtn}
-                onPress={() => void copyRef(booking.bookingRef ?? booking.id)}
-                accessibilityLabel="Copy booking reference"
-              >
-                <Ionicons name="copy-outline" size={14} color={colors.primaryDark} />
-              </Pressable>
+              <View style={styles.summaryTopRight}>
+                <Pressable
+                  style={styles.copyBtn}
+                  onPress={() => void copyRef(booking.bookingRef ?? booking.id)}
+                  accessibilityLabel="Copy booking reference"
+                >
+                  <Ionicons name="copy-outline" size={14} color={colors.primaryDark} />
+                </Pressable>
+                {booking.status === 'completed' ? (
+                  <Pressable
+                    style={[styles.rateRefBtn, needsRating && styles.rateRefBtnHighlight]}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                      openRate(booking.id);
+                    }}
+                    accessibilityRole="button"
+                    accessibilityLabel={needsRating ? 'Rate your visit' : 'View your review'}
+                  >
+                    <Ionicons
+                      name={booking.reviewedAt ? 'star' : 'star-outline'}
+                      size={14}
+                      color={needsRating ? colors.primary : colors.star}
+                    />
+                    <Text style={[styles.rateRefText, needsRating && styles.rateRefTextHighlight]}>
+                      {needsRating ? 'Rate' : 'Rated'}
+                    </Text>
+                  </Pressable>
+                ) : null}
+              </View>
             </View>
             <View style={styles.summaryDivider} />
             <View style={styles.summaryBottom}>
-              <View>
+              <View style={styles.summaryLeft}>
                 <Text style={styles.summaryAmountLbl}>Total amount</Text>
-                <Text style={styles.summaryAmount}>{booking.price}</Text>
+                <Text
+                  style={[styles.summaryAmount, narrow && styles.summaryAmountNarrow]}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.75}
+                >
+                  {booking.price}
+                </Text>
+                {booking.walletUsed && booking.walletUsed > 0 ? (
+                  <View style={styles.walletChipInline}>
+                    <Ionicons name="wallet-outline" size={11} color={colors.primaryDark} />
+                    <Text style={styles.walletChipText} numberOfLines={1}>
+                      {formatInr(booking.walletUsed)} wallet
+                    </Text>
+                  </View>
+                ) : null}
               </View>
-              {booking.walletUsed && booking.walletUsed > 0 ? (
+              {showVisitOtp ? (
+                <View style={styles.summaryOtpCol}>
+                  <Text style={styles.summaryOtpLbl}>Visit OTP</Text>
+                  <View style={styles.summaryOtpRow}>
+                    <Text
+                      style={[
+                        styles.summaryOtpCode,
+                        narrow && styles.summaryOtpCodeNarrow,
+                      ]}
+                      numberOfLines={1}
+                      adjustsFontSizeToFit
+                      minimumFontScale={0.7}
+                    >
+                      {booking.completionOtp}
+                    </Text>
+                    <Pressable
+                      style={styles.summaryOtpShare}
+                      onPress={() => void shareOtp()}
+                      accessibilityLabel="Share OTP"
+                    >
+                      <Ionicons name="share-outline" size={14} color={colors.primaryDark} />
+                    </Pressable>
+                  </View>
+                </View>
+              ) : booking.walletUsed && booking.walletUsed > 0 ? (
                 <View style={styles.walletChip}>
                   <Ionicons name="wallet-outline" size={12} color={colors.primaryDark} />
                   <Text style={styles.walletChipText}>
@@ -413,12 +480,11 @@ export function BookingDetailScreen() {
             accessibilityLabel={`View ${booking.maid} profile`}
           >
             <LinearGradient
-              colors={['#E6FAF6', '#F0FDF9', '#FFFFFF']}
+              colors={['#FFFFFF', '#F4FBFA', '#EAF8F5']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={StyleSheet.absoluteFill}
             />
-            <View style={styles.proGlow} pointerEvents="none" />
             <View style={styles.proTop}>
               <View style={styles.proAvatarRing}>
                 <LinearGradient colors={['#6EE7B7', '#34D399']} style={styles.proAvatarGrad}>
@@ -440,7 +506,9 @@ export function BookingDetailScreen() {
                     </View>
                   ) : null}
                 </View>
-                <Text style={styles.proName}>{booking.maid}</Text>
+                <Text style={styles.proName} numberOfLines={1}>
+                  {booking.maid}
+                </Text>
                 <View style={styles.proChips}>
                   <View style={styles.proChip}>
                     <Ionicons name="star" size={10} color={colors.star} />
@@ -448,7 +516,9 @@ export function BookingDetailScreen() {
                   </View>
                   <View style={styles.proChip}>
                     <Ionicons name="briefcase-outline" size={10} color={colors.primaryDark} />
-                    <Text style={styles.proChipText}>{maidProfile.jobs.toLocaleString('en-IN')} jobs</Text>
+                    <Text style={styles.proChipText}>
+                      {maidProfile.jobs.toLocaleString('en-IN')} jobs
+                    </Text>
                   </View>
                   <View style={styles.proChip}>
                     <Ionicons name="timer-outline" size={10} color={colors.primaryDark} />
@@ -487,15 +557,12 @@ export function BookingDetailScreen() {
               <Ionicons name="arrow-forward" size={12} color={colors.primary} />
             </View>
           </Pressable>
-
           {booking.status === 'completed' ? <BookingVisitCompletedCard booking={booking} /> : null}
           {booking.status === 'completed' && booking.reviewedAt ? (
             <BookingReviewSubmittedCard booking={booking} />
           ) : null}
           {booking.status === 'cancelled' ? <BookingRefundStatusCard booking={booking} /> : null}
-          {booking.status === 'upcoming' && booking.completionOtp ? (
-            <BookingCompletionOtpCard booking={booking} compact onVerified={onOtpVerified} />
-          ) : null}
+          {booking.status === 'upcoming' ? <BookingPartnerDeclinedCard booking={booking} /> : null}
           <BookingLiveLocationCard booking={booking} />
 
           <SectionBlock eyebrow="VISIT" title="Where & when">
@@ -512,24 +579,24 @@ export function BookingDetailScreen() {
             </View>
           </SectionBlock>
 
-          <SectionBlock eyebrow="JOURNEY" title="Status timeline">
+          <SectionBlock eyebrow="LIVE STATUS" title="Status timeline">
             <View style={styles.timelineCard}>
               {timeline.map((step, i) => {
                 const isLast = i === timeline.length - 1;
-                const isActive = !step.done && (i === 0 || timeline[i - 1]?.done);
+                const isActive = step.active ?? (!step.done && (i === 0 || timeline[i - 1]?.done));
                 return (
-                  <View key={step.title} style={styles.timelineRow}>
+                  <View key={step.id} style={styles.timelineRow}>
                     <View style={styles.timelineLeft}>
                       <View
                         style={[
                           styles.timelineDot,
                           step.done && styles.timelineDotDone,
-                          isActive && styles.timelineDotActive,
+                          isActive && !step.done && styles.timelineDotActive,
                         ]}
                       >
                         <Ionicons
-                          name={step.icon}
-                          size={14}
+                          name={step.done ? 'checkmark' : step.icon}
+                          size={step.done ? 16 : 14}
                           color={step.done || isActive ? colors.white : colors.muted}
                         />
                       </View>
@@ -537,11 +604,26 @@ export function BookingDetailScreen() {
                         <View style={[styles.timelineLine, step.done && styles.timelineLineDone]} />
                       ) : null}
                     </View>
-                    <View style={[styles.timelineCopy, isActive && styles.timelineCopyActive]}>
-                      <Text style={[styles.timelineTitle, (step.done || isActive) && styles.timelineTitleDone]}>
+                    <View style={[styles.timelineCopy, isActive && !step.done && styles.timelineCopyActive]}>
+                      <Text
+                        style={[
+                          styles.timelineTitle,
+                          step.done && styles.timelineTitleDone,
+                          isActive && !step.done && styles.timelineTitleActive,
+                        ]}
+                      >
                         {step.title}
                       </Text>
                       <Text style={styles.timelineSub}>{step.sub}</Text>
+                      {step.otpValue ? (
+                        <View style={styles.timelineOtpRow}>
+                          {step.otpValue.split('').map((digit, di) => (
+                            <View key={`${step.id}-otp-${di}`} style={styles.timelineOtpDigit}>
+                              <Text style={styles.timelineOtpDigitText}>{digit}</Text>
+                            </View>
+                          ))}
+                        </View>
+                      ) : null}
                     </View>
                   </View>
                 );
@@ -584,10 +666,17 @@ export function BookingDetailScreen() {
 
           <SectionBlock eyebrow="ACTIONS" title="Quick actions">
             <View style={styles.actionsGrid}>
-              {actions.map((a) => (
+              {actions.map((a) => {
+                const rateHighlight = 'rateHighlight' in a && a.rateHighlight;
+                return (
                 <Pressable
                   key={a.id}
-                  style={[styles.actionCard, { width: narrow ? '100%' : actionW }, a.primary && styles.actionCardPrimary]}
+                  style={[
+                    styles.actionCard,
+                    { width: narrow ? '100%' : actionW },
+                    a.primary && styles.actionCardPrimary,
+                    rateHighlight && styles.actionCardRate,
+                  ]}
                   onPress={() => onAction(a.id)}
                 >
                   {a.primary ? (
@@ -599,12 +688,21 @@ export function BookingDetailScreen() {
                     />
                   ) : null}
                   <View style={[styles.actionIcon, a.primary && styles.actionIconPrimary]}>
-                    <Ionicons name={a.icon} size={18} color={a.primary ? colors.white : colors.primaryDark} />
+                    <Ionicons
+                      name={a.icon}
+                      size={18}
+                      color={a.primary ? colors.white : colors.primaryDark}
+                    />
                   </View>
-                  <Text style={[styles.actionLabel, a.primary && styles.actionLabelPrimary]}>{a.label}</Text>
-                  <Text style={[styles.actionSub, a.primary && styles.actionSubPrimary]}>{a.sub}</Text>
+                  <Text style={[styles.actionLabel, a.primary && styles.actionLabelPrimary]}>
+                    {a.label}
+                  </Text>
+                  <Text style={[styles.actionSub, a.primary && styles.actionSubPrimary]}>
+                    {a.sub}
+                  </Text>
                 </Pressable>
-              ))}
+              );
+              })}
             </View>
           </SectionBlock>
 
@@ -630,25 +728,45 @@ export function BookingDetailScreen() {
 
       {booking.status === 'upcoming' ? (
         <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, spacing.md) }]}>
-          <Pressable
-            style={styles.footerSecondary}
-            onPress={() => openSupport({ chat: true, topic: `Message ${booking.maid}` })}
-          >
-            <Ionicons name="chatbubble-ellipses-outline" size={18} color={colors.primaryDark} />
-            <Text style={styles.footerSecondaryText}>Message pro</Text>
-          </Pressable>
-          <Pressable style={styles.footerPrimary} onPress={() => openTrack(booking.id)}>
-            <LinearGradient
-              colors={['#084F4A', '#0B6E67', '#12A598']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.footerPrimaryGrad}
+          {livePing ? (
+            <View style={styles.footerLiveStrip}>
+              <View style={styles.footerLiveDot} />
+              <Text style={styles.footerLiveText}>
+                GPS live · updated{' '}
+                {new Date(livePing.recordedAt).toLocaleTimeString('en-IN', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
+              </Text>
+            </View>
+          ) : null}
+          <View style={styles.footerRow}>
+            <Pressable
+              style={styles.footerSecondary}
+              onPress={() => openSupport({ chat: true, topic: `Message ${booking.maid}` })}
             >
-              <Ionicons name="navigate" size={18} color={colors.white} />
-              <Text style={styles.footerPrimaryText}>Track live</Text>
-              <Ionicons name="arrow-forward" size={16} color={colors.white} />
-            </LinearGradient>
-          </Pressable>
+              <Ionicons name="chatbubble-ellipses-outline" size={18} color={colors.primaryDark} />
+              <Text style={styles.footerSecondaryText}>Message pro</Text>
+            </Pressable>
+            <Pressable style={styles.footerPrimary} onPress={() => openTrack(booking.id)}>
+              <LinearGradient
+                colors={
+                  livePing
+                    ? ['#010F0E', '#084F4A', '#12A598']
+                    : ['#084F4A', '#0B6E67', '#12A598']
+                }
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.footerPrimaryGrad}
+              >
+                <Ionicons name="navigate" size={18} color={colors.white} />
+                <Text style={styles.footerPrimaryText}>
+                  {livePing ? 'Open live map' : 'Track live'}
+                </Text>
+                <Ionicons name="arrow-forward" size={16} color={colors.white} />
+              </LinearGradient>
+            </Pressable>
+          </View>
         </View>
       ) : null}
     </View>
@@ -804,8 +922,19 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(11,110,103,0.12)',
     overflow: 'hidden',
   },
-  summaryTop: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
-  summaryCopy: { flex: 1, gap: 4 },
+  summaryTop: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  summaryCopy: { flex: 1, gap: 4, minWidth: 0 },
+  summaryTopRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    flexShrink: 0,
+  },
   summaryEyebrow: {
     fontFamily: fonts.bold,
     fontSize: 10,
@@ -826,15 +955,45 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  rateRefBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: radius.pill,
+    backgroundColor: colors.primaryLight,
+    borderWidth: 1,
+    borderColor: 'rgba(11,110,103,0.12)',
+  },
+  rateRefBtnHighlight: {
+    borderColor: 'rgba(11,110,103,0.28)',
+    backgroundColor: '#E6F4F2',
+  },
+  rateRefText: {
+    fontFamily: fonts.bold,
+    fontSize: 12,
+    color: colors.muted,
+  },
+  rateRefTextHighlight: {
+    fontFamily: fonts.extraBold,
+    color: colors.primaryDark,
+  },
   summaryDivider: {
     height: StyleSheet.hairlineWidth,
     backgroundColor: colors.divider,
   },
   summaryBottom: {
     flexDirection: 'row',
-    alignItems: 'flex-end',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
     gap: spacing.sm,
+  },
+  summaryLeft: {
+    flex: 1,
+    gap: 4,
+    minWidth: 0,
+    paddingRight: spacing.xs,
   },
   summaryAmountLbl: { fontFamily: fonts.medium, fontSize: 11, color: colors.muted },
   summaryAmount: {
@@ -842,6 +1001,18 @@ const styles = StyleSheet.create({
     fontSize: 28,
     color: colors.ink,
     letterSpacing: -0.8,
+  },
+  summaryAmountNarrow: { fontSize: 22 },
+  walletChipInline: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 4,
+    backgroundColor: colors.primaryLight,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: radius.pill,
+    marginTop: 2,
   },
   walletChip: {
     flexDirection: 'row',
@@ -853,6 +1024,50 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
   },
   walletChipText: { fontFamily: fonts.semiBold, fontSize: 11, color: colors.primaryDark },
+  summaryOtpCol: {
+    alignItems: 'flex-end',
+    gap: 4,
+    flexShrink: 0,
+    maxWidth: '48%',
+  },
+  summaryOtpLbl: {
+    fontFamily: fonts.bold,
+    fontSize: 10,
+    color: colors.muted,
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+  },
+  summaryOtpRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#E6FAF6',
+    paddingLeft: spacing.sm,
+    paddingRight: 4,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(18,165,152,0.2)',
+  },
+  summaryOtpCode: {
+    fontFamily: fonts.extraBold,
+    fontSize: 18,
+    color: '#084F4A',
+    letterSpacing: 2,
+  },
+  summaryOtpCodeNarrow: {
+    fontSize: 14,
+    letterSpacing: 1,
+  },
+  summaryOtpShare: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(18,165,152,0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
 
   proCard: {
     borderRadius: radius.xxl,
@@ -860,19 +1075,10 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: 'rgba(110,231,183,0.35)',
     shadowColor: '#084F4A',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.12,
-    shadowRadius: 12,
-    elevation: 4,
-  },
-  proGlow: {
-    position: 'absolute',
-    top: -20,
-    right: -20,
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: 'rgba(110,231,183,0.15)',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 3,
   },
   proTop: {
     flexDirection: 'row',
@@ -881,17 +1087,17 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     paddingBottom: spacing.md,
   },
-  proAvatarRing: { position: 'relative' },
+  proAvatarRing: { position: 'relative', flexShrink: 0 },
   proAvatarGrad: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
+    width: 54,
+    height: 54,
+    borderRadius: 27,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.6)',
+    borderColor: 'rgba(255,255,255,0.8)',
   },
-  proInitial: { fontFamily: fonts.extraBold, fontSize: 22, color: colors.primaryDark },
+  proInitial: { fontFamily: fonts.extraBold, fontSize: 20, color: colors.primaryDark },
   proLive: {
     position: 'absolute',
     bottom: 2,
@@ -939,7 +1145,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
   },
   proChipText: { fontFamily: fonts.semiBold, fontSize: 10, color: colors.primaryDark },
-  proActions: { gap: spacing.xs },
+  proActions: { gap: spacing.xs, flexShrink: 0 },
   proActionBtn: {
     width: 38,
     height: 38,
@@ -1038,15 +1244,15 @@ const styles = StyleSheet.create({
     borderColor: colors.divider,
   },
   timelineDotDone: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
+    backgroundColor: '#10B981',
+    borderColor: '#059669',
   },
   timelineDotActive: {
-    backgroundColor: '#3B82F6',
-    borderColor: '#93C5FD',
-    shadowColor: '#3B82F6',
+    backgroundColor: '#12A598',
+    borderColor: '#6EE7B7',
+    shadowColor: '#12A598',
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.4,
+    shadowOpacity: 0.35,
     shadowRadius: 8,
     elevation: 4,
   },
@@ -1057,17 +1263,42 @@ const styles = StyleSheet.create({
     backgroundColor: colors.divider,
     marginVertical: 4,
   },
-  timelineLineDone: { backgroundColor: colors.primaryLight },
-  timelineCopy: { flex: 1, gap: 3, paddingBottom: spacing.xs },
+  timelineLineDone: { backgroundColor: '#6EE7B7' },
+  timelineCopy: { flex: 1, gap: 4, paddingBottom: spacing.sm },
   timelineCopyActive: {
-    backgroundColor: '#EEF6FF',
+    backgroundColor: '#E6FAF6',
     borderRadius: radius.lg,
     padding: spacing.sm,
     marginLeft: -spacing.xs,
+    borderWidth: 1,
+    borderColor: 'rgba(18,165,152,0.15)',
   },
   timelineTitle: { fontFamily: fonts.bold, fontSize: 14, color: colors.muted },
   timelineTitleDone: { color: colors.ink },
+  timelineTitleActive: { color: '#084F4A' },
   timelineSub: { fontFamily: fonts.regular, fontSize: 12, color: colors.muted, lineHeight: 17 },
+  timelineOtpRow: {
+    flexDirection: 'row',
+    gap: 6,
+    marginTop: spacing.xs,
+  },
+  timelineOtpDigit: {
+    flex: 1,
+    maxWidth: 44,
+    aspectRatio: 1,
+    backgroundColor: '#E6FAF6',
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: 'rgba(18,165,152,0.25)',
+  },
+  timelineOtpDigitText: {
+    fontFamily: fonts.extraBold,
+    fontSize: 18,
+    color: '#084F4A',
+    letterSpacing: 0.5,
+  },
 
   paymentCard: {
     backgroundColor: colors.white,
@@ -1116,6 +1347,14 @@ const styles = StyleSheet.create({
     minHeight: 96,
   },
   actionCardPrimary: { borderWidth: 0 },
+  actionCardRate: {
+    borderWidth: 0,
+    shadowColor: '#0B6E67',
+    shadowOpacity: 0.14,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
+  },
   actionIcon: {
     width: 36,
     height: 36,
@@ -1153,11 +1392,37 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    flexDirection: 'row',
     gap: spacing.sm,
     paddingHorizontal: layout.pad,
     paddingTop: spacing.sm,
     backgroundColor: 'rgba(244,246,248,0.96)',
+  },
+  footerLiveStrip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.md,
+    backgroundColor: '#ECFDF3',
+    borderWidth: 1,
+    borderColor: 'rgba(18,165,152,0.2)',
+  },
+  footerLiveDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#12A598',
+  },
+  footerLiveText: {
+    flex: 1,
+    fontFamily: fonts.semiBold,
+    fontSize: 11,
+    color: '#027A48',
+  },
+  footerRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
   },
   footerSecondary: {
     flex: 1,

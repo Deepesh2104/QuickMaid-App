@@ -7,7 +7,7 @@ import {
   type BookingPartnerBridgePayload,
   bookingAmountPaise,
   buildPartnerBookingDeepLink,
-} from '../../../../shared/booking-bridge';
+} from '../../shared/booking-bridge';
 
 async function readBridge(): Promise<BookingPartnerBridgePayload[]> {
   try {
@@ -18,18 +18,25 @@ async function readBridge(): Promise<BookingPartnerBridgePayload[]> {
   }
 }
 
-function orderToBridge(order: PlacedOrder, customerName?: string): BookingPartnerBridgePayload {
+function orderToBridge(
+  order: PlacedOrder,
+  customer?: { name?: string; phone?: string; publicId?: string },
+): BookingPartnerBridgePayload {
   return {
     id: order.id,
     bookingRef: order.bookingRef,
     service: order.service,
     address: order.address,
-    customerName: customerName ?? 'Customer',
+    customerName: customer?.name?.trim() || 'Customer',
+    customerPhone: customer?.phone,
+    customerPublicId: customer?.publicId,
     zone: undefined,
     slotLabel: order.slotLabel ?? order.time,
     visitDate: order.date,
     amountPaise: bookingAmountPaise(order.priceNum),
     completionOtp: order.completionOtp,
+    maidId: order.maidId,
+    maidName: order.maid,
     createdAt: order.createdAt,
     consumed: false,
   };
@@ -38,9 +45,9 @@ function orderToBridge(order: PlacedOrder, customerName?: string): BookingPartne
 /** Demo: enqueue booking for partner app + try deep link handoff. */
 export async function pushBookingToPartnerBridge(
   order: PlacedOrder,
-  customerName?: string,
+  customer?: { name?: string; phone?: string; publicId?: string },
 ): Promise<void> {
-  const payload = orderToBridge(order, customerName);
+  const payload = orderToBridge(order, customer);
   const bridge = await readBridge();
   if (!bridge.some((b) => b.id === payload.id)) {
     await AsyncStorage.setItem(

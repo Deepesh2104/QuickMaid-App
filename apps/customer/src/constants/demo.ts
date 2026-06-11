@@ -19,6 +19,9 @@ export interface DemoBooking {
   maidJobs?: number;
   completionOtp?: string;
   maidAssignedAt?: string;
+  /** Partner declined — awaiting next pro */
+  partnerReassignPending?: boolean;
+  lastDeclinedPartner?: string;
   otpVerifiedAt?: string;
   completedAt?: string;
   visitDate?: string;
@@ -55,7 +58,7 @@ export const DEMO_BOOKINGS: DemoBooking[] = [
     maidId: 'm_sunita',
     maidRating: 4.92,
     maidJobs: 1284,
-    completionOtp: '482916',
+    completionOtp: '123456',
     maidAssignedAt: new Date().toISOString(),
   },
   {

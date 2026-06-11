@@ -108,6 +108,14 @@ export function PartnerJobDeclineModal({
               <Ionicons name="information-circle-outline" size={14} color={colors.warning} />
               <Text style={styles.hintText}>Frequent declines may lower your priority score</Text>
             </View>
+
+            <View style={styles.bridgeStrip}>
+              <LinearGradient colors={['#1E1B4B', '#4338CA']} style={StyleSheet.absoluteFill} />
+              <Ionicons name="sync" size={13} color="#C7D2FE" />
+              <Text style={styles.bridgeText}>
+                Customer app ko reassignment notify · partner_declined bridge event
+              </Text>
+            </View>
           </View>
 
           <View style={styles.footer}>
@@ -236,6 +244,24 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semiBold,
     fontSize: 11,
     color: colors.warning,
+    lineHeight: 15,
+  },
+  bridgeStrip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    borderRadius: radius.lg,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(165,180,252,0.3)',
+  },
+  bridgeText: {
+    flex: 1,
+    fontFamily: fonts.medium,
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.9)',
     lineHeight: 15,
   },
   footer: {

@@ -1,14 +1,11 @@
 # FSD — Cross-App Bridge (Customer ↔ Partner Demo)
 
 **Status:** `UI-DEMO`  
-**Scope:** `QuickMaid-App/shared/`, `apps/partner/shared/`, customer `src/lib/*-bridge.ts`
+**Scope:** `QuickMaid-App/shared/`, `apps/partner/shared/`, `apps/customer/shared/`
 
 ## Overview
 
-Demo-only bridge so a customer order can appear as a partner pending job and partner visit pings can surface on the customer booking detail — **without a backend**. Works when:
-
-1. Both apps share the same device AsyncStorage (same app sandbox is **not** shared; use bridge sync button or deep link), or  
-2. Customer pushes via deep link `quickmaid-partner://booking?...`
+Demo-only bridge so customer orders, partner lifecycle, live location, cancel/reschedule sync across apps — **without a backend**. Works when both apps share the same device AsyncStorage (simulator / web) or via deep link handoff.
 
 Production replaces this with QuickMaid-API dispatch webhooks and real-time location API.
 
@@ -16,37 +13,65 @@ Production replaces this with QuickMaid-API dispatch webhooks and real-time loca
 
 | File | App | Role |
 |------|-----|------|
-| `shared/booking-bridge.ts` | Monorepo canonical | Types, storage key, deep link build/parse |
-| `apps/partner/shared/booking-bridge.ts` | Partner bundle copy | **Keep in sync** with monorepo `shared/` |
-| `apps/partner/src/.../booking-partner-bridge.ts` | Partner | Read bridge → `PartnerJob` pending |
-| `apps/customer/src/lib/booking-partner-bridge.ts` | Customer | `pushBookingToPartnerBridge()` after checkout |
-| `shared/visit-location-bridge.ts` | Monorepo | Live location store by `bookingRef` |
-| `apps/partner/shared/visit-location-bridge.ts` | Partner copy | Same sync note |
-| `apps/partner/.../visit-location.storage.ts` | Partner | Write pings during visit |
-| `apps/customer/.../visit-location-bridge.ts` | Customer | Poll for customer UI |
-| `BookingLiveLocationCard.tsx` | Customer | Shows “Pro is on the way” |
+| `shared/booking-bridge.ts` | Monorepo canonical | Order create → partner pending job |
+| `shared/booking-status-bridge.ts` | Monorepo canonical | Lifecycle events (accept → complete, cancel, reschedule) |
+| `shared/visit-location-bridge.ts` | Monorepo canonical | Live location by `bookingRef` |
+| `shared/visit-complete-bridge.ts` | Monorepo canonical | Post-OTP visit complete handoff → customer modal |
+| `apps/partner/shared/*` | Partner bundle | Metro copies — **keep in sync** |
+| `apps/customer/shared/*` | Customer bundle | Metro copies — **keep in sync** |
+| `partner/.../booking-partner-bridge.ts` | Partner | Ingest customer orders |
+| `partner/.../booking-status-bridge.storage.ts` | Partner | Publish + read lifecycle |
+| `customer/.../booking-partner-bridge.ts` | Customer | Push order after checkout |
+| `customer/.../booking-status-bridge.storage.ts` | Customer | Sync partner events → bookings |
+| `partner/.../visit-location.storage.ts` | Partner | Write GPS pings |
+| `customer/.../visit-location-bridge.ts` | Customer | Read pings for UI |
 
 ### Storage keys
 
-| Key | Constant |
-|-----|----------|
-| Booking bridge | `@qm/booking_partner_bridge_v1` |
-| Visit location | `@qm/visit_location_bridge_v1` |
+| Key | Constant | Purpose |
+|-----|----------|---------|
+| `@qm/booking_partner_bridge_v1` | `BOOKING_PARTNER_BRIDGE_KEY` | New orders queue |
+| `@qm/booking_status_bridge_v1` | `BOOKING_STATUS_BRIDGE_KEY` | Lifecycle events by `bookingRef` |
+| `@qm/booking_status_applied_v1` | `BOOKING_STATUS_APPLIED_KEY` | Idempotency (`customer:ref`, `partner:ref`) |
+| `@qm/visit_location_bridge_v1` | `VISIT_LOCATION_BRIDGE_KEY` | Latest partner ping per booking |
+| `@qm/pending_visit_complete` | `VISIT_COMPLETE_BRIDGE_KEY` | One-shot visit complete modal payload |
+
+### Status bridge events
+
+| Event | Publisher | Consumer |
+|-------|-----------|----------|
+| `partner_accepted` | Partner (manual + auto-assign) | Customer → update pro name, notification |
+| `partner_in_progress` | Partner start visit | Customer → notification, live track |
+| `partner_completed` | Partner OTP complete | Customer → mark completed + visit modal |
+| `partner_declined` | Partner decline | Customer → reassignment notification |
+| `customer_cancelled` | Customer cancel | Partner → decline job |
+| `customer_rescheduled` | Customer reschedule | Partner → patch visit date/slot |
 
 ## Flow — customer order → partner job
 
 ```mermaid
 sequenceDiagram
-  participant C as Customer CheckoutContext
-  participant B as booking-bridge AsyncStorage
-  participant P as Partner booking-partner-bridge
+  participant C as Customer Checkout
+  participant B as booking-bridge
+  participant P as Partner refresh
   participant J as PartnerJobsContext
 
   C->>B: pushBookingToPartnerBridge(order)
-  Note over P: Partner refresh or Settings demo sync
-  P->>B: read unconsumed rows
-  P->>J: ingestBookingBridgePayload → pending job
-  P->>B: mark consumed
+  P->>B: syncCustomerBookingBridge()
+  P->>J: ingest → pending job
+```
+
+## Flow — lifecycle sync
+
+```mermaid
+sequenceDiagram
+  participant P as PartnerJobsContext
+  participant S as booking-status bridge
+  participant C as useUserBookings.refresh
+
+  P->>S: publish partner_accepted / in_progress / completed
+  C->>S: syncBookingsFromPartnerStatusBridge()
+  C->>C: patch booking + notifications
 ```
 
 ## Flow — live location
@@ -55,33 +80,60 @@ sequenceDiagram
 sequenceDiagram
   participant PD as Partner JobDetail (in_progress)
   participant VL as visit-location bridge
-  participant CD as Customer BookingDetail
+  participant TR as Customer Track screen
 
-  PD->>VL: write ping every N seconds (demo)
-  CD->>VL: poll every 8s
-  CD->>CD: BookingLiveLocationCard
+  PD->>PD: auto-start live share on visit start
+  PD->>VL: GPS ping every ~15s
+  TR->>VL: poll every 8s
+  TR->>TR: real coords + ETA
 ```
 
-## Partner demo tools
+## Metro bundling
 
-`PartnerSettingsDemoTools.tsx` → **Sync customer bookings** calls `syncCustomerBookingBridge()`.
+Both apps pin Metro `projectRoot` to their app folder and import from `apps/{app}/shared/`. Do not import monorepo `shared/` directly from `src/` — copy files and keep in sync.
 
-## Metro bundling note
+## Flow — visit complete handoff
 
-Partner app copies `shared/` into `apps/partner/shared/` because Metro `projectRoot` is `apps/partner`. Customer should mirror this pattern if bundle errors occur for `../../../../shared/` imports.
+```mermaid
+sequenceDiagram
+  participant P as Partner OTP complete
+  participant S as booking-status bridge
+  participant V as visit-complete bridge
+  participant C as BookingVisitCompleteModal
+
+  P->>S: partner_completed
+  C->>S: syncBookingsFromPartnerStatusBridge()
+  C->>V: setPendingVisitComplete(payload)
+  C->>C: BookingVisitCompleteModal (2000x premium)
+```
+
+## Batch 4 UI (live location)
+
+| Component | App | Role |
+|-----------|-----|------|
+| `PartnerLiveLocationCard` | Partner | Auto GPS share on visit · bridge write |
+| `PartnerLiveVisitBanner` | Partner | Schedule in-progress hero |
+| `PartnerActiveJobBanner` | Partner | Home live visit CTA |
+| `BookingLiveLocationCard` | Customer | Detail live ping card |
+| `BookingTrackScreen` + `BookingTrackMap` | Customer | Real GPS map position |
+| `BookingUpcomingHero` | Customer | GPS LIVE badge when sharing |
+| `usePartnerLivePing` | Customer | Shared 8s poll hook |
+
+## Batch 1 UI (foundation)
+
+| Component | Screen | Role |
+|-----------|--------|------|
+| `CheckoutPartnerBridgeCard` | Checkout success | Order → partner bridge pipeline |
+| `BookingVisitCompleteModal` | Bookings / Detail | Bridge-synced completion celebration |
+
+## Demo OTP
+
+All visit completion OTPs use `123456` (`DEMO_OTP`) for cross-app demo parity.
 
 ## Phase 4 replacement
 
 | Demo | Production |
 |------|------------|
-| AsyncStorage bridge | `POST /orders` → dispatch service → `POST /maids/me/offers` |
-| Deep link payload | Push notification + API fetch |
-| Location bridge | `POST /jobs/:id/location` + customer `GET /bookings/:id/tracking` |
-
-## Migration checklist
-
-- [ ] Remove `shared/booking-bridge.ts` from mobile apps  
-- [ ] Customer checkout calls `POST /customers/me/bookings`  
-- [ ] Partner receives offers via API / FCM  
-- [ ] Live location via WebSocket or polling endpoint  
-- [ ] Delete duplicate `apps/partner/shared/` copies  
+| AsyncStorage bridges | API webhooks + FCM |
+| Deep link payload | Push notification + fetch |
+| Location bridge | `POST /jobs/:id/location` + customer tracking API |

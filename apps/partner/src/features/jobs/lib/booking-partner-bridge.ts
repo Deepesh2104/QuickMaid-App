@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import { DEMO_VISIT_COMPLETION_OTP } from '@/constants/app';
 import type { PartnerJob } from '@/constants/demo';
 import {
   BOOKING_PARTNER_BRIDGE_KEY,
@@ -9,6 +10,7 @@ import {
 import { emitDispatchEvent } from '@/features/jobs/lib/dispatch.events';
 import { notifyNewManualOffer } from '@/features/jobs/lib/dispatch.notifications';
 import { notifyPartnerJobsChanged } from '@/features/jobs/lib/jobs.events';
+import { getPartnerState } from '@/lib/storage';
 import { getPartnerJobs, savePartnerJobs } from '@/features/jobs/lib/jobs.storage';
 
 export type { BookingPartnerBridgePayload };
@@ -45,8 +47,11 @@ export function bridgePayloadToPartnerJob(payload: BookingPartnerBridgePayload):
     amountPaise: payload.amountPaise,
     status: 'pending',
     distanceKm: 2.8,
-    completionOtp: payload.completionOtp ?? '123456',
+    completionOtp: payload.completionOtp ?? DEMO_VISIT_COMPLETION_OTP,
     customerBookingId: payload.id,
+    customerPublicId: payload.customerPublicId,
+    customerPreferredMaidName: payload.maidName,
+    customerPreferredMaidId: payload.maidId,
   };
 }
 
@@ -61,8 +66,11 @@ export async function ingestBookingBridgePayload(
 
   const job = bridgePayloadToPartnerJob(payload);
   await savePartnerJobs([job, ...jobs]);
-  await notifyNewManualOffer(job);
-  emitDispatchEvent({ type: 'new_offer', jobId: job.id, bookingRef: job.bookingRef });
+  const { isOnline } = await getPartnerState();
+  if (isOnline) {
+    await notifyNewManualOffer(job);
+    emitDispatchEvent({ type: 'new_offer', jobId: job.id, bookingRef: job.bookingRef });
+  }
 
   const bridge = await readBridge();
   const idx = bridge.findIndex((b) => b.id === payload.id);

@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { STORAGE_KEYS, UserProfile } from '../constants/app';
+import { syncCustomerPublicId } from './quickmaid-ids';
 
 type RegisteredUsersMap = Record<string, UserProfile>;
 
@@ -32,11 +33,23 @@ export async function setAuthComplete(): Promise<void> {
   await AsyncStorage.setItem(STORAGE_KEYS.authComplete, 'true');
 }
 
+function normalizeUserProfile(profile: UserProfile): UserProfile {
+  const publicId = syncCustomerPublicId(profile.publicId);
+  if (publicId === profile.publicId) return profile;
+  return { ...profile, publicId };
+}
+
 export async function getUserProfile(): Promise<UserProfile | null> {
   const raw = await AsyncStorage.getItem(STORAGE_KEYS.userProfile);
   if (!raw) return null;
   try {
-    return JSON.parse(raw) as UserProfile;
+    const parsed = JSON.parse(raw) as UserProfile;
+    const profile = normalizeUserProfile(parsed);
+    if (profile.publicId !== parsed.publicId) {
+      await saveUserProfile(profile);
+      await registerUser(profile);
+    }
+    return profile;
   } catch {
     return null;
   }
@@ -67,15 +80,18 @@ export async function registerUser(profile: UserProfile): Promise<void> {
 export async function signInExistingUser(phone: string): Promise<UserProfile | null> {
   const profile = await getRegisteredUser(phone);
   if (!profile) return null;
-  await saveUserProfile(profile);
+  const next = normalizeUserProfile(profile);
+  await saveUserProfile(next);
+  await registerUser(next);
   await setAuthComplete();
-  return profile;
+  return next;
 }
 
 /** New user: save profile and register phone for future sign-ins. */
 export async function completeRegistration(profile: UserProfile): Promise<void> {
-  await saveUserProfile(profile);
-  await registerUser(profile);
+  const next = normalizeUserProfile(profile);
+  await saveUserProfile(next);
+  await registerUser(next);
   await setAuthComplete();
 }
 

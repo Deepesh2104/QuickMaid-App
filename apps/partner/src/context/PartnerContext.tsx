@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 
 import type { PartnerProfile, PartnerRuntimeState } from '@/constants/app';
 import { emitDispatchEvent } from '@/features/jobs/lib/dispatch.events';
+import { notifyUnlistedPendingOffers } from '@/features/jobs/lib/dispatch.notifications';
 import {
   getPartnerProfile,
   getPartnerState,
@@ -45,7 +46,10 @@ export function PartnerProvider({ children }: { children: ReactNode }) {
       const next = { ...state, isOnline: online };
       setState(next);
       await savePartnerState(next);
-      if (online) emitDispatchEvent({ type: 'online_pulse' });
+      if (online) {
+        emitDispatchEvent({ type: 'online_pulse' });
+        await notifyUnlistedPendingOffers();
+      }
     },
     [state],
   );

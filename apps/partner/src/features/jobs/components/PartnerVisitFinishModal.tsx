@@ -19,6 +19,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { OtpInput } from '@/components/ui/OtpInput';
 import type { PartnerJob } from '@/constants/demo';
+import { PartnerVisitOtpUnifiedCard } from '@/features/jobs/components/PartnerVisitOtpUnifiedCard';
 import { completePartnerVisitWithOtp } from '@/features/jobs/lib/job.completion';
 import { formatRs, netEarningPaise } from '@/features/home/lib/home.greeting';
 import { fonts } from '@/theme/fonts';
@@ -131,8 +132,22 @@ export function PartnerVisitFinishModal({
                 <SummaryRow icon="wallet-outline" text={`You earn ${formatRs(net)}`} />
               </View>
 
+              <View style={styles.bridgeCard}>
+                <LinearGradient colors={['#010F0E', '#084F4A']} style={styles.bridgeGrad}>
+                  <View style={styles.bridgeRow}>
+                    <Ionicons name="sync" size={14} color="#6EE7B7" />
+                    <Text style={styles.bridgeTitle}>Completes customer booking</Text>
+                  </View>
+                  <Text style={styles.bridgeSub}>
+                    OTP verify hone par customer app mein visit complete + rating modal khulega
+                  </Text>
+                </LinearGradient>
+              </View>
+
+              <PartnerVisitOtpUnifiedCard expectedOtp={job.completionOtp} />
+
               <View style={styles.otpCard}>
-                <Text style={styles.otpLabel}>COMPLETION OTP</Text>
+                <Text style={styles.otpLabel}>ENTER CUSTOMER OTP</Text>
                 <OtpInput
                   value={otp}
                   onChange={(v) => {
@@ -291,6 +306,21 @@ const styles = StyleSheet.create({
     gap: 6,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(15,20,25,0.06)',
+  },
+  bridgeCard: {
+    borderRadius: radius.lg,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(110,231,183,0.25)',
+  },
+  bridgeGrad: { padding: spacing.md, gap: 6 },
+  bridgeRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  bridgeTitle: { fontFamily: fonts.bold, fontSize: 11, color: '#6EE7B7' },
+  bridgeSub: {
+    fontFamily: fonts.medium,
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.78)',
+    lineHeight: 15,
   },
   summaryRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   summaryText: {

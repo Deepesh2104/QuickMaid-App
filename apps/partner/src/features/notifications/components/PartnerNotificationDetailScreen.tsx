@@ -7,6 +7,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { FormScreenSkeleton } from '@/components/ui/Skeleton';
 import { getNotificationById, markNotificationRead } from '@/features/notifications/lib/notifications.storage';
 import {
   formatNotificationDate,
@@ -88,11 +89,7 @@ export function PartnerNotificationDetailScreen() {
   const footerPad = useMemo(() => insets.bottom + spacing.sm, [insets.bottom]);
 
   if (loading) {
-    return (
-      <View style={styles.loader}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
-    );
+    return <FormScreenSkeleton />;
   }
 
   if (!item) {

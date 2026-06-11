@@ -1,5 +1,9 @@
 import { DEMO_OTP } from '@/constants/app';
 import type { PartnerJob } from '@/constants/demo';
+import {
+  partnerStatusFromJob,
+  publishPartnerBookingStatus,
+} from '@/features/jobs/lib/booking-status-bridge.storage';
 import { getPartnerJobById, updatePartnerJobStatus } from '@/features/jobs/lib/jobs.storage';
 
 export const DEMO_FALLBACK_COMPLETION_OTP = DEMO_OTP;
@@ -24,8 +28,13 @@ export async function completePartnerVisitWithOtp(
     return { ok: false, error: 'Galat OTP. Customer se sahi code lein.' };
   }
 
+  const completedAt = new Date().toISOString();
   const updated = await updatePartnerJobStatus(jobId, 'completed');
   if (!updated) return { ok: false, error: 'Visit complete nahi ho paya. Dobara try karein.' };
+
+  await publishPartnerBookingStatus(
+    partnerStatusFromJob(updated, 'partner_completed', undefined, { completedAt }),
+  );
 
   return { ok: true, job: updated };
 }

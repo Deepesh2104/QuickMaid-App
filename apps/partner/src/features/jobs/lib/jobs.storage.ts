@@ -86,6 +86,22 @@ export async function getPartnerJobById(id: string): Promise<PartnerJob | null> 
   return jobs.find((j) => j.id === id) ?? null;
 }
 
+export async function patchPartnerJob(
+  id: string,
+  patch: Partial<PartnerJob>,
+): Promise<PartnerJob | null> {
+  const raw = await AsyncStorage.getItem(STORAGE_KEYS.partnerJobs);
+  const stored = raw ? (JSON.parse(raw) as PartnerJob[]) : [...DEMO_JOBS];
+  const jobs = mergeStoredWithDemo(stored);
+  const idx = jobs.findIndex((j) => j.id === id);
+  if (idx < 0) return null;
+
+  const next = [...jobs];
+  next[idx] = { ...next[idx], ...patch };
+  await savePartnerJobs(next);
+  return next[idx];
+}
+
 export async function updatePartnerJobStatus(
   id: string,
   status: JobStatus,

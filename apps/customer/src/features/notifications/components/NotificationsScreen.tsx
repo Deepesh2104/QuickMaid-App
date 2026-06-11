@@ -15,12 +15,14 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ListPagination } from '@/components/ui/ListPagination';
+import { NotificationListSkeleton } from '@/components/ui/Skeleton';
 import { PAGE_SIZE_NOTIFICATIONS } from '@/constants/pagination';
 import { usePagination } from '@/hooks/usePagination';
 import { useNotifications } from '../hooks/useNotifications';
 import { NOTIFICATION_FILTERS, notificationDayLabel } from '../lib/notifications.utils';
 import type { AppNotification, NotificationCategory } from '../types/notification.types';
 import { NotificationCard } from './NotificationCard';
+import { NotificationsBridgeHero } from './NotificationsBridgeHero';
 import { fonts } from '@/theme/fonts';
 import { colors } from '@/theme/colors';
 import { layout, radius, spacing } from '@/theme/spacing';
@@ -147,9 +149,7 @@ export function NotificationsScreen() {
       </View>
 
       {loading ? (
-        <View style={styles.loader}>
-          <ActivityIndicator size="large" color={colors.primary} />
-        </View>
+        <NotificationListSkeleton />
       ) : filtered.length === 0 ? (
         <View style={styles.empty}>
           <LinearGradient colors={['#E6F4F2', '#FFFFFF']} style={styles.emptyIcon}>
@@ -165,6 +165,7 @@ export function NotificationsScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + spacing.xl }]}
         >
+          <NotificationsBridgeHero items={items} />
           {slice.map((n, idx) => {
             const day = notificationDayLabel(n.createdAt);
             const prevDay = idx > 0 ? notificationDayLabel(slice[idx - 1].createdAt) : null;

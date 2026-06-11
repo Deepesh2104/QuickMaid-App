@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { FormScreenSkeleton } from '@/components/ui/Skeleton';
 import { useNotificationNavigation } from '../hooks/useNotificationNavigation';
 import { getNotificationById, markNotificationRead } from '../lib/notifications.storage';
 import {
@@ -22,6 +23,7 @@ import {
   getActionLabel,
   hasDeepLink,
 } from '../lib/notifications.utils';
+import { NotificationBridgeDetailCard } from './NotificationBridgeDetailCard';
 import type { AppNotification } from '../types/notification.types';
 import { fonts } from '@/theme/fonts';
 import { colors } from '@/theme/colors';
@@ -63,11 +65,7 @@ export function NotificationDetailScreen() {
   }, [id]);
 
   if (loading) {
-    return (
-      <View style={styles.loader}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
-    );
+    return <FormScreenSkeleton />;
   }
 
   if (!item) {
@@ -142,6 +140,8 @@ export function NotificationDetailScreen() {
             </View>
           </View>
         </LinearGradient>
+
+        <NotificationBridgeDetailCard notification={item} />
 
         <View style={styles.detailCard}>
           <Text style={styles.detailEyebrow}>FULL MESSAGE</Text>

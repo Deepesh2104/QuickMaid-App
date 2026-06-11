@@ -8,12 +8,15 @@ export interface BookingPartnerBridgePayload {
   service: string;
   address: string;
   customerName?: string;
+  customerPublicId?: string;
   zone?: string;
   slotLabel?: string;
   visitDate?: string;
   amountPaise: number;
   completionOtp?: string;
   customerPhone?: string;
+  maidId?: string;
+  maidName?: string;
   createdAt: string;
   consumed?: boolean;
 }
@@ -34,6 +37,7 @@ export function buildPartnerBookingDeepLink(payload: BookingPartnerBridgePayload
     otp: payload.completionOtp ?? '',
     name: payload.customerName ?? 'Customer',
     zone: payload.zone ?? 'Shankar Nagar',
+    maid: payload.maidName ?? '',
   });
   return `quickmaid-partner://booking?${q.toString()}`;
 }
@@ -60,6 +64,7 @@ export function parsePartnerBookingDeepLink(url: string): BookingPartnerBridgePa
       completionOtp: params.get('otp') || undefined,
       customerName: params.get('name') || 'Customer',
       zone: params.get('zone') || 'Shankar Nagar',
+      maidName: params.get('maid') || undefined,
       createdAt: new Date().toISOString(),
     };
   } catch {

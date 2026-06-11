@@ -60,11 +60,11 @@ interface PartnerJobAcceptedModalProps {
 
 const NEXT_STEPS = [
 
-  'Customer ko confirm notify ho gaya',
+  'Customer app bridge sync — pro assigned notify',
 
-  'Visit day par detail se address dekho',
+  'Start visit par live GPS + track screen update',
 
-  'Complete par earning weekly payout me',
+  'OTP complete par customer booking close + payout batch',
 
 ];
 
@@ -261,6 +261,16 @@ export function PartnerJobAcceptedModal({
             </View>
 
 
+
+            {job.customerBookingId ? (
+              <View style={styles.bridgeStrip}>
+                <LinearGradient colors={['#0F172A', '#1570EF']} style={StyleSheet.absoluteFill} />
+                <Ionicons name="sync" size={14} color="#93C5FD" />
+                <Text style={styles.bridgeStripText}>
+                  Customer app notified · {job.customerName} sees you as assigned pro
+                </Text>
+              </View>
+            ) : null}
 
             <View style={styles.summary}>
 
@@ -545,6 +555,26 @@ const styles = StyleSheet.create({
   earnLabel: { fontFamily: fonts.medium, fontSize: 10, color: 'rgba(255,255,255,0.7)' },
 
   earnValue: { fontFamily: fonts.extraBold, fontSize: 20, color: colors.partnerGold, letterSpacing: -0.3 },
+
+  bridgeStrip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    borderRadius: radius.lg,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(147,197,253,0.3)',
+  },
+
+  bridgeStripText: {
+    flex: 1,
+    fontFamily: fonts.medium,
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.9)',
+    lineHeight: 15,
+  },
 
   summary: {
 

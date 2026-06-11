@@ -93,3 +93,23 @@ export function proMapPosition(progress: number): { x: number; y: number } {
   const y = 78 - progress * 46;
   return { x, y };
 }
+
+/** Demo: map real Raipur-area GPS to SVG percent coords for live track map */
+const MAP_ANCHOR = { lat: 21.2514, lng: 81.6296 };
+
+export function gpsToMapPercent(lat: number, lng: number): { x: number; y: number } {
+  const x = 50 + (lng - MAP_ANCHOR.lng) * 4200;
+  const y = 52 - (lat - MAP_ANCHOR.lat) * 4200;
+  return {
+    x: Math.min(86, Math.max(14, x)),
+    y: Math.min(76, Math.max(20, y)),
+  };
+}
+
+export function mapPositionFromLive(
+  progress: number,
+  live?: { lat: number; lng: number } | null,
+): { x: number; y: number } {
+  if (live) return gpsToMapPercent(live.lat, live.lng);
+  return proMapPosition(progress);
+}

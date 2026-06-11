@@ -40,10 +40,10 @@ export function BookingRateSuccessModal({
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={[styles.backdrop, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
         <View style={styles.card}>
-          <LinearGradient colors={['#FFFAEB', '#FFFFFF']} style={styles.cardBg} />
+          <LinearGradient colors={['#ECFDF5', '#FFFFFF']} style={styles.cardBg} />
 
           <View style={styles.iconWrap}>
-            <LinearGradient colors={['#F79009', '#B54708']} style={styles.iconGrad}>
+            <LinearGradient colors={['#084F4A', '#0B6E67', '#12A598']} style={styles.iconGrad}>
               <Ionicons name="star" size={32} color={colors.white} />
             </LinearGradient>
           </View>
@@ -59,7 +59,7 @@ export function BookingRateSuccessModal({
                 key={i}
                 name={i < rating ? 'star' : 'star-outline'}
                 size={28}
-                color="#F79009"
+                color={colors.star}
               />
             ))}
           </View>
@@ -72,7 +72,7 @@ export function BookingRateSuccessModal({
               'Aapka feedback quality improve karta hai',
             ].map((p) => (
               <View key={p} style={styles.point}>
-                <Ionicons name="checkmark-circle" size={14} color="#B54708" />
+                <Ionicons name="checkmark-circle" size={14} color={colors.success} />
                 <Text style={styles.pointText}>{p}</Text>
               </View>
             ))}
@@ -131,7 +131,7 @@ const styles = StyleSheet.create({
     lineHeight: 19,
   },
   stars: { flexDirection: 'row', gap: 6, marginTop: spacing.xs },
-  ratingLabel: { fontFamily: fonts.bold, fontSize: 14, color: '#B54708' },
+  ratingLabel: { fontFamily: fonts.bold, fontSize: 14, color: colors.primaryDark },
   points: { width: '100%', gap: spacing.sm },
   point: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
   pointText: { flex: 1, fontFamily: fonts.medium, fontSize: 12, color: colors.muted, lineHeight: 17 },

@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   VISIT_LOCATION_BRIDGE_KEY,
   type VisitLocationBridgeEntry,
-} from '../../../../shared/visit-location-bridge';
+} from '../../shared/visit-location-bridge';
 
 export type { VisitLocationBridgeEntry };
 

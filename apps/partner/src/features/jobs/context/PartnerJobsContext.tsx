@@ -7,6 +7,11 @@ import { completePartnerVisitWithOtp } from '@/features/jobs/lib/job.completion'
 import { subscribePartnerJobsChanged } from '@/features/jobs/lib/jobs.events';
 import { declineReasonLabel, type DeclineReasonId } from '@/features/jobs/constants/decline.premium';
 import { syncCustomerBookingBridge } from '@/features/jobs/lib/booking-partner-bridge';
+import {
+  partnerStatusFromJob,
+  publishPartnerBookingStatus,
+  syncJobsFromCustomerStatusBridge,
+} from '@/features/jobs/lib/booking-status-bridge.storage';
 import { subscribeDispatchEvents } from '@/features/jobs/lib/dispatch.events';
 import { passJobToNextPartner } from '@/features/jobs/lib/job-reassign.utils';
 import { notifyJobPassedToNextPartner } from '@/features/jobs/lib/dispatch.notifications';
@@ -42,6 +47,7 @@ export function PartnerJobsProvider({ children }: { children: ReactNode }) {
 
   const refresh = useCallback(async () => {
     await syncCustomerBookingBridge();
+    await syncJobsFromCustomerStatusBridge();
     await expireStalePendingOffers();
     const all = await getPartnerJobs();
     setJobs(all);
@@ -93,11 +99,14 @@ export function PartnerJobsProvider({ children }: { children: ReactNode }) {
       const updated = await updatePartnerJobStatus(id, 'accepted');
       if (updated) {
         await clearOfferListedAt(id);
+        await publishPartnerBookingStatus(
+          partnerStatusFromJob(updated, 'partner_accepted', profile?.name),
+        );
         applyJobUpdate(updated);
       }
       return updated;
     },
-    [applyJobUpdate, profile?.kycStatus],
+    [applyJobUpdate, profile?.kycStatus, profile?.name],
   );
 
   const declineJob = useCallback(
@@ -107,6 +116,9 @@ export function PartnerJobsProvider({ children }: { children: ReactNode }) {
       });
       if (updated) {
         await clearOfferListedAt(id);
+        await publishPartnerBookingStatus(
+          partnerStatusFromJob(updated, 'partner_declined', profile?.name),
+        );
         applyJobUpdate(updated);
         await notifyJobPassedToNextPartner(updated);
         const reason = reasonId ? declineReasonLabel(reasonId) : 'Declined';
@@ -115,16 +127,21 @@ export function PartnerJobsProvider({ children }: { children: ReactNode }) {
       }
       return updated;
     },
-    [applyJobUpdate, refresh],
+    [applyJobUpdate, profile?.name, refresh],
   );
 
   const startVisit = useCallback(
     async (id: string) => {
       const updated = await updatePartnerJobStatus(id, 'in_progress');
-      if (updated) applyJobUpdate(updated);
+      if (updated) {
+        await publishPartnerBookingStatus(
+          partnerStatusFromJob(updated, 'partner_in_progress', profile?.name),
+        );
+        applyJobUpdate(updated);
+      }
       return updated;
     },
-    [applyJobUpdate],
+    [applyJobUpdate, profile?.name],
   );
 
   const completeVisit = useCallback(

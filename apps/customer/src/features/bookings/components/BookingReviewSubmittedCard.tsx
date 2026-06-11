@@ -22,7 +22,7 @@ export function BookingReviewSubmittedCard({ booking }: BookingReviewSubmittedCa
     <View style={styles.card}>
       <View style={styles.header}>
         <View style={styles.icon}>
-          <Ionicons name="star" size={18} color="#F79009" />
+          <Ionicons name="star" size={18} color={colors.star} />
         </View>
         <View style={styles.copy}>
           <Text style={styles.title}>Your review</Text>
@@ -34,7 +34,7 @@ export function BookingReviewSubmittedCard({ booking }: BookingReviewSubmittedCa
               key={i}
               name={i < booking.reviewRating! ? 'star' : 'star-outline'}
               size={14}
-              color="#F79009"
+              color={colors.star}
             />
           ))}
         </View>
@@ -57,12 +57,12 @@ export function BookingReviewSubmittedCard({ booking }: BookingReviewSubmittedCa
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#FFFAEB',
+    backgroundColor: colors.successBg,
     borderRadius: radius.xxl,
     padding: spacing.lg,
     gap: spacing.sm,
     borderWidth: 1,
-    borderColor: 'rgba(247,144,9,0.2)',
+    borderColor: 'rgba(2,122,72,0.12)',
   },
   header: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   icon: {
@@ -74,8 +74,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   copy: { flex: 1, gap: 2 },
-  title: { fontFamily: fonts.bold, fontSize: 14, color: '#B54708' },
-  sub: { fontFamily: fonts.medium, fontSize: 12, color: '#93370D' },
+  title: { fontFamily: fonts.bold, fontSize: 14, color: colors.primaryDark },
+  sub: { fontFamily: fonts.medium, fontSize: 12, color: colors.muted },
   stars: { flexDirection: 'row', gap: 2 },
   tags: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   tag: {
@@ -84,9 +84,9 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     borderRadius: radius.pill,
     borderWidth: 1,
-    borderColor: 'rgba(247,144,9,0.2)',
+    borderColor: 'rgba(11,110,103,0.12)',
   },
-  tagText: { fontFamily: fonts.semiBold, fontSize: 11, color: '#B54708' },
+  tagText: { fontFamily: fonts.semiBold, fontSize: 11, color: colors.primaryDark },
   text: {
     fontFamily: fonts.regular,
     fontSize: 13,

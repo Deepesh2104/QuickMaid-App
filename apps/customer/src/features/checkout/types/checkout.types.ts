@@ -84,6 +84,8 @@ export interface PlacedOrder {
   maidJobs?: number;
   completionOtp?: string;
   maidAssignedAt?: string;
+  partnerReassignPending?: boolean;
+  lastDeclinedPartner?: string;
   otpVerifiedAt?: string;
   completedAt?: string;
   cancelledAt?: string;

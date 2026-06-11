@@ -9,6 +9,7 @@ import { colors } from '@/theme/colors';
 import { layout, radius, spacing } from '@/theme/spacing';
 
 import { useNotifications } from '@/features/notifications/hooks/useNotifications';
+import { syncBookingsFromPartnerStatusBridge } from '@/lib/booking-status-bridge.storage';
 import { useHomeDeliveryAddress } from '../hooks/useHomeDeliveryAddress';
 import { useHomeProfile } from '../hooks/useHomeProfile';
 import { HomeDeliverToSheet } from './HomeDeliverToSheet';
@@ -49,6 +50,7 @@ export function HomeScreen() {
   useFocusEffect(
     useCallback(() => {
       void refreshDelivery();
+      void syncBookingsFromPartnerStatusBridge();
     }, [refreshDelivery]),
   );
 

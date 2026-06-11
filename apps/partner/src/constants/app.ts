@@ -1,4 +1,4 @@
-export const DEMO_OTP = '123456';
+export { DEMO_OTP, DEMO_AUTH_OTP, DEMO_VISIT_COMPLETION_OTP } from '../../shared/demo-otp';
 
 /** Grace period before partner data is permanently purged after delete request */
 export const ACCOUNT_DELETION_GRACE_DAYS = 7;

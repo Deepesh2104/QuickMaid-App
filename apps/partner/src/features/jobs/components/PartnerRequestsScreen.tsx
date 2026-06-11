@@ -76,6 +76,7 @@ import { buildManualOffers } from '@/features/jobs/lib/dispatch.utils';
 import { OFFER_WINDOW_LABEL_MINUTES } from '@/features/jobs/lib/offer-expiry.utils';
 import { hasManualTestJobs, manualTestHint } from '@/features/jobs/lib/manual-test.utils';
 import { resetAcceptDeclineTestJobs, resetPartnerJobsToDemo } from '@/features/jobs/lib/jobs.storage';
+import { JobListSkeleton } from '@/components/ui/Skeleton';
 import { usePartnerPreferences } from '@/features/settings/hooks/usePartnerPreferences';
 
 import {
@@ -362,13 +363,7 @@ export function PartnerRequestsScreen({ variant = 'stack' }: PartnerRequestsScre
 
 
         {loading ? (
-
-          <View style={styles.loader}>
-
-            <ActivityIndicator size="large" color={colors.primary} />
-
-          </View>
-
+          <JobListSkeleton count={4} />
         ) : (
 
           <ScrollView

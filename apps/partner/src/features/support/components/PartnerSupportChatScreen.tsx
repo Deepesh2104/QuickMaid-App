@@ -17,6 +17,7 @@ import {
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { NotificationListSkeleton } from '@/components/ui/Skeleton';
 import { SUPPORT_CONTACT } from '@/constants/demo';
 import { getJobById } from '@/features/support/lib/job.lookup';
 import {
@@ -124,11 +125,7 @@ export function PartnerSupportChatScreen() {
   };
 
   if (loading) {
-    return (
-      <View style={styles.loader}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
-    );
+    return <NotificationListSkeleton count={4} />;
   }
 
   return (

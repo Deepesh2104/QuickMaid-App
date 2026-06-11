@@ -69,6 +69,14 @@ export function BookingRescheduleSuccessModal({
             </View>
           </View>
 
+          <View style={styles.bridgeStrip}>
+            <LinearGradient colors={['#042F2E', '#0D9488']} style={StyleSheet.absoluteFill} />
+            <Ionicons name="sync" size={14} color="#5EEAD4" />
+            <Text style={styles.bridgeText}>
+              Partner calendar updated · {booking.slotLabel ?? booking.time} synced via bridge
+            </Text>
+          </View>
+
           <View style={styles.points}>
             {[
               'Pro ko naya slot notify ho jayega',
@@ -145,6 +153,24 @@ const styles = StyleSheet.create({
   },
   summaryRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   summaryText: { flex: 1, fontFamily: fonts.semiBold, fontSize: 13, color: colors.ink },
+  bridgeStrip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    borderRadius: radius.lg,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(94,234,212,0.25)',
+  },
+  bridgeText: {
+    flex: 1,
+    fontFamily: fonts.medium,
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.9)',
+    lineHeight: 15,
+  },
   points: { gap: spacing.sm },
   point: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
   pointText: { flex: 1, fontFamily: fonts.medium, fontSize: 12, color: colors.muted, lineHeight: 17 },

@@ -1,26 +1,24 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import type { DemoBooking } from '@/constants/demo';
-import { STORAGE_KEYS } from '@/constants/app';
+import {
+  VISIT_COMPLETE_BRIDGE_KEY,
+  type VisitCompleteBridgePayload,
+} from '../../../../shared/visit-complete-bridge';
 
 import { completeBookingById, getBookingById } from '@/features/checkout/lib/bookings.storage';
 
-export interface VisitCompletePayload {
-  bookingId: string;
-  maidName: string;
-  service: string;
-  completedAt: string;
-}
+export type VisitCompletePayload = VisitCompleteBridgePayload;
 
 export async function setPendingVisitComplete(payload: VisitCompletePayload): Promise<void> {
-  await AsyncStorage.setItem(STORAGE_KEYS.pendingVisitComplete, JSON.stringify(payload));
+  await AsyncStorage.setItem(VISIT_COMPLETE_BRIDGE_KEY, JSON.stringify(payload));
 }
 
 export async function consumePendingVisitComplete(): Promise<VisitCompletePayload | null> {
   try {
-    const raw = await AsyncStorage.getItem(STORAGE_KEYS.pendingVisitComplete);
+    const raw = await AsyncStorage.getItem(VISIT_COMPLETE_BRIDGE_KEY);
     if (!raw) return null;
-    await AsyncStorage.removeItem(STORAGE_KEYS.pendingVisitComplete);
+    await AsyncStorage.removeItem(VISIT_COMPLETE_BRIDGE_KEY);
     return JSON.parse(raw) as VisitCompletePayload;
   } catch {
     return null;

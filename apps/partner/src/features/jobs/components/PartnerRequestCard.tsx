@@ -127,6 +127,13 @@ export function PartnerRequestCard({
 
             </View>
 
+            {job.customerBookingId ? (
+              <View style={styles.bridgeTagPremium}>
+                <Ionicons name="phone-portrait-outline" size={9} color="#1570EF" />
+                <Text style={styles.bridgeTextPremium}>APP</Text>
+              </View>
+            ) : null}
+
           </View>
 
 
@@ -168,6 +175,15 @@ export function PartnerRequestCard({
           </View>
 
 
+
+          {job.customerPreferredMaidName ? (
+            <View style={styles.premiumPrefRow}>
+              <Ionicons name="person-outline" size={12} color="#1570EF" />
+              <Text style={styles.premiumPrefText} numberOfLines={1}>
+                Customer chose {job.customerPreferredMaidName}
+              </Text>
+            </View>
+          ) : null}
 
           <View style={styles.premiumAddressRow}>
 
@@ -731,6 +747,25 @@ const styles = StyleSheet.create({
 
   newTextPremium: { fontFamily: fonts.bold, fontSize: 9, color: colors.white, letterSpacing: 0.5 },
 
+  bridgeTagPremium: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: '#EFF8FF',
+    paddingHorizontal: 7,
+    paddingVertical: 4,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: 'rgba(21,112,239,0.25)',
+  },
+
+  bridgeTextPremium: {
+    fontFamily: fonts.bold,
+    fontSize: 8,
+    color: '#1570EF',
+    letterSpacing: 0.5,
+  },
+
   premiumMain: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
 
   premiumIcon: {
@@ -784,6 +819,25 @@ const styles = StyleSheet.create({
   premiumEarnLabel: { fontFamily: fonts.medium, fontSize: 9, color: colors.muted },
 
   premiumEarn: { fontFamily: fonts.extraBold, fontSize: 18, color: colors.partnerGold },
+
+  premiumPrefRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 6,
+    borderRadius: radius.lg,
+    backgroundColor: '#EFF8FF',
+    borderWidth: 1,
+    borderColor: 'rgba(21,112,239,0.15)',
+  },
+
+  premiumPrefText: {
+    flex: 1,
+    fontFamily: fonts.semiBold,
+    fontSize: 11,
+    color: '#1570EF',
+  },
 
   premiumAddressRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
 

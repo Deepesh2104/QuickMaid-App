@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { BookingDetailSkeleton } from '@/components/ui/Skeleton';
 import type { DemoBooking } from '@/constants/demo';
 import { getBookingById } from '../lib/booking.lookup';
 import {
@@ -97,11 +98,7 @@ export function BookingDocumentScreen({ type }: BookingDocumentScreenProps) {
   const otherLabel = type === 'invoice' ? 'View receipt' : 'View invoice';
 
   if (loading) {
-    return (
-      <View style={[styles.loader, { paddingTop: insets.top }]}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
-    );
+    return <BookingDetailSkeleton />;
   }
 
   if (!booking || !document) {

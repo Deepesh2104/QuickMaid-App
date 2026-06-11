@@ -19,11 +19,16 @@ import { usePartner } from '@/context/PartnerContext';
 import { usePartnerAlert } from '@/context/PartnerAlertContext';
 import type { PartnerJob } from '@/constants/demo';
 import { formatRs } from '@/features/home/lib/home.greeting';
+import { JobDetailSkeleton } from '@/components/ui/Skeleton';
 import { usePartnerJobs } from '@/features/jobs/hooks/usePartnerJobs';
 import { passedToNextPartnerMessage } from '@/features/jobs/lib/decline.utils';
 import { PartnerJobAcceptedModal } from '@/features/jobs/components/PartnerJobAcceptedModal';
 import { PartnerJobDeclineModal } from '@/features/jobs/components/PartnerJobDeclineModal';
 import { PartnerJobNavigateSheet } from '@/features/jobs/components/PartnerJobNavigateSheet';
+import { PartnerCustomerBridgeJobCard } from '@/features/jobs/components/PartnerCustomerBridgeJobCard';
+import { PartnerCustomerCancelBridgeCard } from '@/features/jobs/components/PartnerCustomerCancelBridgeCard';
+import { PartnerCustomerRescheduleBridgeCard } from '@/features/jobs/components/PartnerCustomerRescheduleBridgeCard';
+import { PartnerLifecycleBridgeCard } from '@/features/jobs/components/PartnerLifecycleBridgeCard';
 import { PartnerLiveLocationCard } from '@/features/jobs/components/PartnerLiveLocationCard';
 import { PartnerVisitStartModal } from '@/features/jobs/components/PartnerVisitStartModal';
 import type { DeclineReasonId } from '@/features/jobs/constants/decline.premium';
@@ -148,11 +153,7 @@ export function JobDetailScreen() {
   }, [job, insets.bottom, fromHistory, manualMode]);
 
   if (loading) {
-    return (
-      <View style={styles.loader}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
-    );
+    return <JobDetailSkeleton />;
   }
 
   if (!job) {
@@ -451,6 +452,10 @@ export function JobDetailScreen() {
             </View>
           </Animated.View>
 
+          {job.customerBookingId ? <PartnerCustomerBridgeJobCard job={job} /> : null}
+          <PartnerCustomerRescheduleBridgeCard job={job} />
+          {isDeclined ? <PartnerCustomerCancelBridgeCard job={job} /> : null}
+
           <Animated.View entering={FadeInDown.delay(80).duration(320)} style={[styles.sectionCard, { padding: cardPad }]}>
             <Text style={styles.sectionEyebrow}>CUSTOMER</Text>
             <View style={styles.customerRow}>
@@ -533,6 +538,10 @@ export function JobDetailScreen() {
             ) : null}
           </Animated.View>
 
+          {(isAccepted || isInProgress || isCompleted) ? (
+            <PartnerLifecycleBridgeCard job={job} />
+          ) : null}
+
           {isInProgress ? (
             <PartnerLiveLocationCard
               jobId={job.id}
@@ -559,7 +568,7 @@ export function JobDetailScreen() {
             </Animated.View>
           ) : null}
 
-          {isDeclined ? (
+          {isDeclined && !job.declineReason?.toLowerCase().includes('customer') ? (
             <Animated.View entering={FadeInDown.delay(140).duration(300)} style={styles.declinedBanner}>
               <Ionicons name="information-circle-outline" size={16} color={colors.muted} />
               <Text style={styles.declinedText}>

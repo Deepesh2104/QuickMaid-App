@@ -27,6 +27,8 @@ function orderToDemo(o: PlacedOrder): DemoBooking {
     maidJobs: o.maidJobs,
     completionOtp: o.completionOtp,
     maidAssignedAt: o.maidAssignedAt,
+    partnerReassignPending: o.partnerReassignPending,
+    lastDeclinedPartner: o.lastDeclinedPartner,
     otpVerifiedAt: o.otpVerifiedAt,
     completedAt: o.completedAt,
     visitDate: o.visitDate,
@@ -87,6 +89,29 @@ export async function addStoredBooking(order: PlacedOrder): Promise<void> {
 export async function getBookingById(id: string): Promise<DemoBooking | undefined> {
   const all = await getAllBookings();
   return all.find((b) => b.id === id);
+}
+
+export async function patchBookingById(
+  id: string,
+  patch: BookingOverride,
+): Promise<DemoBooking | null> {
+  const stored = await getStoredBookings();
+  const idx = stored.findIndex((b) => b.id === id);
+
+  if (idx >= 0) {
+    const updated: PlacedOrder = { ...stored[idx], ...patch };
+    stored[idx] = updated;
+    await AsyncStorage.setItem(STORAGE_KEYS.userBookings, JSON.stringify(stored));
+    const overrides = await getOverrides();
+    return applyOverride(orderToDemo(updated), overrides);
+  }
+
+  const demo = DEMO_BOOKINGS.find((b) => b.id === id);
+  if (!demo) return null;
+
+  await setOverride(id, patch);
+  const overrides = await getOverrides();
+  return applyOverride(demo, overrides);
 }
 
 export async function rescheduleBookingById(

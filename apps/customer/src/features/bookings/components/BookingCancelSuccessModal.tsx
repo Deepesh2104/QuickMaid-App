@@ -77,6 +77,14 @@ export function BookingCancelSuccessModal({
             ))}
           </View>
 
+          <View style={styles.bridgeStrip}>
+            <LinearGradient colors={['#450A0A', '#B91C1C']} style={StyleSheet.absoluteFill} />
+            <Ionicons name="checkmark-circle" size={14} color="#FCA5A5" />
+            <Text style={styles.bridgeText}>
+              Partner bridge synced · job removed from pro schedule
+            </Text>
+          </View>
+
           <View style={styles.points}>
             {[
               'Pro ko visit cancel notify ho gaya',
@@ -170,6 +178,24 @@ const styles = StyleSheet.create({
   lineLabel: { fontFamily: fonts.semiBold, fontSize: 12, color: colors.ink },
   lineEta: { fontFamily: fonts.medium, fontSize: 10, color: colors.muted },
   lineAmount: { fontFamily: fonts.bold, fontSize: 13, color: '#027A48' },
+  bridgeStrip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    borderRadius: radius.lg,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(252,165,165,0.25)',
+  },
+  bridgeText: {
+    flex: 1,
+    fontFamily: fonts.medium,
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.9)',
+    lineHeight: 15,
+  },
   points: { gap: spacing.sm },
   point: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
   pointText: { flex: 1, fontFamily: fonts.medium, fontSize: 12, color: colors.muted, lineHeight: 17 },

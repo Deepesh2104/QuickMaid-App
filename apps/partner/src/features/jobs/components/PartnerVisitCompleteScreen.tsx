@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
+import { FormScreenSkeleton } from '@/components/ui/Skeleton';
 import { OtpInput } from '@/components/ui/OtpInput';
 import { PartnerStackShell } from '@/components/ui/PartnerStackShell';
 import { QmButton } from '@/components/ui/QmButton';
@@ -18,6 +19,7 @@ import {
 import { usePartnerJobs } from '@/features/jobs/hooks/usePartnerJobs';
 import { getPartnerJobById } from '@/features/jobs/lib/jobs.storage';
 import { PartnerRequestsSectionHeader } from '@/features/jobs/components/PartnerRequestsSections';
+import { PartnerVisitOtpUnifiedCard } from '@/features/jobs/components/PartnerVisitOtpUnifiedCard';
 import { fonts } from '@/theme/fonts';
 import { colors } from '@/theme/colors';
 import { radius, spacing } from '@/theme/spacing';
@@ -44,11 +46,7 @@ export function PartnerVisitCompleteScreen() {
   }, [jobId]);
 
   if (loading) {
-    return (
-      <View style={styles.loader}>
-        <ActivityIndicator color={colors.primary} size="large" />
-      </View>
-    );
+    return <FormScreenSkeleton />;
   }
 
   if (!job) {
@@ -183,6 +181,7 @@ export function PartnerVisitCompleteScreen() {
               icon="keypad-outline"
               compact
             />
+            <PartnerVisitOtpUnifiedCard expectedOtp={job.completionOtp} />
             <View style={styles.otpCard}>
               <OtpInput
                 value={otp}
@@ -192,7 +191,6 @@ export function PartnerVisitCompleteScreen() {
                 }}
                 error={error}
               />
-              <Text style={styles.demoOtpHint}>Demo OTP: {VISIT_COMPLETE_DEMO_OTP}</Text>
             </View>
           </Animated.View>
 

@@ -9,23 +9,31 @@ import { colors } from '@/theme/colors';
 import { radius, spacing } from '@/theme/spacing';
 
 import { useOpenRateBooking } from '../hooks/useOpenRateBooking';
+import { useOpenNotifications } from '@/features/notifications/hooks/useOpenNotifications';
 import { useNotifications } from '@/features/notifications/hooks/useNotifications';
+import { filterBridgeNotifications } from '@/features/notifications/lib/notifications.utils';
 import { usePendingVisitComplete } from '../hooks/usePendingVisitComplete';
 import { useUserBookings } from '../hooks/useUserBookings';
 import { filterBookings } from '../utils/bookings.utils';
+import { BookingBridgeNotificationsCard } from './BookingBridgeNotificationsCard';
+import { BookingPartnerSyncBanner } from './BookingPartnerSyncBanner';
 import { BookingsBody } from './BookingsBody';
 import { BookingVisitCompleteModal } from './BookingVisitCompleteModal';
 import { BookingsFilterRail, type BookingFilter } from './BookingsFilterRail';
+import { BookingListSkeleton } from '@/components/ui/Skeleton';
 import { BookingsHeader } from './BookingsHeader';
 
 export function BookingsScreen() {
   const insets = useSafeAreaInsets();
   const { tabScrollPad } = useLayoutMetrics();
   const { profile, refresh: refreshProfile } = useHomeProfile();
-  const { bookings, refresh: refreshBookings } = useUserBookings();
+  const { bookings, loading, refresh: refreshBookings } = useUserBookings();
   const { payload, visible, checkPending, dismiss } = usePendingVisitComplete();
   const openRate = useOpenRateBooking();
-  const { unreadCount } = useNotifications();
+  const { items: notifications, unreadCount } = useNotifications();
+  const openNotifications = useOpenNotifications();
+  const bridgeAlerts = filterBridgeNotifications(notifications);
+  const bridgeUnread = bridgeAlerts.filter((n) => !n.read).length;
   const [filter, setFilter] = useState<BookingFilter>('all');
   const [refreshing, setRefreshing] = useState(false);
 
@@ -53,8 +61,10 @@ export function BookingsScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      refreshBookings();
-      void checkPending();
+      void (async () => {
+        await refreshBookings();
+        await checkPending();
+      })();
     }, [refreshBookings, checkPending]),
   );
 
@@ -90,13 +100,26 @@ export function BookingsScreen() {
           <View style={[styles.lowerSheet, { paddingBottom: insets.bottom + spacing.md }]}>
             <View style={styles.sheetHandle} />
             <BookingsFilterRail active={filter} counts={counts} onSelect={setFilter} />
-            <BookingsBody
-              filter={filter}
-              filteredBookings={filteredBookings}
-              upcomingBookings={upcomingBookings}
-              completedBookings={completedBookings}
-              onOtpVerified={onOtpVerified}
+            <BookingPartnerSyncBanner
+              upcoming={upcomingBookings}
+              bridgeAlertCount={bridgeUnread}
+              onRefresh={() => void refreshBookings()}
             />
+            <BookingBridgeNotificationsCard
+              notifications={notifications}
+              onOpenNotifications={openNotifications}
+            />
+            {loading ? (
+              <BookingListSkeleton count={3} />
+            ) : (
+              <BookingsBody
+                filter={filter}
+                filteredBookings={filteredBookings}
+                upcomingBookings={upcomingBookings}
+                completedBookings={completedBookings}
+                onOtpVerified={onOtpVerified}
+              />
+            )}
           </View>
         </View>
       </ScrollView>

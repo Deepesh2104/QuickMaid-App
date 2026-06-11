@@ -26,9 +26,9 @@ const AnimatedView = Animated.View;
 const STATUS = {
   upcoming: {
     label: 'Upcoming',
-    gradient: ['#EEF6FF', '#F8FBFF', '#FFFFFF'] as const,
-    ink: '#175CD3',
-    accent: '#175CD3',
+    gradient: ['#F0FAF9', '#F6FDFB', '#FFFFFF'] as const,
+    ink: '#0B6E67',
+    accent: '#12A598',
     stripe: ['#084F4A', '#0B6E67', '#12A598'] as const,
   },
   completed: {
@@ -61,6 +61,7 @@ function QuickAction({
   label,
   onPress,
   primary,
+  rateHighlight,
   compact,
   colW,
 }: {
@@ -68,12 +69,19 @@ function QuickAction({
   label: string;
   onPress: () => void;
   primary?: boolean;
+  rateHighlight?: boolean;
   compact?: boolean;
   colW: number;
 }) {
+  const highlighted = primary || rateHighlight;
   return (
     <Pressable
-      style={[styles.quickTile, primary && styles.quickTilePrimary, { width: colW }]}
+      style={[
+        styles.quickTile,
+        highlighted && styles.quickTilePrimary,
+        rateHighlight && styles.quickTileRate,
+        { width: colW },
+      ]}
       onPress={() => {
         Haptics.selectionAsync();
         onPress();
@@ -81,12 +89,16 @@ function QuickAction({
       accessibilityRole="button"
       accessibilityLabel={label}
     >
-      {primary ? (
-        <LinearGradient colors={['#084F4A', '#0B6E67']} style={StyleSheet.absoluteFill} />
+      {highlighted ? (
+        <LinearGradient colors={['#084F4A', '#0B6E67', '#12A598']} style={StyleSheet.absoluteFill} />
       ) : null}
-      <Ionicons name={icon} size={compact ? 16 : 18} color={primary ? colors.white : colors.primaryDark} />
+      <Ionicons
+        name={icon}
+        size={compact ? 16 : 18}
+        color={highlighted ? colors.white : colors.primaryDark}
+      />
       <Text
-        style={[styles.quickTileText, primary && styles.quickTileTextPrimary]}
+        style={[styles.quickTileText, highlighted && styles.quickTileTextPrimary]}
         numberOfLines={1}
         adjustsFontSizeToFit
         minimumFontScale={0.8}
@@ -162,12 +174,272 @@ function UpcomingQuickActions({
   );
 }
 
+function CompletedQuickActions({
+  booking,
+  compact,
+  quickColW,
+  onRate,
+  onRebook,
+  onOpenDetail,
+}: {
+  booking: DemoBooking;
+  compact: boolean;
+  quickColW: number;
+  onRate: () => void;
+  onRebook: () => void;
+  onOpenDetail: () => void;
+}) {
+  if (booking.status !== 'completed') return null;
+
+  const needsRate = !booking.reviewedAt;
+  const gridColW = needsRate ? quickColW : (quickColW * 3 + QUICK_GAP * 2 - QUICK_GAP) / 2;
+
+  return (
+    <View style={styles.actionsBlock}>
+      <Pressable
+        style={[styles.rateHero, needsRate && styles.rateHeroHighlight]}
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          onRate();
+        }}
+        accessibilityRole="button"
+        accessibilityLabel={needsRate ? 'Rate your visit' : 'View your review'}
+      >
+        <LinearGradient
+          colors={
+            needsRate
+              ? ['#084F4A', '#0B6E67', '#12A598']
+              : ['#ECFDF5', '#F0FDF9', '#FFFFFF']
+          }
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={StyleSheet.absoluteFill}
+        />
+        <View style={styles.trackHeroLeft}>
+          <View style={[styles.trackIcon, !needsRate && styles.rateHeroIconRated]}>
+            <Ionicons
+              name="star"
+              size={18}
+              color={needsRate ? colors.star : colors.success}
+            />
+          </View>
+          <View style={styles.trackCopy}>
+            <Text style={[styles.trackTitle, !needsRate && styles.rateHeroTitleRated]}>
+              {needsRate ? 'Rate your visit' : 'View your review'}
+            </Text>
+            <Text
+              style={[styles.trackSub, !needsRate && styles.rateHeroSubRated]}
+              numberOfLines={1}
+            >
+              {needsRate
+                ? `${booking.maid} · ${booking.service} · 30 sec`
+                : `${booking.reviewRating ?? ''}★ · ${booking.maid}`}
+            </Text>
+          </View>
+        </View>
+        <Ionicons
+          name="chevron-forward"
+          size={18}
+          color={needsRate ? colors.white : colors.primary}
+        />
+      </Pressable>
+
+      <View style={styles.quickGrid}>
+        {needsRate ? (
+          <QuickAction
+            icon="star-outline"
+            label="Rate"
+            compact={compact}
+            colW={gridColW}
+            rateHighlight
+            onPress={onRate}
+          />
+        ) : null}
+        <QuickAction
+          icon="refresh"
+          label="Rebook"
+          compact={compact}
+          colW={gridColW}
+          onPress={onRebook}
+        />
+        <QuickAction
+          icon="open-outline"
+          label="Open"
+          compact={compact}
+          colW={gridColW}
+          primary={!needsRate}
+          onPress={onOpenDetail}
+        />
+      </View>
+    </View>
+  );
+}
+
+function UpcomingBookingCard({
+  booking,
+  index,
+  showQuickActions,
+  compact,
+  quickColW,
+  openDetail,
+  openTrack,
+  openReschedule,
+  openSupport,
+  openProProfile,
+}: {
+  booking: DemoBooking;
+  index: number;
+  showQuickActions?: boolean;
+  compact: boolean;
+  quickColW: number;
+  openDetail: (id: string) => void;
+  openTrack: (id: string) => void;
+  openReschedule: (id: string) => void;
+  openSupport: (opts: { chat: boolean; topic: string }) => void;
+  openProProfile: (id: string, opts: { name: string; bookingId: string; status: DemoBooking['status'] }) => void;
+}) {
+  const scale = useSharedValue(1);
+  const anim = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  const initial = booking.maid.charAt(0);
+  const imageId = getBookingImageId(booking.service);
+
+  return (
+    <AnimatedView style={[styles.upcomingCard, anim]}>
+      <LinearGradient colors={['#084F4A', '#0B6E67', '#12A598']} style={styles.upcomingStripe} />
+
+      <Pressable
+        onPressIn={() => {
+          scale.value = withSpring(0.985, { damping: 16, stiffness: 360 });
+        }}
+        onPressOut={() => {
+          scale.value = withSpring(1, { damping: 16, stiffness: 360 });
+        }}
+        onPress={() => openDetail(booking.id)}
+        accessibilityRole="button"
+        accessibilityLabel={`${booking.service}, upcoming visit`}
+      >
+        <View style={styles.upcomingVisual}>
+          <HomePhoto uri={getServiceImages(imageId)} style={styles.upcomingPhoto} overlay="none" />
+          <LinearGradient
+            colors={['rgba(1,15,14,0.05)', 'rgba(1,15,14,0.55)', 'rgba(1,15,14,0.88)']}
+            locations={[0.1, 0.55, 1]}
+            style={StyleSheet.absoluteFill}
+          />
+          <View style={styles.upcomingVisualTop}>
+            <View style={styles.upcomingLivePill}>
+              <View style={styles.liveDot} />
+              <Text style={styles.upcomingLiveText}>Upcoming visit</Text>
+            </View>
+            <Text style={styles.upcomingIndex}>{String(index + 1).padStart(2, '0')}</Text>
+          </View>
+          <View style={styles.upcomingVisualBottom}>
+            <Text style={styles.upcomingService} numberOfLines={2}>
+              {booking.service}
+            </Text>
+            <Text style={styles.upcomingPrice}>{booking.price}</Text>
+          </View>
+        </View>
+
+        <View style={styles.upcomingBody}>
+          <View style={styles.slotChip}>
+            <Ionicons name="calendar-outline" size={13} color={colors.primaryDark} />
+            <Text style={styles.slotText}>{booking.date}</Text>
+            <View style={styles.slotDivider} />
+            <Ionicons name="time-outline" size={13} color={colors.primaryDark} />
+            <Text style={styles.slotText}>{booking.time}</Text>
+            {booking.duration ? (
+              <>
+                <View style={styles.slotDivider} />
+                <Text style={styles.slotMuted}>{booking.duration}</Text>
+              </>
+            ) : null}
+          </View>
+
+          <Pressable
+            style={styles.proMiniCard}
+            onPress={() => {
+              Haptics.selectionAsync();
+              openProProfile(resolveMaidId(booking.maid, booking.maidId), {
+                name: booking.maid,
+                bookingId: booking.id,
+                status: booking.status,
+              });
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={`View ${booking.maid} profile`}
+          >
+            <View style={styles.proMiniAvatar}>
+              <Text style={styles.proMiniInitial}>{initial}</Text>
+            </View>
+            <View style={styles.proMiniCopy}>
+              <Text style={styles.proMiniLabel}>ASSIGNED PRO</Text>
+              <Text style={styles.proMiniName} numberOfLines={1}>
+                {booking.maid}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={14} color={colors.mutedLight} />
+          </Pressable>
+
+          <View style={styles.addrChip}>
+            <Ionicons name="location-outline" size={12} color={colors.muted} />
+            <Text style={styles.addrChipText} numberOfLines={compact ? 1 : 2}>
+              {booking.address}
+            </Text>
+          </View>
+
+          <View style={styles.upcomingMetaRow}>
+            {booking.bookingRef ? (
+              <View style={styles.refChip}>
+                <Ionicons name="receipt-outline" size={11} color={colors.primaryDark} />
+                <Text style={styles.refChipText} numberOfLines={1}>
+                  {booking.bookingRef}
+                </Text>
+              </View>
+            ) : null}
+            {booking.completionOtp ? (
+              <View style={styles.otpChip}>
+                <Ionicons name="key-outline" size={11} color={colors.primaryDark} />
+                <Text style={styles.otpChipLabel}>OTP</Text>
+                <Text style={styles.otpChipCode}>{booking.completionOtp}</Text>
+              </View>
+            ) : null}
+          </View>
+
+          {booking.maidAssignedAt ? (
+            <View style={styles.confirmedChip}>
+              <Ionicons name="checkmark-circle" size={12} color="#0B6E67" />
+              <Text style={styles.confirmedChipText}>Pro confirmed · synced</Text>
+            </View>
+          ) : null}
+        </View>
+      </Pressable>
+
+      {showQuickActions ? (
+        <View style={styles.upcomingActions}>
+          <UpcomingQuickActions
+            service={booking.service}
+            maid={booking.maid}
+            compact={compact}
+            quickColW={quickColW}
+            onOpenDetail={() => openDetail(booking.id)}
+            onTrack={() => openTrack(booking.id)}
+            onReschedule={() => openReschedule(booking.id)}
+            onMessage={() => openSupport({ chat: true, topic: `${booking.service} · ${booking.maid}` })}
+          />
+        </View>
+      ) : null}
+    </AnimatedView>
+  );
+}
+
 export function BookingCard({ booking, index, showRebook, showQuickActions }: BookingCardProps) {
   const { width, contentWidth } = useLayoutMetrics();
   const compact = width < 380;
   const cardInnerW = contentWidth - spacing.lg * 2;
   const quickColW = (cardInnerW - QUICK_GAP * 2) / 3;
   const isUpcoming = booking.status === 'upcoming';
+  const isCompleted = booking.status === 'completed';
+  const needsRating = isCompleted && !booking.reviewedAt;
   const openDetail = useOpenBookingDetail();
   const openRate = useOpenRateBooking();
   const openTrack = useOpenTrackBooking();
@@ -183,8 +455,31 @@ export function BookingCard({ booking, index, showRebook, showQuickActions }: Bo
   const thumbW = compact ? 64 : 72;
   const thumbH = compact ? 78 : 88;
 
+  if (isUpcoming) {
+    return (
+      <UpcomingBookingCard
+        booking={booking}
+        index={index}
+        showQuickActions={showQuickActions}
+        compact={compact}
+        quickColW={quickColW}
+        openDetail={openDetail}
+        openTrack={openTrack}
+        openReschedule={openReschedule}
+        openSupport={openSupport}
+        openProProfile={openProProfile}
+      />
+    );
+  }
+
   return (
-    <AnimatedView style={[styles.card, isUpcoming && showQuickActions && styles.cardUpcoming, anim]}>
+    <AnimatedView
+      style={[
+        styles.card,
+        needsRating && showQuickActions && styles.cardNeedsRate,
+        anim,
+      ]}
+    >
       <LinearGradient colors={[...status.stripe]} style={styles.stripe} />
       <LinearGradient colors={[...status.gradient]} style={StyleSheet.absoluteFill} />
 
@@ -260,64 +555,71 @@ export function BookingCard({ booking, index, showRebook, showQuickActions }: Bo
             </View>
 
             {booking.bookingRef ? (
-              <View style={styles.ref}>
-                <Ionicons name="receipt-outline" size={11} color={colors.primary} />
-                <Text style={styles.refText} numberOfLines={1}>
-                  {booking.bookingRef}
-                </Text>
+              <View style={styles.refRow}>
+                <View style={styles.ref}>
+                  <Ionicons name="receipt-outline" size={11} color={colors.primary} />
+                  <Text style={styles.refText} numberOfLines={1}>
+                    {booking.bookingRef}
+                  </Text>
+                </View>
+                {isCompleted ? (
+                  <Pressable
+                    style={[styles.refRateBtn, needsRating && styles.refRateBtnHighlight]}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                      openRate(booking.id);
+                    }}
+                    accessibilityRole="button"
+                    accessibilityLabel={needsRating ? 'Rate your visit' : 'View your review'}
+                  >
+                    <Ionicons
+                      name={booking.reviewedAt ? 'star' : 'star-outline'}
+                      size={11}
+                      color={needsRating ? colors.primary : colors.star}
+                    />
+                    <Text style={[styles.refRateText, needsRating && styles.refRateTextHighlight]}>
+                      {needsRating ? 'Rate' : 'Rated'}
+                    </Text>
+                  </Pressable>
+                ) : null}
               </View>
             ) : null}
 
-            {isUpcoming && booking.completionOtp ? (
-              <View style={styles.otpStrip}>
-                <Ionicons name="key-outline" size={12} color={colors.primaryDark} />
-                <Text style={styles.otpLabel}>OTP</Text>
-                <Text style={styles.otpCode}>{booking.completionOtp}</Text>
-              </View>
-            ) : null}
           </View>
         </View>
       </Pressable>
 
-      {showQuickActions && isUpcoming ? (
-        <UpcomingQuickActions
-          service={booking.service}
-          maid={booking.maid}
+      {isCompleted && (showQuickActions || showRebook) ? (
+        <CompletedQuickActions
+          booking={booking}
           compact={compact}
           quickColW={quickColW}
+          onRate={() => openRate(booking.id)}
+          onRebook={() => rebook(booking.service)}
           onOpenDetail={() => openDetail(booking.id)}
-          onTrack={() => openTrack(booking.id)}
-          onReschedule={() => openReschedule(booking.id)}
-          onMessage={() => openSupport({ chat: true, topic: `${booking.service} · ${booking.maid}` })}
         />
       ) : null}
 
-      {showRebook && booking.status === 'completed' ? (
-        <View style={styles.actions}>
-          <Pressable style={styles.rateBtn} onPress={() => openRate(booking.id)} accessibilityRole="button">
-            <Ionicons
-              name={booking.reviewedAt ? 'star' : 'star-outline'}
-              size={14}
-              color={booking.reviewedAt ? '#F79009' : colors.inkSecondary}
-            />
-            <Text style={styles.rateText}>{booking.reviewedAt ? 'Review' : 'Rate'}</Text>
+      {booking.status === 'cancelled' ? (
+        <View style={styles.cancelledActions}>
+          <Pressable
+            style={styles.cancelledPrimary}
+            onPress={() => rebook(booking.service)}
+            accessibilityRole="button"
+          >
+            <LinearGradient colors={['#084F4A', '#0B6E67']} style={StyleSheet.absoluteFill} />
+            <Ionicons name="refresh" size={15} color={colors.white} />
+            <Text style={styles.cancelledPrimaryText}>Book again</Text>
           </Pressable>
-          <Pressable style={styles.rebookBtn} onPress={() => rebook(booking.service)} accessibilityRole="button">
-            <LinearGradient colors={['#0B6E67', '#084F4A']} style={styles.rebookGrad}>
-              <Ionicons name="refresh" size={14} color={colors.white} />
-              <Text style={styles.rebookText} numberOfLines={1}>
-                Rebook same pro
-              </Text>
-            </LinearGradient>
+          <Pressable
+            style={styles.cancelledGhost}
+            onPress={() => openSupport({ chat: true, topic: `${booking.service} · cancelled` })}
+            accessibilityRole="button"
+          >
+            <Ionicons name="chatbubble-ellipses-outline" size={15} color={colors.primaryDark} />
+            <Text style={styles.cancelledGhostText}>Support</Text>
           </Pressable>
         </View>
-      ) : null}
-
-      {booking.status === 'cancelled' ? (
-        <Pressable style={styles.bookAgain} onPress={() => rebook(booking.service)} accessibilityRole="button">
-          <Text style={styles.bookAgainText}>Book again</Text>
-          <Ionicons name="arrow-forward" size={13} color={colors.primary} />
-        </Pressable>
       ) : null}
 
       <Text style={styles.index}>{String(index + 1).padStart(2, '0')}</Text>
@@ -337,8 +639,8 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(15,20,25,0.06)',
     backgroundColor: colors.white,
   },
-  cardUpcoming: {
-    borderColor: 'rgba(11,110,103,0.14)',
+  cardNeedsRate: {
+    borderColor: 'rgba(11,110,103,0.18)',
     shadowColor: '#0B6E67',
     shadowOpacity: 0.08,
     shadowRadius: 14,
@@ -446,23 +748,55 @@ const styles = StyleSheet.create({
     color: colors.muted,
     lineHeight: 14,
   },
+  refRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.xs,
+    marginTop: 2,
+    width: '100%',
+  },
   ref: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    alignSelf: 'flex-start',
-    maxWidth: '100%',
+    flex: 1,
+    minWidth: 0,
     backgroundColor: colors.primaryLight,
     borderRadius: radius.pill,
     paddingHorizontal: 8,
     paddingVertical: 4,
-    marginTop: 2,
   },
   refText: {
     fontFamily: fonts.semiBold,
     fontSize: 9,
     color: colors.primaryDark,
     flexShrink: 1,
+  },
+  refRateBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: radius.pill,
+    backgroundColor: colors.primaryLight,
+    borderWidth: 1,
+    borderColor: 'rgba(11,110,103,0.12)',
+    flexShrink: 0,
+  },
+  refRateBtnHighlight: {
+    borderColor: 'rgba(11,110,103,0.28)',
+    backgroundColor: '#E6F4F2',
+  },
+  refRateText: {
+    fontFamily: fonts.bold,
+    fontSize: 10,
+    color: colors.muted,
+  },
+  refRateTextHighlight: {
+    fontFamily: fonts.extraBold,
+    color: colors.primaryDark,
   },
   otpStrip: {
     flexDirection: 'row',
@@ -482,6 +816,25 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semiBold,
     fontSize: 10,
     color: colors.primaryDark,
+  },
+  syncStrip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    alignSelf: 'flex-start',
+    maxWidth: '100%',
+    backgroundColor: '#FFFBEB',
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 5,
+    marginTop: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(180,83,9,0.2)',
+  },
+  syncText: {
+    fontFamily: fonts.semiBold,
+    fontSize: 10,
+    color: '#B45309',
   },
   otpCode: {
     fontFamily: fonts.extraBold,
@@ -531,6 +884,31 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: 'rgba(255,255,255,0.78)',
   },
+  rateHero: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    overflow: 'hidden',
+    gap: spacing.sm,
+  },
+  rateHeroHighlight: {
+    shadowColor: '#0B6E67',
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
+  },
+  rateHeroIconRated: {
+    backgroundColor: colors.successBg,
+  },
+  rateHeroTitleRated: {
+    color: colors.primaryDark,
+  },
+  rateHeroSubRated: {
+    color: colors.muted,
+  },
   quickGrid: {
     flexDirection: 'row',
     gap: QUICK_GAP,
@@ -551,6 +929,9 @@ const styles = StyleSheet.create({
   quickTilePrimary: {
     borderColor: colors.primary,
   },
+  quickTileRate: {
+    borderColor: colors.primary,
+  },
   quickTileText: {
     fontFamily: fonts.bold,
     fontSize: 10,
@@ -561,63 +942,289 @@ const styles = StyleSheet.create({
   quickTileTextPrimary: {
     color: colors.white,
   },
-  actions: {
+  upcomingCard: {
+    marginHorizontal: layout.pad,
+    marginBottom: spacing.md,
+    borderRadius: radius.xxl,
+    overflow: 'hidden',
+    backgroundColor: colors.white,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(11,110,103,0.14)',
+    shadowColor: '#0B6E67',
+    shadowOpacity: 0.1,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 4,
+  },
+  upcomingStripe: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 4,
+    zIndex: 2,
+  },
+  upcomingVisual: {
+    height: 128,
+    overflow: 'hidden',
+    backgroundColor: '#084F4A',
+  },
+  upcomingPhoto: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  upcomingVisualTop: {
+    position: 'absolute',
+    top: spacing.md,
+    left: spacing.md,
+    right: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    zIndex: 2,
+  },
+  upcomingLivePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.22)',
+    borderRadius: radius.pill,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  liveDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: '#6EE7B7',
+  },
+  upcomingLiveText: {
+    fontFamily: fonts.bold,
+    fontSize: 10,
+    color: colors.white,
+    letterSpacing: 0.4,
+  },
+  upcomingIndex: {
+    fontFamily: fonts.extraBold,
+    fontSize: 22,
+    color: 'rgba(255,255,255,0.22)',
+    letterSpacing: -0.5,
+  },
+  upcomingVisualBottom: {
+    position: 'absolute',
+    left: spacing.md,
+    right: spacing.md,
+    bottom: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+    zIndex: 2,
+  },
+  upcomingService: {
+    flex: 1,
+    fontFamily: fonts.extraBold,
+    fontSize: 18,
+    color: colors.white,
+    letterSpacing: -0.4,
+    lineHeight: 22,
+  },
+  upcomingPrice: {
+    fontFamily: fonts.extraBold,
+    fontSize: 18,
+    color: '#6EE7B7',
+    letterSpacing: -0.3,
+    flexShrink: 0,
+  },
+  upcomingBody: {
+    padding: spacing.md,
+    gap: spacing.sm,
+  },
+  upcomingActions: {
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.md,
+  },
+  slotChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 6,
+    backgroundColor: '#F0FAF9',
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(11,110,103,0.1)',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.sm,
+  },
+  slotText: {
+    fontFamily: fonts.semiBold,
+    fontSize: 12,
+    color: colors.inkSecondary,
+  },
+  slotMuted: {
+    fontFamily: fonts.medium,
+    fontSize: 11,
+    color: colors.muted,
+  },
+  slotDivider: {
+    width: 1,
+    height: 12,
+    backgroundColor: 'rgba(11,110,103,0.15)',
+  },
+  proMiniCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.white,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(11,110,103,0.12)',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.sm,
+  },
+  proMiniAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: radius.md,
+    backgroundColor: colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  proMiniInitial: {
+    fontFamily: fonts.extraBold,
+    fontSize: 13,
+    color: colors.primaryDark,
+  },
+  proMiniCopy: { flex: 1, gap: 1, minWidth: 0 },
+  proMiniLabel: {
+    fontFamily: fonts.bold,
+    fontSize: 9,
+    color: colors.muted,
+    letterSpacing: 0.8,
+  },
+  proMiniName: {
+    fontFamily: fonts.bold,
+    fontSize: 14,
+    color: colors.ink,
+  },
+  addrChip: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 5,
+    minWidth: 0,
+  },
+  addrChipText: {
+    flex: 1,
+    fontFamily: fonts.regular,
+    fontSize: 11,
+    color: colors.muted,
+    lineHeight: 15,
+  },
+  upcomingMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  refChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: colors.primaryLight,
+    borderRadius: radius.pill,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    maxWidth: '58%',
+  },
+  refChipText: {
+    fontFamily: fonts.semiBold,
+    fontSize: 10,
+    color: colors.primaryDark,
+    flexShrink: 1,
+  },
+  otpChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#E6F4F2',
+    borderRadius: radius.pill,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderWidth: 1,
+    borderColor: 'rgba(11,110,103,0.15)',
+  },
+  otpChipLabel: {
+    fontFamily: fonts.semiBold,
+    fontSize: 10,
+    color: colors.primaryDark,
+  },
+  otpChipCode: {
+    fontFamily: fonts.extraBold,
+    fontSize: 12,
+    color: colors.primaryDark,
+    letterSpacing: 1.2,
+  },
+  confirmedChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    alignSelf: 'flex-start',
+    backgroundColor: '#F0FAF9',
+    borderRadius: radius.pill,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderWidth: 1,
+    borderColor: 'rgba(11,110,103,0.12)',
+  },
+  confirmedChipText: {
+    fontFamily: fonts.semiBold,
+    fontSize: 10,
+    color: '#0B6E67',
+  },
+  cancelledActions: {
     flexDirection: 'row',
     gap: spacing.sm,
     paddingTop: spacing.xs,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: 'rgba(15,20,25,0.06)',
   },
-  rateBtn: {
-    flex: 0.8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-    borderRadius: radius.pill,
-    paddingVertical: 11,
-    backgroundColor: colors.bg,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(15,20,25,0.08)',
-  },
-  rateText: {
-    fontFamily: fonts.semiBold,
-    fontSize: 12,
-    color: colors.inkSecondary,
-  },
-  rebookBtn: {
-    flex: 1.4,
-    borderRadius: radius.pill,
-    overflow: 'hidden',
-    minWidth: 0,
-  },
-  rebookGrad: {
+  cancelledPrimary: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    paddingVertical: 11,
-    paddingHorizontal: spacing.sm,
+    borderRadius: radius.lg,
+    paddingVertical: 12,
+    overflow: 'hidden',
   },
-  rebookText: {
+  cancelledPrimaryText: {
     fontFamily: fonts.bold,
-    fontSize: 12,
+    fontSize: 13,
     color: colors.white,
-    flexShrink: 1,
   },
-  bookAgain: {
+  cancelledGhost: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 5,
-    paddingTop: spacing.xs,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(15,20,25,0.06)',
+    gap: 6,
+    borderRadius: radius.lg,
+    paddingVertical: 12,
+    backgroundColor: colors.primaryLight,
+    borderWidth: 1,
+    borderColor: 'rgba(11,110,103,0.12)',
   },
-  bookAgainText: {
+  cancelledGhostText: {
     fontFamily: fonts.bold,
     fontSize: 13,
-    color: colors.primary,
+    color: colors.primaryDark,
   },
   index: {
     position: 'absolute',

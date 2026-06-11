@@ -1,10 +1,21 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 
+import { DEMO_VISIT_COMPLETION_OTP } from '@/constants/app';
 import type { DemoBooking } from '@/constants/demo';
+import { getPartnerLiveLocation } from '@/lib/visit-location-bridge';
 import { HomePhoto } from '@/features/home/components/HomePhoto';
 import { HomeSectionHeader } from '@/features/home/components/HomeSectionHeader';
 import { getServiceImages } from '@/features/home/constants/unsplash.images';
@@ -19,13 +30,13 @@ import { layout, radius, spacing } from '@/theme/spacing';
 
 const AnimatedPress = Animated.createAnimatedComponent(Pressable);
 
-function getSteps(booking: DemoBooking) {
+function getSteps(booking: DemoBooking, gpsLive: boolean) {
   const hasOtp = Boolean(booking.completionOtp);
   return [
     { id: 'confirmed', label: 'Confirmed', done: true },
     { id: 'assigned', label: 'Pro auto-assigned', done: true },
     { id: 'otp', label: 'OTP ready', done: hasOtp },
-    { id: 'ontheway', label: 'On the way', done: false },
+    { id: 'ontheway', label: gpsLive ? 'Live GPS' : 'On the way', done: gpsLive },
   ];
 }
 
@@ -38,11 +49,40 @@ export function BookingUpcomingHero({ booking }: BookingUpcomingHeroProps) {
   const openReschedule = useOpenReschedule();
   const openTrack = useOpenTrackBooking();
   const openSupport = useOpenSupport();
+  const [gpsLive, setGpsLive] = useState(false);
   const scale = useSharedValue(1);
+  const pulse = useSharedValue(1);
   const anim = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  const pulseStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: pulse.value }],
+    opacity: 0.55 - pulse.value * 0.15,
+  }));
+
+  useEffect(() => {
+    if (!gpsLive) return;
+    pulse.value = withRepeat(
+      withSequence(
+        withTiming(1.35, { duration: 1100, easing: Easing.out(Easing.quad) }),
+        withTiming(1, { duration: 0 }),
+      ),
+      -1,
+    );
+  }, [gpsLive, pulse]);
+
+  useEffect(() => {
+    if (!booking.bookingRef) return;
+    const poll = async () => {
+      const ping = await getPartnerLiveLocation(booking.bookingRef!);
+      setGpsLive(Boolean(ping));
+    };
+    void poll();
+    const id = setInterval(() => void poll(), 8000);
+    return () => clearInterval(id);
+  }, [booking.bookingRef]);
+
   const initial = booking.maid.charAt(0);
   const imageId = getBookingImageId(booking.service);
-  const steps = getSteps(booking);
+  const steps = getSteps(booking, gpsLive);
 
   return (
     <View style={styles.block}>
@@ -74,9 +114,12 @@ export function BookingUpcomingHero({ booking }: BookingUpcomingHeroProps) {
         />
 
         <View style={styles.topRow}>
-          <View style={styles.live}>
-            <View style={styles.liveDot} />
-            <Text style={styles.liveText}>LIVE</Text>
+          <View style={[styles.live, gpsLive && styles.liveOn]}>
+            {gpsLive ? <Animated.View style={[styles.livePulse, pulseStyle]} /> : null}
+            <View style={[styles.liveDot, gpsLive && styles.liveDotOn]} />
+            <Text style={[styles.liveText, gpsLive && styles.liveTextOn]}>
+              {gpsLive ? 'GPS LIVE' : 'UPCOMING'}
+            </Text>
           </View>
           {booking.bookingRef ? (
             <View style={styles.ref}>
@@ -99,6 +142,19 @@ export function BookingUpcomingHero({ booking }: BookingUpcomingHeroProps) {
             </View>
             <Text style={styles.price}>{booking.price}</Text>
           </View>
+
+          {booking.completionOtp ? (
+            <View style={styles.otpStrip}>
+              <Ionicons name="key" size={12} color="#FCD34D" />
+              <Text style={styles.otpStripLabel}>Visit OTP</Text>
+              <Text style={styles.otpStripCode}>{booking.completionOtp}</Text>
+              {booking.completionOtp === DEMO_VISIT_COMPLETION_OTP ? (
+                <View style={styles.otpDemoTag}>
+                  <Text style={styles.otpDemoText}>DEMO</Text>
+                </View>
+              ) : null}
+            </View>
+          ) : null}
 
           <View style={styles.steps}>
             {steps.map((s, i) => (
@@ -128,12 +184,18 @@ export function BookingUpcomingHero({ booking }: BookingUpcomingHeroProps) {
           <Text style={styles.actionText}>Reschedule</Text>
         </Pressable>
         <Pressable
-          style={styles.actionBtn}
+          style={[styles.actionBtn, gpsLive && styles.actionBtnLive]}
           onPress={() => openTrack(booking.id)}
           accessibilityRole="button"
         >
-          <Ionicons name="locate-outline" size={16} color={colors.primaryDark} />
-          <Text style={styles.actionText}>Track pro</Text>
+          <Ionicons
+            name={gpsLive ? 'navigate' : 'locate-outline'}
+            size={16}
+            color={gpsLive ? '#1570EF' : colors.primaryDark}
+          />
+          <Text style={[styles.actionText, gpsLive && styles.actionTextLive]}>
+            {gpsLive ? 'Live map' : 'Track pro'}
+          </Text>
         </Pressable>
         <Pressable
           style={styles.actionPrimary}
@@ -181,19 +243,35 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     paddingHorizontal: 10,
     paddingVertical: 5,
+    overflow: 'hidden',
+  },
+  liveOn: {
+    backgroundColor: 'rgba(1,15,14,0.85)',
+    borderWidth: 1,
+    borderColor: 'rgba(110,231,183,0.45)',
+  },
+  livePulse: {
+    position: 'absolute',
+    left: 6,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: 'rgba(18,165,152,0.35)',
   },
   liveDot: {
     width: 7,
     height: 7,
     borderRadius: 4,
-    backgroundColor: colors.success,
+    backgroundColor: colors.mutedLight,
   },
+  liveDotOn: { backgroundColor: '#6EE7B7' },
   liveText: {
     fontFamily: fonts.bold,
     fontSize: 10,
-    color: colors.success,
+    color: colors.muted,
     letterSpacing: 0.5,
   },
+  liveTextOn: { color: '#6EE7B7' },
   ref: {
     backgroundColor: 'rgba(255,255,255,0.14)',
     borderRadius: radius.pill,
@@ -251,6 +329,42 @@ const styles = StyleSheet.create({
     fontSize: 22,
     color: '#6EE7B7',
     letterSpacing: -0.4,
+  },
+  otpStrip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(252,211,77,0.15)',
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 5,
+    borderWidth: 1,
+    borderColor: 'rgba(252,211,77,0.3)',
+    marginBottom: spacing.sm,
+  },
+  otpStripLabel: {
+    fontFamily: fonts.semiBold,
+    fontSize: 10,
+    color: 'rgba(255,255,255,0.75)',
+  },
+  otpStripCode: {
+    fontFamily: fonts.extraBold,
+    fontSize: 12,
+    color: '#FCD34D',
+    letterSpacing: 1,
+  },
+  otpDemoTag: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: radius.pill,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+  },
+  otpDemoText: {
+    fontFamily: fonts.bold,
+    fontSize: 8,
+    color: '#FCD34D',
+    letterSpacing: 0.5,
   },
   steps: {
     flexDirection: 'row',
@@ -311,6 +425,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.primaryDark,
   },
+  actionBtnLive: {
+    backgroundColor: '#EFF8FF',
+    borderColor: 'rgba(21,112,239,0.25)',
+  },
+  actionTextLive: { color: '#1570EF' },
   actionPrimary: {
     flex: 1.15,
     borderRadius: radius.pill,

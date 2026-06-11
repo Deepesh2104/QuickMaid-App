@@ -13,9 +13,11 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { FormScreenSkeleton } from '@/components/ui/Skeleton';
 import type { DemoBooking } from '@/constants/demo';
 import { formatInr } from '@/features/checkout/lib/checkout.utils';
 import { cancelBookingById } from '@/features/checkout/lib/bookings.storage';
+import { publishCustomerBookingStatus } from '@/lib/booking-status-bridge.storage';
 import { getBookingById } from '../lib/booking.lookup';
 import {
   CANCEL_REASONS,
@@ -24,6 +26,7 @@ import {
   generateRefundTxnId,
   type CancelReasonId,
 } from '../lib/booking.cancel';
+import { BookingChangeBridgeCard } from './BookingChangeBridgeCard';
 import { BookingCancelConfirmModal } from './BookingCancelConfirmModal';
 import { BookingCancelSuccessModal } from './BookingCancelSuccessModal';
 import { fonts } from '@/theme/fonts';
@@ -87,16 +90,21 @@ export function BookingCancelScreen() {
 
     if (!updated) return;
 
+    if (updated.bookingRef) {
+      await publishCustomerBookingStatus({
+        bookingRef: updated.bookingRef,
+        customerBookingId: updated.id,
+        event: 'customer_cancelled',
+        cancelReason: reasonLabel,
+      });
+    }
+
     setCancelledBooking(updated);
     setSuccessVisible(true);
   };
 
   if (loading) {
-    return (
-      <View style={[styles.loader, { paddingTop: insets.top }]}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
-    );
+    return <FormScreenSkeleton />;
   }
 
   if (!booking) {
@@ -163,6 +171,8 @@ export function BookingCancelScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 120 }]}
       >
+        <BookingChangeBridgeCard booking={booking} variant="cancel" />
+
         {breakdown ? (
           <View style={styles.refundBlock}>
             <View style={styles.refundHeader}>

@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { FormScreenSkeleton } from '@/components/ui/Skeleton';
 import type { DemoBooking } from '@/constants/demo';
 import { submitBookingReview } from '@/features/checkout/lib/bookings.storage';
 import { getBookingById } from '../lib/booking.lookup';
@@ -87,11 +88,7 @@ export function BookingRateScreen() {
   };
 
   if (loading) {
-    return (
-      <View style={[styles.loader, { paddingTop: insets.top }]}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
-    );
+    return <FormScreenSkeleton />;
   }
 
   if (!booking) {
@@ -122,7 +119,7 @@ export function BookingRateScreen() {
   return (
     <View style={styles.root}>
       <LinearGradient
-        colors={['#7A2E0E', '#B54708', '#F79009']}
+        colors={['#084F4A', '#0B6E67', '#12A598']}
         style={[styles.header, { paddingTop: insets.top + spacing.sm }]}
       >
         <View style={styles.headerGlow} />
@@ -160,7 +157,7 @@ export function BookingRateScreen() {
           <>
             <BookingReviewSubmittedCard booking={booking} />
             <View style={styles.thanks}>
-              <Ionicons name="heart" size={18} color="#B54708" />
+              <Ionicons name="heart" size={18} color={colors.primary} />
               <Text style={styles.thanksText}>Review submit ho chuki hai — thank you!</Text>
             </View>
           </>
@@ -183,7 +180,7 @@ export function BookingRateScreen() {
                       accessibilityRole="button"
                       accessibilityLabel={`${value} stars`}
                     >
-                      <Ionicons name={on ? 'star' : 'star-outline'} size={40} color="#F79009" />
+                      <Ionicons name={on ? 'star' : 'star-outline'} size={40} color={colors.star} />
                     </Pressable>
                   );
                 })}
@@ -203,7 +200,7 @@ export function BookingRateScreen() {
                     style={[styles.tag, on && styles.tagOn]}
                     onPress={() => toggleTag(tag.id)}
                   >
-                    <Ionicons name={tag.icon} size={14} color={on ? '#B54708' : colors.muted} />
+                    <Ionicons name={tag.icon} size={14} color={on ? colors.primaryDark : colors.muted} />
                     <Text style={[styles.tagText, on && styles.tagTextOn]}>{tag.label}</Text>
                   </Pressable>
                 );
@@ -224,7 +221,7 @@ export function BookingRateScreen() {
             <Text style={styles.charCount}>{text.length}/280</Text>
 
             <View style={styles.note}>
-              <Ionicons name="information-circle-outline" size={18} color="#B54708" />
+              <Ionicons name="information-circle-outline" size={18} color={colors.primary} />
               <Text style={styles.noteText}>
                 Honest reviews se Raipur mein better service milti hai. Aapka naam public nahi dikhega.
               </Text>
@@ -345,7 +342,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  proInitial: { fontFamily: fonts.extraBold, fontSize: 20, color: '#B54708' },
+  proInitial: { fontFamily: fonts.extraBold, fontSize: 20, color: colors.primaryDark },
   proCopy: { flex: 1, gap: 2 },
   proName: { fontFamily: fonts.extraBold, fontSize: 16, color: colors.white },
   proMeta: { fontFamily: fonts.medium, fontSize: 12, color: 'rgba(255,255,255,0.85)' },
@@ -363,7 +360,7 @@ const styles = StyleSheet.create({
   },
   stars: { flexDirection: 'row', gap: spacing.sm },
   starBtn: { padding: spacing.xs },
-  ratingLabel: { fontFamily: fonts.bold, fontSize: 14, color: '#B54708' },
+  ratingLabel: { fontFamily: fonts.bold, fontSize: 14, color: colors.primaryDark },
   tags: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   tag: {
     flexDirection: 'row',
@@ -376,9 +373,9 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: 'rgba(15,20,25,0.08)',
   },
-  tagOn: { borderColor: '#FEC84B', backgroundColor: '#FFFAEB' },
+  tagOn: { borderColor: 'rgba(11,110,103,0.35)', backgroundColor: colors.primaryLight },
   tagText: { fontFamily: fonts.semiBold, fontSize: 12, color: colors.muted },
-  tagTextOn: { color: '#B54708', fontFamily: fonts.bold },
+  tagTextOn: { color: colors.primaryDark, fontFamily: fonts.bold },
   input: {
     backgroundColor: colors.white,
     borderRadius: radius.xl,
@@ -403,13 +400,13 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     padding: spacing.lg,
     borderRadius: radius.xl,
-    backgroundColor: '#FFFAEB',
+    backgroundColor: colors.primaryLight,
   },
   noteText: {
     flex: 1,
     fontFamily: fonts.medium,
     fontSize: 12,
-    color: '#93370D',
+    color: colors.inkSecondary,
     lineHeight: 18,
   },
   thanks: {
@@ -419,7 +416,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: spacing.lg,
   },
-  thanksText: { fontFamily: fonts.semiBold, fontSize: 13, color: '#B54708' },
+  thanksText: { fontFamily: fonts.semiBold, fontSize: 13, color: colors.primaryDark },
   footer: {
     position: 'absolute',
     left: 0,

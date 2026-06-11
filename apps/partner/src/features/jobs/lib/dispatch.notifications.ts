@@ -4,6 +4,12 @@ import { formatRs, netEarningPaise } from '@/features/home/lib/home.greeting';
 
 import { appendPartnerNotification } from '@/features/notifications/lib/notifications.storage';
 
+import { emitDispatchEvent } from '@/features/jobs/lib/dispatch.events';
+import { getPartnerJobs } from '@/features/jobs/lib/jobs.storage';
+import {
+  getOfferListedAt,
+  primeOfferTimers,
+} from '@/features/jobs/lib/offer-expiry.storage';
 import { getPartnerPreferences } from '@/features/settings/lib/settings.storage';
 
 
@@ -35,6 +41,19 @@ export async function notifyNewManualOffer(job: PartnerJob): Promise<void> {
     kind: 'job',
     jobId: job.id,
   });
+}
+
+/** Pending jobs ingested while offline get alerts when partner goes online. */
+export async function notifyUnlistedPendingOffers(): Promise<void> {
+  const jobs = await getPartnerJobs();
+  const pending = jobs.filter((j) => j.status === 'pending');
+  for (const job of pending) {
+    const listedAt = await getOfferListedAt(job.id);
+    if (listedAt != null) continue;
+    await notifyNewManualOffer(job);
+    emitDispatchEvent({ type: 'new_offer', jobId: job.id, bookingRef: job.bookingRef });
+    await primeOfferTimers([job.id]);
+  }
 }
 
 export async function notifyJobAutoAssigned(job: PartnerJob): Promise<void> {

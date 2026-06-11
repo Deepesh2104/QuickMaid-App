@@ -82,6 +82,11 @@ export interface PartnerJob {
   declineReason?: string;
   /** Linked customer app booking id (bridge / deep link demo) */
   customerBookingId?: string;
+  /** Customer public ID — CU-{7-digit} */
+  customerPublicId?: string;
+  /** Customer checkout auto-assigned pro (bridge demo) */
+  customerPreferredMaidName?: string;
+  customerPreferredMaidId?: string;
   /** Demo: how many times job re-entered partner pool */
   reassignGeneration?: number;
 }

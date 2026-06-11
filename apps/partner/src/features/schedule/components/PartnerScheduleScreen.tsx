@@ -16,7 +16,9 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ListPagination } from '@/components/ui/ListPagination';
+import { JobListSkeleton } from '@/components/ui/Skeleton';
 import { usePartner } from '@/context/PartnerContext';
+import { PartnerBridgeSyncBanner } from '@/features/jobs/components/PartnerBridgeSyncBanner';
 import { PartnerRequestsSectionHeader } from '@/features/jobs/components/PartnerRequestsSections';
 import { usePartnerJobs } from '@/features/jobs/hooks/usePartnerJobs';
 import { SCHEDULE_FILTERS } from '@/features/schedule/constants/schedule.premium';
@@ -145,9 +147,7 @@ export function PartnerScheduleScreen() {
         <View style={styles.sheetHandle} />
 
         {loading ? (
-          <View style={styles.loader}>
-            <ActivityIndicator size="large" color={colors.primary} />
-          </View>
+          <JobListSkeleton count={3} />
         ) : (
           <ScrollView
             showsVerticalScrollIndicator={false}
@@ -166,6 +166,13 @@ export function PartnerScheduleScreen() {
                 <PartnerScheduleLiveBanner job={liveJob} />
               </Animated.View>
             ) : null}
+
+            <Animated.View entering={FadeInDown.delay(20).duration(300)}>
+              <PartnerBridgeSyncBanner
+                activeJobs={active}
+                onRefresh={() => void refresh()}
+              />
+            </Animated.View>
 
             <Animated.View entering={FadeInDown.delay(40).duration(300)}>
               <PartnerScheduleTodayBanner count={todayCount} />

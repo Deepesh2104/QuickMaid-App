@@ -1,3 +1,5 @@
+import { DEMO_OTP } from '@/constants/app';
+
 export interface MaidProfile {
   id: string;
   name: string;
@@ -25,7 +27,7 @@ const MAID_POOL: MaidProfile[] = [
 ];
 
 export function generateCompletionOtp(): string {
-  return String(Math.floor(100000 + Math.random() * 900000));
+  return DEMO_OTP;
 }
 
 /** Auto-assign best available pro + 6-digit visit completion OTP */

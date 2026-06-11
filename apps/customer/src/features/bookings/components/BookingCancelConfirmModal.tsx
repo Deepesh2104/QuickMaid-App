@@ -60,6 +60,14 @@ export function BookingCancelConfirmModal({
 
           <Text style={styles.hint}>Yeh action undo nahi ho sakta. Pro auto-unassign ho jayegi.</Text>
 
+          <View style={styles.bridgeStrip}>
+            <LinearGradient colors={['#450A0A', '#991B1B']} style={StyleSheet.absoluteFill} />
+            <Ionicons name="swap-horizontal" size={14} color="#FCA5A5" />
+            <Text style={styles.bridgeText}>
+              Partner app se job auto-remove · bridge sync on confirm
+            </Text>
+          </View>
+
           <Pressable
             style={[styles.danger, loading && styles.btnOff]}
             onPress={onConfirm}
@@ -134,6 +142,24 @@ const styles = StyleSheet.create({
     color: colors.muted,
     textAlign: 'center',
     lineHeight: 16,
+  },
+  bridgeStrip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    borderRadius: radius.lg,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(252,165,165,0.3)',
+  },
+  bridgeText: {
+    flex: 1,
+    fontFamily: fonts.medium,
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.9)',
+    lineHeight: 15,
   },
   danger: {
     alignItems: 'center',

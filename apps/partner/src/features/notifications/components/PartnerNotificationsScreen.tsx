@@ -16,6 +16,7 @@ import {
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { NotificationListSkeleton } from '@/components/ui/Skeleton';
 import { PartnerNotificationCard } from '@/features/notifications/components/PartnerNotificationCard';
 import { useNotifications } from '@/features/notifications/hooks/useNotifications';
 import {
@@ -177,9 +178,7 @@ export function PartnerNotificationsScreen() {
         </View>
 
         {loading ? (
-          <View style={styles.loader}>
-            <ActivityIndicator size="large" color={colors.primary} />
-          </View>
+          <NotificationListSkeleton />
         ) : filtered.length === 0 ? (
           <View style={styles.empty}>
             <LinearGradient colors={['#E6F4F2', colors.white]} style={styles.emptyIcon}>

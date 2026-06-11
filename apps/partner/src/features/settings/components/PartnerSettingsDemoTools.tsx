@@ -1,14 +1,17 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
+import { DEMO_AUTH_OTP, DEMO_VISIT_COMPLETION_OTP } from '@/constants/app';
 import { usePartner } from '@/context/PartnerContext';
 import type { KycStatus } from '@/constants/app';
 import { PartnerRequestsSectionHeader } from '@/features/jobs/components/PartnerRequestsSections';
 import { usePartnerJobs } from '@/features/jobs/hooks/usePartnerJobs';
 import { syncCustomerBookingBridge } from '@/features/jobs/lib/booking-partner-bridge';
+import { syncJobsFromCustomerStatusBridge } from '@/features/jobs/lib/booking-status-bridge.storage';
 import {
   resetAcceptDeclineTestJobs,
   resetPartnerJobsToDemo,
@@ -20,7 +23,7 @@ import { radius, shadow, spacing } from '@/theme/spacing';
 export function PartnerSettingsDemoTools() {
   const { profile, updateProfile } = usePartner();
   const { refresh } = usePartnerJobs();
-  const [busy, setBusy] = useState<'none' | 'all' | 'test' | 'bridge' | 'kyc'>('none');
+  const [busy, setBusy] = useState<'none' | 'all' | 'test' | 'bridge' | 'kyc' | 'status'>('none');
 
   const toggleKycDemo = async () => {
     setBusy('kyc');
@@ -30,11 +33,12 @@ export function PartnerSettingsDemoTools() {
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
-  const run = async (kind: 'all' | 'test' | 'bridge') => {
+  const run = async (kind: 'all' | 'test' | 'bridge' | 'status') => {
     setBusy(kind);
     if (kind === 'all') await resetPartnerJobsToDemo();
     else if (kind === 'test') await resetAcceptDeclineTestJobs();
-    else await syncCustomerBookingBridge();
+    else if (kind === 'bridge') await syncCustomerBookingBridge();
+    else await syncJobsFromCustomerStatusBridge();
     await refresh();
     setBusy('none');
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -49,75 +53,196 @@ export function PartnerSettingsDemoTools() {
         icon="refresh-outline"
         compact
       />
+
+      <LinearGradient
+        colors={['#0F172A', '#1E3A5F', '#1570EF']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.bridgeHero}
+      >
+        <View style={styles.bridgeGlow} pointerEvents="none" />
+        <View style={styles.bridgeHead}>
+          <Ionicons name="git-network-outline" size={20} color={colors.white} />
+          <View style={styles.bridgeCopy}>
+            <Text style={styles.bridgeEyebrow}>CUSTOMER BRIDGE</Text>
+            <Text style={styles.bridgeTitle}>Cross-app sync tools</Text>
+          </View>
+        </View>
+        <Text style={styles.bridgeSub}>
+          Orders, lifecycle events, cancel/reschedule — demo AsyncStorage bridge
+        </Text>
+        <View style={styles.otpStrip}>
+          <Ionicons name="keypad-outline" size={14} color="#FCD34D" />
+          <Text style={styles.otpStripText}>
+            Unified OTP {DEMO_AUTH_OTP} · login + visit completion (customer app bhi same)
+          </Text>
+        </View>
+        <View style={styles.bridgeActions}>
+          <Pressable
+            style={styles.bridgeBtn}
+            onPress={() => void run('bridge')}
+            disabled={busy !== 'none'}
+          >
+            <Ionicons name="download-outline" size={14} color={colors.white} />
+            <Text style={styles.bridgeBtnText}>
+              {busy === 'bridge' ? 'Syncing…' : 'Pull customer orders'}
+            </Text>
+          </Pressable>
+          <Pressable
+            style={[styles.bridgeBtn, styles.bridgeBtnAlt]}
+            onPress={() => void run('status')}
+            disabled={busy !== 'none'}
+          >
+            <Ionicons name="sync-outline" size={14} color="#93C5FD" />
+            <Text style={[styles.bridgeBtnText, styles.bridgeBtnTextAlt]}>
+              {busy === 'status' ? 'Syncing…' : 'Pull cancel/reschedule'}
+            </Text>
+          </Pressable>
+        </View>
+      </LinearGradient>
+
       <View style={styles.card}>
-        <Pressable
-          style={styles.row}
+        <DemoRow
+          icon="hand-left-outline"
+          iconBg="#FFFBEB"
+          iconColor="#B45309"
+          title="Reset Accept/Decline test"
+          sub="MANUAL + DECLINE TEST cards wapas pending"
+          action={busy === 'test' ? '...' : 'Run'}
           onPress={() => void run('test')}
           disabled={busy !== 'none'}
-        >
-          <View style={[styles.icon, { backgroundColor: '#FFFBEB' }]}>
-            <Ionicons name="hand-left-outline" size={16} color="#B45309" />
-          </View>
-          <View style={styles.copy}>
-            <Text style={styles.title}>Reset Accept/Decline test</Text>
-            <Text style={styles.sub}>MANUAL + DECLINE TEST cards wapas pending</Text>
-          </View>
-          <Text style={styles.action}>{busy === 'test' ? '...' : 'Run'}</Text>
-        </Pressable>
+        />
         <View style={styles.divider} />
-        <Pressable
-          style={styles.row}
-          onPress={() => void run('bridge')}
-          disabled={busy !== 'none'}
-        >
-          <View style={[styles.icon, { backgroundColor: '#EEF6FF' }]}>
-            <Ionicons name="link-outline" size={16} color="#175CD3" />
-          </View>
-          <View style={styles.copy}>
-            <Text style={styles.title}>Sync customer bookings</Text>
-            <Text style={styles.sub}>Bridge queue → pending partner jobs (demo)</Text>
-          </View>
-          <Text style={styles.action}>{busy === 'bridge' ? '...' : 'Run'}</Text>
-        </Pressable>
-        <View style={styles.divider} />
-        <Pressable
-          style={styles.row}
+        <DemoRow
+          icon="shield-outline"
+          iconBg="#FEF3F2"
+          iconColor="#D92D20"
+          title="Toggle KYC gate (demo)"
+          sub={`Ab: ${profile?.kycStatus ?? 'pending'} — accept block test ke liye`}
+          action={busy === 'kyc' ? '...' : 'Flip'}
           onPress={() => void toggleKycDemo()}
           disabled={busy !== 'none'}
-        >
-          <View style={[styles.icon, { backgroundColor: '#FEF3F2' }]}>
-            <Ionicons name="shield-outline" size={16} color="#D92D20" />
-          </View>
-          <View style={styles.copy}>
-            <Text style={styles.title}>Toggle KYC gate (demo)</Text>
-            <Text style={styles.sub}>
-              Ab: {profile?.kycStatus ?? 'pending'} — accept block test ke liye
-            </Text>
-          </View>
-          <Text style={styles.action}>{busy === 'kyc' ? '...' : 'Flip'}</Text>
-        </Pressable>
+        />
         <View style={styles.divider} />
-        <Pressable
-          style={styles.row}
+        <DemoRow
+          icon="briefcase-outline"
+          iconBg={colors.primaryLight}
+          iconColor={colors.primaryDark}
+          title="Reset all demo jobs"
+          sub="Saari visits seed state — Schedule khali"
+          action={busy === 'all' ? '...' : 'Run'}
           onPress={() => void run('all')}
           disabled={busy !== 'none'}
-        >
-          <View style={[styles.icon, { backgroundColor: colors.primaryLight }]}>
-            <Ionicons name="briefcase-outline" size={16} color={colors.primaryDark} />
-          </View>
-          <View style={styles.copy}>
-            <Text style={styles.title}>Reset all demo jobs</Text>
-            <Text style={styles.sub}>Saari visits seed state — Schedule khali</Text>
-          </View>
-          <Text style={styles.action}>{busy === 'all' ? '...' : 'Run'}</Text>
-        </Pressable>
+        />
       </View>
     </Animated.View>
   );
 }
 
+function DemoRow({
+  icon,
+  iconBg,
+  iconColor,
+  title,
+  sub,
+  action,
+  onPress,
+  disabled,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  iconBg: string;
+  iconColor: string;
+  title: string;
+  sub: string;
+  action: string;
+  onPress: () => void;
+  disabled: boolean;
+}) {
+  return (
+    <Pressable style={styles.row} onPress={onPress} disabled={disabled}>
+      <View style={[styles.icon, { backgroundColor: iconBg }]}>
+        <Ionicons name={icon} size={16} color={iconColor} />
+      </View>
+      <View style={styles.copy}>
+        <Text style={styles.title}>{title}</Text>
+        <Text style={styles.sub}>{sub}</Text>
+      </View>
+      <Text style={styles.action}>{action}</Text>
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
   block: { gap: spacing.sm },
+  bridgeHero: {
+    borderRadius: radius.xxl,
+    padding: spacing.md,
+    gap: spacing.sm,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
+    ...shadow.md,
+  },
+  bridgeGlow: {
+    position: 'absolute',
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: 'rgba(21,112,239,0.3)',
+    top: -30,
+    right: -10,
+  },
+  bridgeHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  bridgeCopy: { flex: 1, gap: 2 },
+  bridgeEyebrow: {
+    fontFamily: fonts.bold,
+    fontSize: 9,
+    color: 'rgba(255,255,255,0.55)',
+    letterSpacing: 1.1,
+  },
+  bridgeTitle: { fontFamily: fonts.bold, fontSize: 15, color: colors.white },
+  bridgeSub: {
+    fontFamily: fonts.medium,
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.72)',
+    lineHeight: 15,
+  },
+  otpStrip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    padding: spacing.sm,
+    borderRadius: radius.lg,
+    backgroundColor: 'rgba(252,211,77,0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(252,211,77,0.25)',
+  },
+  otpStripText: {
+    flex: 1,
+    fontFamily: fonts.medium,
+    fontSize: 11,
+    color: '#FCD34D',
+    lineHeight: 15,
+  },
+  bridgeActions: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xs },
+  bridgeBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: radius.pill,
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
+  bridgeBtnAlt: {
+    backgroundColor: 'rgba(21,112,239,0.25)',
+    borderColor: 'rgba(147,197,253,0.3)',
+  },
+  bridgeBtnText: { fontFamily: fonts.bold, fontSize: 11, color: colors.white },
+  bridgeBtnTextAlt: { color: '#93C5FD' },
   card: {
     backgroundColor: colors.white,
     borderRadius: radius.xl,

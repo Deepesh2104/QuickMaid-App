@@ -398,27 +398,7 @@ export function PartnerScheduleWeekEarningsCard({
   );
 }
 
-export function PartnerScheduleLiveBanner({ job }: { job: PartnerJob }) {
-  const router = useRouter();
-
-  return (
-    <Pressable style={styles.liveBanner} onPress={() => router.push(`/job/${job.id}` as Href)}>
-      <View style={styles.livePulse}>
-        <View style={styles.liveDotAnim} />
-      </View>
-      <View style={styles.liveCopy}>
-        <Text style={styles.liveTitle}>Visit in progress</Text>
-        <Text style={styles.liveSub} numberOfLines={1}>
-          {job.service} · {job.customerName}
-        </Text>
-      </View>
-      <View style={styles.liveCta}>
-        <Text style={styles.liveCtaText}>Open</Text>
-        <Ionicons name="arrow-forward" size={12} color="#1570EF" />
-      </View>
-    </Pressable>
-  );
-}
+export { PartnerLiveVisitBanner as PartnerScheduleLiveBanner } from '@/features/schedule/components/PartnerLiveVisitBanner';
 
 export function PartnerSchedulePayoutStrip({ amount }: { amount: string }) {
   const router = useRouter();

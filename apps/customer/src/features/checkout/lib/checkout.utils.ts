@@ -60,10 +60,10 @@ export function computeOrderSummary(draft: CheckoutDraft, account: ProfileAccoun
   };
 }
 
-/** Booking ID: QM-7 + 7 random digits */
+/** Booking ref: QM- + last 7 digits of checkout timestamp (e.g. QM-4567890). */
 export function generateBookingRef(_priceNum?: number): string {
-  const digits = Math.floor(1_000_000 + Math.random() * 9_000_000);
-  return `QM-7${digits}`;
+  const digits = String(Date.now() % 10_000_000).padStart(7, '0');
+  return `QM-${digits}`;
 }
 
 export function slotToTime(slotId?: string): string {

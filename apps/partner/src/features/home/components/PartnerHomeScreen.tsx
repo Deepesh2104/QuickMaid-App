@@ -33,6 +33,7 @@ import { PartnerAutoAssignBanner } from '@/features/jobs/components/PartnerAutoA
 import { PartnerRequestsOnlineBanner } from '@/features/jobs/components/PartnerRequestsSections';
 import { useDispatchAssign } from '@/features/jobs/context/DispatchAssignContext';
 import { usePartnerDispatch } from '@/features/jobs/hooks/usePartnerDispatch';
+import { PartnerBridgeSyncBanner } from '@/features/jobs/components/PartnerBridgeSyncBanner';
 import { usePartnerJobs } from '@/features/jobs/hooks/usePartnerJobs';
 import { usePartnerPreferences } from '@/features/settings/hooks/usePartnerPreferences';
 import { PartnerScheduleVisitCard } from '@/features/schedule/components/PartnerScheduleVisitCard';
@@ -173,6 +174,12 @@ export function PartnerHomeScreen() {
           <Animated.View entering={FadeInDown.delay(40).duration(320)}>
             <PartnerEarningsHero state={state} />
           </Animated.View>
+
+          {active.length > 0 ? (
+            <Animated.View entering={FadeInDown.delay(50).duration(320)}>
+              <PartnerBridgeSyncBanner activeJobs={active} onRefresh={() => void refreshJobs()} />
+            </Animated.View>
+          ) : null}
 
           {liveCount > 0 && liveJob ? (
             <Animated.View entering={FadeInDown.delay(60).duration(320)}>

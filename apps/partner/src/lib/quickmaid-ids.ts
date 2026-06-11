@@ -1,11 +1,11 @@
-/** Booking ID: QM-7 + 7 random digits (e.g. QM-74829163) */
+/** Booking ref: QM- + last 7 digits of timestamp (e.g. QM-4567890). */
 export function generateBookingRef(): string {
-  const digits = Math.floor(1_000_000 + Math.random() * 9_000_000);
-  return `QM-7${digits}`;
+  const digits = String(Date.now() % 10_000_000).padStart(7, '0');
+  return `QM-${digits}`;
 }
 
 export function isValidBookingRef(ref: string): boolean {
-  return /^QM-7\d{7}$/.test(ref);
+  return /^QM-\d{7}$/.test(ref.trim()) || /^QM-7\d{7}$/.test(ref.trim());
 }
 
 /** Parse DD/MM/YYYY or DD-MM-YYYY → DDMMYY */

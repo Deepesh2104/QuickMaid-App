@@ -1,4 +1,4 @@
-export const DEMO_OTP = '123456';
+export { DEMO_OTP, DEMO_AUTH_OTP, DEMO_VISIT_COMPLETION_OTP } from '../../shared/demo-otp';
 
 export const STORAGE_KEYS = {
   onboardingDone: '@qm/onboarding_done',
@@ -26,6 +26,8 @@ export const STORAGE_KEYS = {
 export interface UserProfile {
   name: string;
   phone: string;
+  /** Auto-generated customer ID — CU-{7-digit timestamp} */
+  publicId?: string;
   city: string;
   email?: string;
   gender?: string;

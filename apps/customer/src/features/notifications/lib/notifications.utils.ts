@@ -116,3 +116,34 @@ export function getActionLabel(action?: NotificationAction): string {
 export function hasDeepLink(action?: NotificationAction): boolean {
   return Boolean(action && action.type !== 'none');
 }
+
+const BRIDGE_ID_PREFIX = 'bridge-';
+
+export function isBridgeNotification(id: string): boolean {
+  return id.startsWith(BRIDGE_ID_PREFIX);
+}
+
+export function bridgeEventFromNotificationId(id: string): string | null {
+  if (!isBridgeNotification(id)) return null;
+  const parts = id.slice(BRIDGE_ID_PREFIX.length).split('-');
+  return parts[0] ?? null;
+}
+
+export function bridgeEventLabel(event: string | null): string {
+  switch (event) {
+    case 'partner_accepted':
+      return 'Pro assigned';
+    case 'partner_in_progress':
+      return 'Visit live';
+    case 'partner_completed':
+      return 'Visit complete';
+    case 'partner_declined':
+      return 'Reassigning pro';
+    default:
+      return 'Partner bridge';
+  }
+}
+
+export function filterBridgeNotifications(items: AppNotification[]): AppNotification[] {
+  return items.filter((n) => isBridgeNotification(n.id));
+}

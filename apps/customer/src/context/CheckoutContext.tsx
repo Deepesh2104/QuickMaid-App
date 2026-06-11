@@ -8,6 +8,7 @@ import { formatAddressLine } from '@/features/profile/lib/profile.utils';
 import type { ProfileAccountData } from '@/features/profile/types/profile.types';
 import { addStoredBooking } from '@/features/checkout/lib/bookings.storage';
 import { pushBookingToPartnerBridge } from '@/lib/booking-partner-bridge';
+import { getUserProfile } from '@/lib/storage';
 import { autoAssignMaid } from '@/features/bookings/lib/maid.assign';
 import {
   completePayment,
@@ -201,7 +202,12 @@ export function CheckoutProvider({ children }: { children: React.ReactNode }) {
       }
 
       await addStoredBooking(order);
-      await pushBookingToPartnerBridge(order, account.name);
+      const userProfile = await getUserProfile();
+      await pushBookingToPartnerBridge(order, {
+        name: userProfile?.name,
+        phone: userProfile?.phone,
+        publicId: userProfile?.publicId,
+      });
       await addNotification({
         id: `notif_${order.id}`,
         category: 'booking',

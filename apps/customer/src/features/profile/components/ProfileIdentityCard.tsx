@@ -62,6 +62,9 @@ export function ProfileIdentityCard({ profile, percent, onEdit }: ProfileIdentit
             <Text style={styles.editPillText}>Edit</Text>
           </View>
         </View>
+        {profile?.publicId ? (
+          <Text style={styles.idText}>ID {profile.publicId}</Text>
+        ) : null}
         {profile?.email ? <Text style={styles.meta}>{profile.email}</Text> : (
           <Text style={styles.metaHint}>Add email for receipts</Text>
         )}
@@ -140,6 +143,12 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bold,
     fontSize: 10,
     color: colors.primaryDark,
+  },
+  idText: {
+    fontFamily: fonts.semiBold,
+    fontSize: 11,
+    color: colors.primaryDark,
+    letterSpacing: 0.3,
   },
   meta: {
     fontFamily: fonts.regular,
