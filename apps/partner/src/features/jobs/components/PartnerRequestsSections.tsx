@@ -13,7 +13,9 @@ import {
   REQUEST_TIPS,
   requestsPremium,
 } from '@/features/jobs/constants/requests.premium';
-import { responseMinutesLeft } from '@/features/jobs/lib/requests.utils';
+import { useOfferCountdown } from '@/features/jobs/hooks/useOfferCountdown';
+import { formatOfferCountdown } from '@/features/jobs/lib/offer-expiry.utils';
+import { usePartnerI18n } from '@/i18n/usePartnerI18n';
 import { fonts } from '@/theme/fonts';
 import { colors } from '@/theme/colors';
 import { layout, radius, shadow, spacing } from '@/theme/spacing';
@@ -79,10 +81,13 @@ export function PartnerRequestsSectionHeader({
 
 interface OnlineBannerProps {
   isOnline: boolean;
+  autoAssign?: boolean;
   onToggle: (next: boolean) => void;
 }
 
-export function PartnerRequestsOnlineBanner({ isOnline, onToggle }: OnlineBannerProps) {
+export function PartnerRequestsOnlineBanner({ isOnline, autoAssign, onToggle }: OnlineBannerProps) {
+  const { t } = usePartnerI18n();
+
   return (
     <View style={[styles.onlineBanner, isOnline ? styles.onlineOn : styles.onlineOff]}>
       <View style={[styles.onlineIcon, isOnline ? styles.onlineIconOn : styles.onlineIconOff]}>
@@ -94,12 +99,14 @@ export function PartnerRequestsOnlineBanner({ isOnline, onToggle }: OnlineBanner
       </View>
       <View style={styles.onlineCopy}>
         <Text style={[styles.onlineTitle, isOnline ? styles.onlineTitleOn : styles.onlineTitleOff]}>
-          {isOnline ? 'You are live for dispatch' : 'Go online to receive requests'}
+          {isOnline ? t('liveForOffers') : t('goOnlineDispatch')}
         </Text>
         <Text style={styles.onlineSub}>
           {isOnline
-            ? 'New visits land in this inbox first — respond within 15 min'
-            : 'Turn on availability to start matching jobs in your zone'}
+            ? autoAssign
+              ? t('autoAssignOn')
+              : t('manualOffers')
+            : t('goOffline')}
         </Text>
       </View>
       <Switch
@@ -124,14 +131,14 @@ interface BestMatchProps {
 
 export function PartnerRequestsBestMatch({ job, onAccept, onOpen }: BestMatchProps) {
   const net = netEarningPaise(job.amountPaise);
-  const mins = responseMinutesLeft(job.id);
+  const { secondsLeft, expired } = useOfferCountdown(job.id, true);
 
   return (
     <View style={styles.bestWrap}>
       <PartnerRequestsSectionHeader
-        eyebrow="Top match"
-        title="Best for you right now"
-        subtitle="Nearest visit with strong earnings"
+        eyebrow="Job offer"
+        title="Assigned to you"
+        subtitle="Slot + zone match · respond before timer ends"
         icon="sparkles"
         compact
       />
@@ -141,11 +148,13 @@ export function PartnerRequestsBestMatch({ job, onAccept, onOpen }: BestMatchPro
         <View style={styles.bestTop}>
           <View style={styles.bestBadge}>
             <Ionicons name="flash" size={12} color={colors.partnerGold} />
-            <Text style={styles.bestBadgeText}>PRIORITY</Text>
+            <Text style={styles.bestBadgeText}>UC DISPATCH</Text>
           </View>
-          <View style={styles.timerPill}>
+          <View style={[styles.timerPill, expired && styles.timerPillExpired]}>
             <Ionicons name="timer-outline" size={12} color={colors.white} />
-            <Text style={styles.timerText}>~{mins} min left</Text>
+            <Text style={styles.timerText}>
+              {expired ? 'Expired' : formatOfferCountdown(secondsLeft)}
+            </Text>
           </View>
         </View>
         <Text style={styles.bestService}>{job.service}</Text>
@@ -159,17 +168,19 @@ export function PartnerRequestsBestMatch({ job, onAccept, onOpen }: BestMatchPro
             <Text style={styles.bestEarnLabel}>You earn</Text>
             <Text style={styles.bestEarn}>{formatRs(net)}</Text>
           </View>
-          <Pressable
-            style={styles.bestAccept}
-            onPress={(e) => {
-              e.stopPropagation?.();
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              onAccept();
-            }}
-          >
-            <Text style={styles.bestAcceptText}>Accept now</Text>
-            <Ionicons name="arrow-forward" size={14} color={colors.primaryDark} />
-          </Pressable>
+          {!expired ? (
+            <Pressable
+              style={styles.bestAccept}
+              onPress={(e) => {
+                e.stopPropagation?.();
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                onAccept();
+              }}
+            >
+              <Text style={styles.bestAcceptText}>Accept now</Text>
+              <Ionicons name="arrow-forward" size={14} color={colors.primaryDark} />
+            </Pressable>
+          ) : null}
         </View>
       </Pressable>
     </View>
@@ -376,21 +387,29 @@ export function PartnerRequestsEmptyPremium({
   isOnline,
   zone,
   filterLabel,
+  slotsMismatch,
+  onResetDemo,
 }: {
   isOnline: boolean;
   zone?: string;
   filterLabel?: string;
+  slotsMismatch?: boolean;
+  onResetDemo?: () => void;
 }) {
   const title = !isOnline
     ? 'You are offline'
-    : filterLabel
-      ? `No ${filterLabel.toLowerCase()} requests`
-      : 'Inbox is clear';
+    : slotsMismatch
+      ? 'No offers for your slots'
+      : filterLabel
+        ? `No ${filterLabel.toLowerCase()} offers`
+        : 'No job offers right now';
   const sub = !isOnline
-    ? 'Switch on availability above — most partners get their first offer within minutes.'
-    : filterLabel
-      ? 'Try another filter or stay online. New visits arrive throughout the day.'
-      : `You're online in ${zone ?? 'your zone'}. We'll notify you the moment a visit matches your slots.`;
+    ? 'Urban Company style: offers tabhi aate hain jab aap live ho. Switch on above.'
+    : slotsMismatch
+      ? 'Pending jobs hain par aapke active slots / zone se match nahi karte. Slots ya work address update karo.'
+      : filterLabel
+        ? 'Try another filter or wait — new offers arrive when customers book your windows.'
+        : `Live in ${zone ?? 'your zone'}. Offers auto-match your morning / afternoon / Sunday slots.`;
 
   return (
     <View style={styles.emptyPremium}>
@@ -399,6 +418,25 @@ export function PartnerRequestsEmptyPremium({
       </LinearGradient>
       <Text style={styles.emptyTitle}>{title}</Text>
       <Text style={styles.emptySub}>{sub}</Text>
+      {!isOnline ? (
+        <Text style={styles.emptyTip}>Step 1: Online toggle ON karo (upar wala switch)</Text>
+      ) : (
+        <Text style={styles.emptyTip}>
+          Check Schedule tab — auto-accept jobs wahan ho sakti hain. Start visit khud dabana.
+        </Text>
+      )}
+      {onResetDemo ? (
+        <Pressable
+          style={styles.emptyResetBtn}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            onResetDemo();
+          }}
+        >
+          <Ionicons name="refresh" size={14} color={colors.white} />
+          <Text style={styles.emptyResetText}>Reset demo jobs</Text>
+        </Pressable>
+      ) : null}
     </View>
   );
 }
@@ -516,6 +554,7 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     borderRadius: radius.pill,
   },
+  timerPillExpired: { backgroundColor: 'rgba(220,38,38,0.45)' },
   timerText: { fontFamily: fonts.semiBold, fontSize: 11, color: colors.white },
   bestService: { fontFamily: fonts.extraBold, fontSize: 18, color: colors.white, letterSpacing: -0.3 },
   bestCustomer: { fontFamily: fonts.medium, fontSize: 13, color: 'rgba(255,255,255,0.85)' },
@@ -683,4 +722,23 @@ const styles = StyleSheet.create({
     maxWidth: 300,
     paddingHorizontal: layout.pad,
   },
+  emptyTip: {
+    fontFamily: fonts.semiBold,
+    fontSize: 11,
+    color: colors.primaryDark,
+    textAlign: 'center',
+    lineHeight: 16,
+    maxWidth: 280,
+  },
+  emptyResetBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm + 2,
+    borderRadius: radius.pill,
+    backgroundColor: colors.primaryDark,
+  },
+  emptyResetText: { fontFamily: fonts.bold, fontSize: 12, color: colors.white },
 });

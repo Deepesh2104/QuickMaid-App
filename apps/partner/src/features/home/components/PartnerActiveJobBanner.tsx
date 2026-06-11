@@ -16,6 +16,9 @@ interface PartnerActiveJobBannerProps {
 
 export function PartnerActiveJobBanner({ job }: PartnerActiveJobBannerProps) {
   const router = useRouter();
+  const live = job.status === 'in_progress';
+  const label = live ? 'ACTIVE VISIT' : 'CONFIRMED VISIT';
+  const cta = live ? 'Open job' : 'Start visit';
 
   return (
     <Pressable
@@ -27,8 +30,8 @@ export function PartnerActiveJobBanner({ job }: PartnerActiveJobBannerProps) {
     >
       <LinearGradient colors={['#084F4A', '#0D8A82']} style={styles.card}>
         <View style={styles.liveRow}>
-          <View style={styles.liveDot} />
-          <Text style={styles.liveLabel}>ACTIVE VISIT</Text>
+          <View style={[styles.liveDot, !live && styles.confirmedDot]} />
+          <Text style={styles.liveLabel}>{label}</Text>
         </View>
         <Text style={styles.service}>{job.service}</Text>
         <Text style={styles.customer}>{job.customerName} · {job.visitDate}</Text>
@@ -36,7 +39,7 @@ export function PartnerActiveJobBanner({ job }: PartnerActiveJobBannerProps) {
         <View style={styles.footer}>
           <Text style={styles.earn}>{formatRs(netEarningPaise(job.amountPaise))}</Text>
           <View style={styles.cta}>
-            <Text style={styles.ctaText}>Open job</Text>
+            <Text style={styles.ctaText}>{cta}</Text>
             <Ionicons name="arrow-forward" size={14} color={colors.white} />
           </View>
         </View>
@@ -51,6 +54,7 @@ const styles = StyleSheet.create({
   card: { borderRadius: radius.xl, padding: spacing.lg, gap: 6 },
   liveRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   liveDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#FBBF24' },
+  confirmedDot: { backgroundColor: '#6EE7B7' },
   liveLabel: { fontFamily: fonts.bold, fontSize: 10, color: 'rgba(255,255,255,0.75)', letterSpacing: 1 },
   service: { fontFamily: fonts.extraBold, fontSize: 18, color: colors.white, marginTop: 4 },
   customer: { fontFamily: fonts.semiBold, fontSize: 13, color: 'rgba(255,255,255,0.85)' },

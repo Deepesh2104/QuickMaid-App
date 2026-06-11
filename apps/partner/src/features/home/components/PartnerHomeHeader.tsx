@@ -21,7 +21,8 @@ interface PartnerHomeHeaderProps {
   unreadCount: number;
   workTitle: string;
   workLine: string;
-  openCount: number;
+  queueCount: number;
+  queueLabel: string;
   todayCount: number;
   earningsLabel: string;
   onNotificationsPress: () => void;
@@ -34,7 +35,8 @@ export function PartnerHomeHeader({
   unreadCount,
   workTitle,
   workLine,
-  openCount,
+  queueCount,
+  queueLabel,
   todayCount,
   earningsLabel,
   onNotificationsPress,
@@ -119,8 +121,8 @@ export function PartnerHomeHeader({
 
       <View style={styles.statBar}>
         <View style={styles.statChip}>
-          <Text style={styles.statNum}>{openCount}</Text>
-          <Text style={styles.statLabel}>Open</Text>
+          <Text style={styles.statNum}>{queueCount}</Text>
+          <Text style={styles.statLabel}>{queueLabel}</Text>
         </View>
         <View style={styles.statDivider} />
         <View style={styles.statChip}>

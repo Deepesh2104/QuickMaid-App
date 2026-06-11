@@ -12,7 +12,7 @@ export const STORAGE_KEYS = {
   supportTickets: '@qmp/partner_support_tickets',
   notificationsRead: '@qmp/partner_notifications_read',
   notificationsInbox: '@qmp/partner_notifications_inbox',
-  partnerJobs: '@qmp/partner_jobs',
+  partnerJobs: '@qmp/partner_jobs_v4',
   kycDraft: '@qmp/partner_kyc_draft',
   partnerPreferences: '@qmp/partner_preferences',
 } as const;

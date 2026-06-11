@@ -23,6 +23,13 @@ In-depth specs for every Partner app feature: screens, components, demo data, **
 | [15-BOOK-HOME](./15-BOOK-HOME.md) | Dual-role customer handoff | `app/book-home` | Deep link only |
 | [16-LEGAL](./16-LEGAL.md) | Terms, privacy, policies | `app/legal/[slug]` | Static content |
 | [17-ACCOUNT](./17-ACCOUNT.md) | Delete account | `app/account/delete` | `deletePartnerAccount()` |
+| [18-DISPATCH](./18-DISPATCH.md) | UC auto-assign & manual requests | `(tabs)/*`, settings | `dispatch.*`, `offer-expiry.*` |
+
+## Monorepo cross-app docs
+
+| Doc | Topic |
+|-----|--------|
+| [`QuickMaid-App/docs/FSD/`](../../../../docs/FSD/README.md) | Index + cross-app bridge |
 
 ## How to read an FSD
 

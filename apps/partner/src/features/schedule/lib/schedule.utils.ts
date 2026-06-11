@@ -51,6 +51,50 @@ export function scheduleFilterCount(jobs: PartnerJob[], filter: ScheduleFilter):
   return filterScheduleJobs(jobs, filter).length;
 }
 
+export interface ScheduleSlotGroup {
+  label: string;
+  sub: string;
+  jobs: PartnerJob[];
+}
+
+const SLOT_GROUPS: { id: string; label: string; sub: string; match: (job: PartnerJob) => boolean }[] = [
+  {
+    id: 'morning',
+    label: 'Morning window',
+    sub: 'Mon–Sat · 8–11 AM',
+    match: (j) => j.slotLabel.includes('8–11') || j.slotLabel.includes('8-11'),
+  },
+  {
+    id: 'afternoon',
+    label: 'Afternoon window',
+    sub: 'Mon–Sat · 2–5 PM',
+    match: (j) => j.slotLabel.includes('2–5') || j.slotLabel.includes('2-5'),
+  },
+  {
+    id: 'sunday',
+    label: 'Sunday window',
+    sub: 'Sun · 8–11 AM',
+    match: (j) => j.slotLabel.toLowerCase().includes('sun'),
+  },
+];
+
+export function groupScheduleBySlot(jobs: PartnerJob[]): ScheduleSlotGroup[] {
+  const groups: ScheduleSlotGroup[] = [];
+
+  for (const slot of SLOT_GROUPS) {
+    const list = sortScheduleJobs(jobs.filter(slot.match));
+    if (list.length) groups.push({ label: slot.label, sub: slot.sub, jobs: list });
+  }
+
+  const matched = new Set(groups.flatMap((g) => g.jobs.map((j) => j.id)));
+  const other = sortScheduleJobs(jobs.filter((j) => !matched.has(j.id)));
+  if (other.length) {
+    groups.push({ label: 'Other visits', sub: 'Outside preferred windows', jobs: other });
+  }
+
+  return groups;
+}
+
 export function groupScheduleByVisit(jobs: PartnerJob[]): { label: string; jobs: PartnerJob[] }[] {
   const order = ['Today', 'Tomorrow'];
   const buckets = new Map<string, PartnerJob[]>();

@@ -49,6 +49,7 @@ import {
   type EarningsFilter,
 } from '@/features/earnings/lib/earnings.utils';
 import { getPartnerJobById } from '@/features/jobs/lib/jobs.storage';
+import { mergePayoutBatches, runDemoWeeklyPayoutBatch } from '@/features/payout/lib/payout.batch';
 import { jobEarningsBreakdown } from '@/features/jobs/lib/job-detail.utils';
 import { useLayoutMetrics } from '@/hooks/useLayoutMetrics';
 import { useListPagination } from '@/hooks/useListPagination';
@@ -74,6 +75,7 @@ export function PartnerEarningsScreen() {
   const [filter, setFilter] = useState<EarningsFilter>('all');
   const [refreshing, setRefreshing] = useState(false);
   const [focusJob, setFocusJob] = useState<PartnerJob | null>(null);
+  const [payoutBatch, setPayoutBatch] = useState<EarningRow | null>(null);
 
   useEffect(() => {
     if (!jobId) {
@@ -83,7 +85,16 @@ export function PartnerEarningsScreen() {
     void getPartnerJobById(jobId).then(setFocusJob);
   }, [jobId, jobs]);
 
-  const ledger = useMemo(() => mergeEarningsLedger(DEMO_EARNINGS, jobs), [jobs]);
+  useEffect(() => {
+    const base = mergeEarningsLedger(DEMO_EARNINGS, jobs);
+    const pending = pendingFromJobs(jobs, base);
+    void runDemoWeeklyPayoutBatch(pending, profile?.upiId).then(setPayoutBatch);
+  }, [jobs, profile?.upiId]);
+
+  const ledger = useMemo(
+    () => mergePayoutBatches(mergeEarningsLedger(DEMO_EARNINGS, jobs), payoutBatch),
+    [jobs, payoutBatch],
+  );
 
   const visitEarningRow = useMemo(
     () => (focusJob ? findEarningForJob(focusJob, ledger) : null),
@@ -115,7 +126,7 @@ export function PartnerEarningsScreen() {
   );
   const grossPaise = useMemo(() => earningsGrossFromNet(creditTotal), [creditTotal]);
   const feePaise = useMemo(() => earningsFeeAmount(grossPaise), [grossPaise]);
-  const pendingCompleted = useMemo(() => pendingFromJobs(jobs), [jobs]);
+  const pendingCompleted = useMemo(() => pendingFromJobs(jobs, ledger), [jobs, ledger]);
   const scheduled = useMemo(() => scheduledEarnings(jobs), [jobs]);
   const nextPayoutPaise = useMemo(
     () => nextPayoutEstimate(creditTotal, pendingCompleted),

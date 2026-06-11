@@ -14,7 +14,10 @@ import type { PartnerJob } from '@/constants/demo';
 
 import { formatRs, netEarningPaise } from '@/features/home/lib/home.greeting';
 
+import { useOfferCountdown } from '@/features/jobs/hooks/useOfferCountdown';
+import { formatOfferCountdown } from '@/features/jobs/lib/offer-expiry.utils';
 import { responseMinutesLeft } from '@/features/jobs/lib/requests.utils';
+import { usePartnerI18n } from '@/i18n/usePartnerI18n';
 
 import { fonts } from '@/theme/fonts';
 
@@ -29,6 +32,12 @@ interface PartnerRequestCardProps {
   job: PartnerJob;
 
   compact?: boolean;
+
+  /** Tighter inbox layout for Requests tab (not the large premium card). */
+  dense?: boolean;
+
+  /** Live countdown for manual pending offers */
+  showOfferTimer?: boolean;
 
   premium?: boolean;
 
@@ -52,15 +61,25 @@ function serviceIcon(service: string): keyof typeof Ionicons.glyphMap {
 
 
 
-export function PartnerRequestCard({ job, compact = false, premium = false, onAccept, onDecline }: PartnerRequestCardProps) {
+export function PartnerRequestCard({
+  job,
+  compact = false,
+  dense = false,
+  showOfferTimer = false,
+  premium = false,
+  onAccept,
+  onDecline,
+}: PartnerRequestCardProps) {
 
   const router = useRouter();
+  const { t } = usePartnerI18n();
 
   const net = netEarningPaise(job.amountPaise);
 
   const showActions = !compact && onAccept && onDecline;
 
   const mins = responseMinutesLeft(job.id);
+  const { secondsLeft, expired } = useOfferCountdown(job.id, showOfferTimer && !!showActions);
 
 
 
@@ -276,7 +295,7 @@ export function PartnerRequestCard({ job, compact = false, premium = false, onAc
 
           onPress={openDetail}
 
-          style={({ pressed }) => [styles.body, pressed && styles.pressed]}
+          style={({ pressed }) => [styles.body, dense && styles.bodyDense, pressed && styles.pressed]}
 
           accessibilityRole="button"
 
@@ -286,9 +305,9 @@ export function PartnerRequestCard({ job, compact = false, premium = false, onAc
 
           <View style={styles.row1}>
 
-            <View style={styles.icon}>
+            <View style={[styles.icon, dense && styles.iconDense]}>
 
-              <Ionicons name={serviceIcon(job.service)} size={16} color={colors.partnerGold} />
+              <Ionicons name={serviceIcon(job.service)} size={dense ? 14 : 16} color={colors.partnerGold} />
 
             </View>
 
@@ -318,11 +337,22 @@ export function PartnerRequestCard({ job, compact = false, premium = false, onAc
 
             </Text>
 
-            <View style={styles.newTag}>
-
-              <Text style={styles.newText}>NEW</Text>
-
-            </View>
+            {showOfferTimer && showActions ? (
+              <View style={[styles.newTag, expired && styles.timerTagExpired]}>
+                <Ionicons
+                  name="timer-outline"
+                  size={9}
+                  color={expired ? colors.error : colors.partnerGold}
+                />
+                <Text style={[styles.newText, expired && styles.timerTextExpired]}>
+                  {expired ? 'EXP' : formatOfferCountdown(secondsLeft)}
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.newTag}>
+                <Text style={styles.newText}>NEW</Text>
+              </View>
+            )}
 
           </View>
 
@@ -330,13 +360,13 @@ export function PartnerRequestCard({ job, compact = false, premium = false, onAc
 
 
 
-        {showActions ? (
+        {showActions && !expired ? (
 
-          <View style={styles.actions}>
+          <View style={[styles.actions, dense && styles.actionsDense]}>
 
             <Pressable
 
-              style={styles.declineBtn}
+              style={[styles.declineBtn, dense && styles.declineBtnDense]}
 
               onPress={() => {
 
@@ -366,7 +396,10 @@ export function PartnerRequestCard({ job, compact = false, premium = false, onAc
 
             >
 
-              <LinearGradient colors={['#084F4A', '#0B6E67']} style={styles.acceptGrad}>
+              <LinearGradient
+                colors={['#084F4A', '#0B6E67']}
+                style={[styles.acceptGrad, dense && styles.acceptGradDense]}
+              >
 
                 <Text style={styles.acceptText}>Accept</Text>
 
@@ -376,6 +409,11 @@ export function PartnerRequestCard({ job, compact = false, premium = false, onAc
 
           </View>
 
+        ) : showActions && expired ? (
+          <View style={[styles.expiredRow, dense && styles.expiredRowDense]}>
+            <Ionicons name="time-outline" size={12} color={colors.error} />
+            <Text style={styles.expiredText}>{t('offerWindowClosed')}</Text>
+          </View>
         ) : null}
 
       </View>
@@ -414,6 +452,8 @@ const styles = StyleSheet.create({
 
   body: { paddingHorizontal: spacing.md, paddingTop: spacing.md, paddingBottom: spacing.sm, gap: 4 },
 
+  bodyDense: { paddingHorizontal: spacing.sm, paddingTop: spacing.sm, paddingBottom: spacing.xs, gap: 2 },
+
   pressed: { opacity: 0.92 },
 
   row1: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
@@ -433,6 +473,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
 
   },
+
+  iconDense: { width: 24, height: 24, borderRadius: 6 },
 
   service: {
 
@@ -502,7 +544,15 @@ const styles = StyleSheet.create({
 
     borderRadius: 4,
 
+    flexDirection: 'row',
+
+    alignItems: 'center',
+
+    gap: 2,
+
   },
+
+  timerTagExpired: { backgroundColor: '#FEF3F2' },
 
   newText: {
 
@@ -515,6 +565,8 @@ const styles = StyleSheet.create({
     letterSpacing: 0.4,
 
   },
+
+  timerTextExpired: { color: colors.error },
 
   actions: {
 
@@ -529,6 +581,19 @@ const styles = StyleSheet.create({
     paddingTop: 2,
 
   },
+
+  actionsDense: { paddingHorizontal: spacing.sm, paddingBottom: spacing.sm, gap: spacing.xs },
+  expiredRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.md,
+    paddingTop: spacing.xs,
+  },
+  expiredRowDense: { paddingHorizontal: spacing.sm, paddingBottom: spacing.sm },
+  expiredText: { fontFamily: fonts.medium, fontSize: 11, color: colors.error },
 
   declineBtn: {
 
@@ -548,6 +613,8 @@ const styles = StyleSheet.create({
 
   },
 
+  declineBtnDense: { paddingVertical: 7 },
+
   declineText: { fontFamily: fonts.semiBold, fontSize: 13, color: colors.muted },
 
   acceptBtn: { flex: 1.4, borderRadius: radius.pill, overflow: 'hidden' },
@@ -559,6 +626,8 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
 
   },
+
+  acceptGradDense: { paddingVertical: 7 },
 
   acceptText: { fontFamily: fonts.bold, fontSize: 13, color: colors.white },
 

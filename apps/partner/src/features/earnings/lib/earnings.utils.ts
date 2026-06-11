@@ -77,8 +77,13 @@ export function groupEarningsByDay(rows: EarningRow[]): { label: string; rows: E
   return groups;
 }
 
-export function pendingFromJobs(jobs: PartnerJob[]): number {
-  const completed = jobs.filter((j) => j.status === 'completed');
+export function pendingFromJobs(jobs: PartnerJob[], ledger: EarningRow[] = []): number {
+  const knownRefs = new Set(
+    ledger.filter((r) => r.kind === 'credit').map((r) => r.subtitle),
+  );
+  const completed = jobs.filter(
+    (j) => j.status === 'completed' && !knownRefs.has(j.bookingRef),
+  );
   return completed.reduce((sum, j) => sum + netEarningPaise(j.amountPaise), 0);
 }
 

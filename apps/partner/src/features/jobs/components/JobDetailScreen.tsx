@@ -15,14 +15,18 @@ import {
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { usePartner } from '@/context/PartnerContext';
+import { usePartnerAlert } from '@/context/PartnerAlertContext';
 import type { PartnerJob } from '@/constants/demo';
 import { formatRs } from '@/features/home/lib/home.greeting';
+import { usePartnerJobs } from '@/features/jobs/hooks/usePartnerJobs';
+import { passedToNextPartnerMessage } from '@/features/jobs/lib/decline.utils';
 import { PartnerJobAcceptedModal } from '@/features/jobs/components/PartnerJobAcceptedModal';
 import { PartnerJobDeclineModal } from '@/features/jobs/components/PartnerJobDeclineModal';
 import { PartnerJobNavigateSheet } from '@/features/jobs/components/PartnerJobNavigateSheet';
 import { PartnerLiveLocationCard } from '@/features/jobs/components/PartnerLiveLocationCard';
 import { PartnerVisitStartModal } from '@/features/jobs/components/PartnerVisitStartModal';
-import { declineReasonLabel, type DeclineReasonId } from '@/features/jobs/constants/decline.premium';
+import type { DeclineReasonId } from '@/features/jobs/constants/decline.premium';
 import {
   canCallCustomer,
   customerTelUri,
@@ -40,7 +44,10 @@ import {
   jobTravelMins,
   serviceIcon,
 } from '@/features/jobs/lib/job-detail.utils';
-import { getPartnerJobById, updatePartnerJobStatus } from '@/features/jobs/lib/jobs.storage';
+import { getPartnerJobById } from '@/features/jobs/lib/jobs.storage';
+import { acceptBlockedMessage } from '@/features/kyc/lib/kyc.routing';
+import { usePartnerPreferences } from '@/features/settings/hooks/usePartnerPreferences';
+import { usePartnerI18n } from '@/i18n/usePartnerI18n';
 import { usePartnerWorkAddress } from '@/features/profile/hooks/usePartnerWorkAddress';
 import { useOpenSupportChat } from '@/features/support/hooks/useOpenSupportChat';
 import { useLayoutMetrics } from '@/hooks/useLayoutMetrics';
@@ -96,6 +103,12 @@ export function JobDetailScreen() {
   const { isCompact, isNarrow, isShort } = useLayoutMetrics();
   const { defaultAddress } = usePartnerWorkAddress();
   const openSupportChat = useOpenSupportChat();
+  const { alert } = usePartnerAlert();
+  const { profile } = usePartner();
+  const { acceptJob, declineJob, startVisit, canAcceptJobs } = usePartnerJobs();
+  const { prefs } = usePartnerPreferences();
+  const { t } = usePartnerI18n();
+  const manualMode = !prefs.autoAssignOffers;
   const [job, setJob] = useState<PartnerJob | null>(null);
   const [loading, setLoading] = useState(true);
   const [showAccepted, setShowAccepted] = useState(false);
@@ -123,15 +136,16 @@ export function JobDetailScreen() {
 
   const footerPad = useMemo(() => {
     if (!job) return spacing.lg;
+    const showPendingFooter = job.status === 'pending' && manualMode;
     const hasFooter =
-      job.status === 'pending' ||
+      showPendingFooter ||
       job.status === 'accepted' ||
       job.status === 'in_progress' ||
       (job.status === 'completed' && !fromHistory);
     // Footer sits outside ScrollView — only add safe-area padding when there is no footer bar.
     if (hasFooter) return spacing.sm;
     return insets.bottom + spacing.lg;
-  }, [job, insets.bottom, fromHistory]);
+  }, [job, insets.bottom, fromHistory, manualMode]);
 
   if (loading) {
     return (
@@ -170,10 +184,24 @@ export function JobDetailScreen() {
   const showMapsActions = isPending || isAccepted || isInProgress;
 
   const accept = async () => {
-    await updatePartnerJobStatus(job.id, 'accepted');
-    const next = { ...job, status: 'accepted' as const };
-    setJob(next);
-    setShowAccepted(true);
+    if (!canAcceptJobs) {
+      alert({
+        title: t('kycBlockTitle'),
+        message: acceptBlockedMessage(profile?.kycStatus),
+        variant: 'warning',
+        icon: 'shield-outline',
+        buttons: [
+          { text: 'Later', style: 'cancel' },
+          { text: 'Open KYC', onPress: () => router.push('/kyc' as Href) },
+        ],
+      });
+      return;
+    }
+    const updated = await acceptJob(job.id);
+    if (updated) {
+      setJob(updated);
+      setShowAccepted(true);
+    }
   };
 
   const decline = () => {
@@ -183,9 +211,19 @@ export function JobDetailScreen() {
 
   const confirmDecline = async (reasonId: DeclineReasonId) => {
     setDeclining(true);
-    await updatePartnerJobStatus(job.id, 'declined', { declineReason: declineReasonLabel(reasonId) });
+    const updated = await declineJob(job.id, reasonId);
     setDeclining(false);
     setShowDecline(false);
+    if (updated) {
+      alert({
+        title: 'Job agle partner ko gayi',
+        message: passedToNextPartnerMessage(updated),
+        variant: 'info',
+        icon: 'swap-horizontal-outline',
+        buttons: [{ text: 'OK', onPress: () => router.back() }],
+      });
+      return;
+    }
     router.back();
   };
 
@@ -201,7 +239,7 @@ export function JobDetailScreen() {
 
   const confirmStartVisit = async () => {
     setStartingVisit(true);
-    const updated = await updatePartnerJobStatus(job.id, 'in_progress');
+    const updated = await startVisit(job.id);
     setStartingVisit(false);
     if (updated) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -296,11 +334,21 @@ export function JobDetailScreen() {
           />
           <View style={styles.sheetHandle} />
 
-          {isPending && responseMins ? (
+          {isPending && manualMode && responseMins ? (
             <Animated.View entering={FadeInDown.duration(300)} style={styles.timerBanner}>
               <Ionicons name="timer-outline" size={15} color={colors.warning} />
               <Text style={styles.timerText} numberOfLines={2}>
-                Respond in ~{responseMins} min to keep priority
+                Requests tab se ~{responseMins} min mein Accept ya Decline karein
+              </Text>
+            </Animated.View>
+          ) : null}
+
+          {isPending && !manualMode ? (
+            <Animated.View entering={FadeInDown.duration(300)} style={styles.arriveBanner}>
+              <Ionicons name="flash-outline" size={16} color={colors.partnerGold} />
+              <Text style={styles.arriveText} numberOfLines={3}>
+                Auto-assign ON — match hone par yeh visit Schedule par confirm ho jayegi. Accept/Decline
+                Requests tab par nahi, yahan sirf details hain.
               </Text>
             </Animated.View>
           ) : null}
@@ -485,7 +533,14 @@ export function JobDetailScreen() {
             ) : null}
           </Animated.View>
 
-          {isInProgress ? <PartnerLiveLocationCard active /> : null}
+          {isInProgress ? (
+            <PartnerLiveLocationCard
+              jobId={job.id}
+              bookingRef={job.bookingRef}
+              partnerName={profile?.name}
+              active
+            />
+          ) : null}
 
           {nextSteps.length > 0 ? (
             <Animated.View entering={FadeInDown.delay(140).duration(320)} style={[styles.sectionCard, { padding: cardPad }]}>
@@ -564,7 +619,7 @@ export function JobDetailScreen() {
         </View>
       </ScrollView>
 
-      {isPending ? (
+      {isPending && manualMode ? (
         <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.sm }]}>
           <Pressable style={styles.declineBtn} onPress={decline}>
             <Ionicons name="close" size={15} color={colors.muted} />
@@ -574,6 +629,18 @@ export function JobDetailScreen() {
             <LinearGradient colors={['#084F4A', '#0B6E67']} style={styles.acceptGrad}>
               <Ionicons name="checkmark" size={17} color={colors.white} />
               <Text style={styles.acceptText} numberOfLines={1}>Accept</Text>
+            </LinearGradient>
+          </Pressable>
+        </View>
+      ) : isPending && !manualMode ? (
+        <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.sm }]}>
+          <Pressable
+            style={[styles.acceptBtn, styles.acceptBtnFull]}
+            onPress={() => router.replace('/(tabs)' as Href)}
+          >
+            <LinearGradient colors={['#084F4A', '#0B6E67']} style={styles.acceptGrad}>
+              <Ionicons name="briefcase-outline" size={17} color={colors.white} />
+              <Text style={styles.acceptText} numberOfLines={1}>Jobs tab par jao</Text>
             </LinearGradient>
           </Pressable>
         </View>

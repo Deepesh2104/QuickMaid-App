@@ -6,7 +6,9 @@
 
 ## Overview
 
-Core partner workflow: browse pending offers, accept/decline, navigate to customer, start visit, share live location UI, complete with customer OTP, view history.
+Core partner workflow: **UC-style dispatch** (auto-assign or manual Requests), accept/decline, navigate to customer, start visit, share live location UI, complete with customer OTP, view history.
+
+> Full dispatch spec: [FSD 18 — Dispatch](./18-DISPATCH.md)
 
 ### Job lifecycle
 
@@ -19,7 +21,7 @@ pending → declined
 
 | Route | Screen | Key components |
 |-------|--------|----------------|
-| `(tabs)/requests` | `PartnerRequestsScreen` | Filters, `PartnerRequestCard`, decline/accept modals |
+| `(tabs)/requests` | `PartnerRequestsScreen` | Best Match hero, filters, `PartnerRequestCard`, countdown, modals (hidden tab when auto-assign ON) |
 | `job/[id]` | `JobDetailScreen` | Actions by status, navigate sheet, live location |
 | `job/complete/[id]` | `PartnerVisitCompleteScreen` | OTP entry |
 | `job/history` | `PartnerJobHistoryScreen` | Paginated completed/declined |
@@ -49,6 +51,11 @@ Key fields for API: `id`, `booking_ref`, `status`, `amount_paise`, `completion_o
 | `updatePartnerJobStatus(id, status, patch?)` | `jobs.storage.ts` | Local status transition |
 | `usePartnerJobs()` | `hooks/usePartnerJobs.ts` | Hook: refresh, accept, decline, start, complete |
 | `completePartnerVisitWithOtp(id, otp)` | `job.completion.ts` | Validates OTP → `completed` |
+| `autoAssignPrimaryOffer(...)` | `dispatch.assign.ts` | Auto-accept best offer |
+| `expireStalePendingOffers()` | `offer-expiry.runner.ts` | TTL → decline + requeue |
+| `passJobToNextPartner(...)` | `job-reassign.utils.ts` | Decline/expiry → new pool offer |
+| `syncCustomerBookingBridge()` | `booking-partner-bridge.ts` | Customer order → pending job |
+| `emitDispatchEvent(...)` | `dispatch.events.ts` | Local realtime bus |
 
 ### Hook exports
 

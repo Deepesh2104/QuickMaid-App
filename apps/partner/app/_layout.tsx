@@ -8,6 +8,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthFlowProvider } from '@/context/AuthFlowContext';
 import { PartnerAlertProvider } from '@/context/PartnerAlertContext';
 import { PartnerProvider } from '@/context/PartnerContext';
+import { PartnerJobsProvider } from '@/features/jobs/context/PartnerJobsContext';
 import { useAppFonts } from '@/hooks/useAppFonts';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -21,6 +22,7 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <AuthFlowProvider>
         <PartnerProvider>
+          <PartnerJobsProvider>
           <PartnerAlertProvider>
           <StatusBar style="light" />
           <Stack screenOptions={{ headerShown: false, animation: 'fade' }}>
@@ -42,6 +44,7 @@ export default function RootLayout() {
             <Stack.Screen name="settings" options={{ animation: 'slide_from_right' }} />
           </Stack>
           </PartnerAlertProvider>
+          </PartnerJobsProvider>
         </PartnerProvider>
       </AuthFlowProvider>
     </SafeAreaProvider>

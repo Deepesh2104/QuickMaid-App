@@ -19,7 +19,7 @@ export function PartnerSettingsPreferences() {
   const { prefs, update } = usePartnerPreferences();
 
   const onToggle = (
-    key: 'jobAlerts' | 'payoutAlerts' | 'kycAlerts' | 'hapticFeedback',
+    key: 'autoAssignOffers' | 'jobAlerts' | 'payoutAlerts' | 'kycAlerts' | 'hapticFeedback',
     value: boolean,
   ) => {
     if (prefs.hapticFeedback) void Haptics.selectionAsync();
@@ -74,6 +74,27 @@ export function PartnerSettingsPreferences() {
               </Pressable>
             );
           })}
+        </View>
+
+        <View style={styles.divider} />
+
+        <Text style={styles.groupLabel}>DISPATCH (DEMO)</Text>
+        <View style={styles.toggleRow}>
+          <View style={[styles.toggleIcon, { backgroundColor: '#FFFBEB' }]}>
+            <Ionicons name="flash-outline" size={16} color="#B45309" />
+          </View>
+          <View style={styles.toggleCopy}>
+            <Text style={styles.toggleTitle}>Auto-assign offers</Text>
+            <Text style={styles.toggleSub}>
+              Job auto-accepts on match — Start visit remains manual when you arrive
+            </Text>
+          </View>
+          <Switch
+            value={prefs.autoAssignOffers}
+            onValueChange={(v) => onToggle('autoAssignOffers', v)}
+            trackColor={{ false: colors.bgMuted, true: 'rgba(217,119,6,0.35)' }}
+            thumbColor={prefs.autoAssignOffers ? colors.partnerGold : colors.white}
+          />
         </View>
 
         <View style={styles.divider} />

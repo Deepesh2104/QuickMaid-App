@@ -34,7 +34,7 @@ import {
 } from '@/features/schedule/components/PartnerScheduleSections';
 import {
   filterScheduleJobs,
-  groupScheduleByVisit,
+  groupScheduleBySlot,
   scheduleFilterCount,
   scheduleInProgressCount,
   scheduleNextJob,
@@ -72,7 +72,7 @@ export function PartnerScheduleScreen() {
     SCHEDULE_PAGE_SIZE,
     filter,
   );
-  const grouped = useMemo(() => groupScheduleByVisit(visibleItems), [visibleItems]);
+  const grouped = useMemo(() => groupScheduleBySlot(visibleItems), [visibleItems]);
   const todayCount = useMemo(() => scheduleTodayCount(active), [active]);
   const tomorrowCount = useMemo(
     () => active.filter((j) => j.visitDate === 'Tomorrow').length,
@@ -234,7 +234,7 @@ export function PartnerScheduleScreen() {
               ) : (
                 <>
                   <View style={styles.inboxHead}>
-                    <Text style={styles.inboxTitle}>{filter === 'all' ? 'Calendar' : activeFilter?.label}</Text>
+                    <Text style={styles.inboxTitle}>{filter === 'all' ? 'Slot windows' : activeFilter?.label}</Text>
                     <Text style={styles.inboxCount}>{filtered.length} scheduled</Text>
                   </View>
                   <View style={styles.groups}>
@@ -242,7 +242,10 @@ export function PartnerScheduleScreen() {
                       <View key={group.label} style={styles.group}>
                         <View style={styles.groupHead}>
                           <View style={styles.groupDot} />
-                          <Text style={styles.groupLabel}>{group.label}</Text>
+                          <View style={styles.groupTitles}>
+                            <Text style={styles.groupLabel}>{group.label}</Text>
+                            <Text style={styles.groupSub}>{group.sub}</Text>
+                          </View>
                           <View style={styles.groupPill}>
                             <Text style={styles.groupCount}>{group.jobs.length}</Text>
                           </View>
@@ -451,7 +454,9 @@ const styles = StyleSheet.create({
   group: { gap: spacing.sm },
   groupHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   groupDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.primary },
+  groupTitles: { flex: 1, gap: 1 },
   groupLabel: { fontFamily: fonts.bold, fontSize: 12, color: colors.inkSecondary, letterSpacing: 0.3 },
+  groupSub: { fontFamily: fonts.medium, fontSize: 10, color: colors.muted },
   groupPill: {
     backgroundColor: colors.primaryLight,
     paddingHorizontal: 8,

@@ -11,14 +11,14 @@ export function serviceIcon(service: string): 'sparkles' | 'restaurant-outline' 
 export function jobStatusMeta(status: JobStatus) {
   const map = {
     pending: {
-      label: 'New request',
+      label: 'Awaiting response',
       icon: 'flash' as const,
       tone: '#FFFBEB',
       ink: '#B54708',
       accent: '#D97706',
     },
     accepted: {
-      label: 'Accepted',
+      label: 'Confirmed',
       icon: 'checkmark-circle' as const,
       tone: '#E6F4F2',
       ink: '#084F4A',
@@ -90,9 +90,10 @@ export function jobTravelMins(distanceKm?: number) {
 export function jobNextSteps(status: JobStatus) {
   const map = {
     accepted: [
+      { icon: 'calendar-outline' as const, text: 'Schedule tab par confirmed visit dikhegi' },
       { icon: 'navigate-outline' as const, text: 'Open Maps — reach the address 10 min early' },
-      { icon: 'play-circle-outline' as const, text: 'When you arrive, tap Start visit to begin the job' },
-      { icon: 'wallet-outline' as const, text: 'Payout credits next Monday after completion' },
+      { icon: 'play-circle-outline' as const, text: 'Pahunch kar Start visit dabao — auto-start nahi hota' },
+      { icon: 'wallet-outline' as const, text: 'OTP verify ke baad earning Monday payout mein' },
     ],
     in_progress: [
       { icon: 'key-outline' as const, text: 'Tap Finish visit — customer se 6-digit OTP lein' },
@@ -126,7 +127,7 @@ export const JOB_ASSURANCE = [
   {
     icon: 'star-outline' as const,
     title: 'Priority rating',
-    sub: 'Fast accept & on-time visits boost offers',
+    sub: 'On-time Start visit & completion boost priority',
     topic: null,
   },
 ];

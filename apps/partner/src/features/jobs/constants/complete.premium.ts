@@ -4,8 +4,10 @@ export const VISIT_COMPLETE_STEPS = [
   { icon: 'checkmark-done' as const, text: 'Verify karo — earning credit' },
 ] as const;
 
+export const VISIT_COMPLETE_DEMO_OTP = '123456';
+
 export const VISIT_COMPLETE_TIPS = [
+  `Demo test OTP: ${VISIT_COMPLETE_DEMO_OTP} (customer app se bhi yahi)`,
   'Customer tab OTP share kare jab kaam poora ho',
-  'Galat OTP par dubara try karo — 3 attempts ke baad support',
-  'Verify hone par earning Monday payout batch mein jati hai',
+  'Verify hone par earning Monday payout batch mein jayegi',
 ] as const;

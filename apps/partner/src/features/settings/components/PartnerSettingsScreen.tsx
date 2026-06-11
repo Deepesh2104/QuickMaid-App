@@ -8,6 +8,7 @@ import { PartnerStackShell } from '@/components/ui/PartnerStackShell';
 import { usePartner } from '@/context/PartnerContext';
 import { APP_VERSION } from '@/features/profile/constants/profile.premium';
 import { PartnerRequestsSectionHeader } from '@/features/jobs/components/PartnerRequestsSections';
+import { PartnerSettingsDemoTools } from '@/features/settings/components/PartnerSettingsDemoTools';
 import { PartnerSettingsPreferences } from '@/features/settings/components/PartnerSettingsPreferences';
 import { SETTINGS_SECTIONS, SETTINGS_STATS } from '@/features/settings/constants/settings.premium';
 import { fonts } from '@/theme/fonts';
@@ -32,6 +33,7 @@ export function PartnerSettingsScreen() {
       stats={stats}
     >
       <PartnerSettingsPreferences />
+      <PartnerSettingsDemoTools />
 
       {SETTINGS_SECTIONS.map((section, sIdx) => (
         <Animated.View

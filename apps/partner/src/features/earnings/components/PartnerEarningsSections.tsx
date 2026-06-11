@@ -352,8 +352,8 @@ const EMPTY_FILTER_COPY: Record<
     icon: 'add-circle-outline',
     title: 'No job credits yet',
     sub: 'Finish a visit with OTP — net earning credits after the 10% fee',
-    cta: 'View requests',
-    route: '/(tabs)/requests',
+    cta: 'Open schedule',
+    route: '/(tabs)/schedule',
   },
   payouts: {
     icon: 'arrow-up-circle-outline',
@@ -366,8 +366,8 @@ const EMPTY_FILTER_COPY: Record<
     icon: 'calendar-outline',
     title: 'Quiet week so far',
     sub: 'Go online and accept jobs — this week filter updates live',
-    cta: 'Go to requests',
-    route: '/(tabs)/requests',
+    cta: 'Go online',
+    route: '/(tabs)',
   },
 };
 

@@ -34,6 +34,7 @@ import { getBookingById } from '../lib/booking.lookup';
 import { resolveMaidProfile } from '../lib/maid.profile';
 import { getBookingImageId } from '../utils/bookings.utils';
 import { BookingCompletionOtpCard } from './BookingCompletionOtpCard';
+import { BookingLiveLocationCard } from './BookingLiveLocationCard';
 import { useOpenProProfile } from '@/features/pro/hooks/useOpenProProfile';
 import { BookingRefundStatusCard } from './BookingRefundStatusCard';
 import { BookingReviewSubmittedCard } from './BookingReviewSubmittedCard';
@@ -495,6 +496,7 @@ export function BookingDetailScreen() {
           {booking.status === 'upcoming' && booking.completionOtp ? (
             <BookingCompletionOtpCard booking={booking} compact onVerified={onOtpVerified} />
           ) : null}
+          <BookingLiveLocationCard booking={booking} />
 
           <SectionBlock eyebrow="VISIT" title="Where & when">
             <View style={styles.detailCard}>

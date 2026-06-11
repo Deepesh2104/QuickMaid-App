@@ -42,35 +42,49 @@ import { formatRs, netEarningPaise } from '@/features/home/lib/home.greeting';
 
 import { REQUEST_FILTERS } from '@/features/jobs/constants/requests.premium';
 
+import { PartnerAutoAssignBanner } from '@/features/jobs/components/PartnerAutoAssignBanner';
 import { PartnerJobAcceptedModal } from '@/features/jobs/components/PartnerJobAcceptedModal';
 import { PartnerJobDeclineModal } from '@/features/jobs/components/PartnerJobDeclineModal';
 import { PartnerRequestCard } from '@/features/jobs/components/PartnerRequestCard';
 
 import {
 
-  PartnerRequestsActivePreview,
-
   PartnerRequestsEmptyPremium,
+
+  PartnerRequestsBestMatch,
 
   PartnerRequestsHelpStrip,
 
-  PartnerRequestsOnlineBanner,
+  PartnerRequestsHowItWorks,
 
-  PartnerRequestsPerformance,
+  PartnerRequestsOnlineBanner,
 
   PartnerRequestsSectionHeader,
 
-  PartnerRequestsTrustFooter,
-
 } from '@/features/jobs/components/PartnerRequestsSections';
 
+import { usePartnerAlert } from '@/context/PartnerAlertContext';
+import type { DeclineReasonId } from '@/features/jobs/constants/decline.premium';
+import { passedToNextPartnerMessage } from '@/features/jobs/lib/decline.utils';
+import { useDispatchAssign } from '@/features/jobs/context/DispatchAssignContext';
+import { acceptBlockedMessage } from '@/features/kyc/lib/kyc.routing';
+import { usePartnerDispatch } from '@/features/jobs/hooks/usePartnerDispatch';
 import { usePartnerJobs } from '@/features/jobs/hooks/usePartnerJobs';
+import { usePartnerI18n } from '@/i18n/usePartnerI18n';
+import { useDispatchInboxAlerts } from '@/features/jobs/hooks/useDispatchInboxAlerts';
+import { buildManualOffers } from '@/features/jobs/lib/dispatch.utils';
+import { OFFER_WINDOW_LABEL_MINUTES } from '@/features/jobs/lib/offer-expiry.utils';
+import { hasManualTestJobs, manualTestHint } from '@/features/jobs/lib/manual-test.utils';
+import { resetAcceptDeclineTestJobs, resetPartnerJobsToDemo } from '@/features/jobs/lib/jobs.storage';
+import { usePartnerPreferences } from '@/features/settings/hooks/usePartnerPreferences';
 
 import {
 
   filterCount,
 
   filterPendingJobs,
+
+  getBestMatchJob,
 
   groupPendingByVisit,
 
@@ -111,14 +125,47 @@ export function PartnerRequestsScreen({ variant = 'stack' }: PartnerRequestsScre
   const { tabScrollPad } = useLayoutMetrics();
 
   const { profile, state, setOnline } = usePartner();
+  const { alert } = usePartnerAlert();
 
-  const { pending, active, loading, refresh, acceptJob, declineJob } = usePartnerJobs();
+  const { pending, active, loading, refresh, acceptJob, declineJob, canAcceptJobs } = usePartnerJobs();
+  const { t } = usePartnerI18n();
+  const { prefs } = usePartnerPreferences();
+  const { offers, primaryOffer, moreOffers, offerCount } = usePartnerDispatch(
+    pending,
+    active,
+    profile,
+    state.isOnline,
+  );
+  const {
+    lastAssigned,
+    bannerMinimized,
+    minimizeBanner,
+    expandBanner,
+    dismiss: dismissAssign,
+  } = useDispatchAssign();
+  const manualMode = !prefs.autoAssignOffers;
+  useDispatchInboxAlerts(manualMode && state.isOnline);
+  const manualOffers = useMemo(
+    () => buildManualOffers(pending, profile, state.isOnline),
+    [pending, profile, state.isOnline],
+  );
+  const bestMatch = useMemo(
+    () =>
+      manualMode && state.isOnline && manualOffers.length > 0
+        ? getBestMatchJob(manualOffers, profile, state.isOnline, active)
+        : null,
+    [manualMode, state.isOnline, manualOffers, profile, active],
+  );
+  const manualInboxOffers = useMemo(
+    () => (bestMatch ? manualOffers.filter((j) => j.id !== bestMatch.id) : manualOffers),
+    [manualOffers, bestMatch],
+  );
+  const inboxOffers = manualMode ? manualOffers : offers;
+  const inboxCount = manualMode ? manualOffers.length : offerCount;
 
   const isTab = variant === 'tab';
 
   const bottomPad = isTab ? tabScrollPad : insets.bottom + spacing.xl;
-
-
 
   const [filter, setFilter] = useState<RequestFilter>('all');
 
@@ -127,10 +174,13 @@ export function PartnerRequestsScreen({ variant = 'stack' }: PartnerRequestsScre
   const [acceptedJob, setAcceptedJob] = useState<PartnerJob | null>(null);
   const [declineTarget, setDeclineTarget] = useState<{ id: string; ref: string } | null>(null);
   const [declining, setDeclining] = useState(false);
+  const [resetting, setResetting] = useState(false);
 
-
-
-  const filtered = useMemo(() => filterPendingJobs(pending, filter), [pending, filter]);
+  const dispatchPool = useMemo(
+    () => (manualMode ? manualInboxOffers : moreOffers.map((o) => o as PartnerJob)),
+    [manualMode, manualInboxOffers, moreOffers],
+  );
+  const filtered = useMemo(() => filterPendingJobs(dispatchPool, filter), [dispatchPool, filter]);
 
   const { visibleItems, hasMore, loadMore, showing } = useListPagination(
     filtered,
@@ -141,20 +191,14 @@ export function PartnerRequestsScreen({ variant = 'stack' }: PartnerRequestsScre
   const grouped = useMemo(() => groupPendingByVisit(visibleItems), [visibleItems]);
 
   const totalEarnings = useMemo(
-
-    () => filtered.reduce((sum, j) => sum + netEarningPaise(j.amountPaise), 0),
-
-    [filtered],
-
+    () => inboxOffers.reduce((sum, j) => sum + netEarningPaise(j.amountPaise), 0),
+    [inboxOffers],
   );
 
   const nearestKm = useMemo(() => {
-
-    const distances = filtered.map((j) => j.distanceKm).filter((d): d is number => d != null);
-
+    const distances = inboxOffers.map((j) => j.distanceKm).filter((d): d is number => d != null);
     return distances.length ? Math.min(...distances) : null;
-
-  }, [filtered]);
+  }, [inboxOffers]);
 
 
 
@@ -172,14 +216,38 @@ export function PartnerRequestsScreen({ variant = 'stack' }: PartnerRequestsScre
 
   };
 
+  const onResetDemo = async () => {
+    setRefreshing(true);
+    await resetPartnerJobsToDemo();
+    await refresh();
+    setRefreshing(false);
+  };
 
+  const onResetTest = async () => {
+    setResetting(true);
+    await resetAcceptDeclineTestJobs();
+    await refresh();
+    setResetting(false);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  };
 
   const onAccept = async (job: PartnerJob) => {
-
-    await acceptJob(job.id);
-
-    setAcceptedJob(job);
-
+    if (!canAcceptJobs) {
+      alert({
+        title: t('kycBlockTitle'),
+        message: acceptBlockedMessage(profile?.kycStatus),
+        variant: 'warning',
+        icon: 'shield-outline',
+        buttons: [
+          { text: 'Later', style: 'cancel' },
+          { text: 'Open KYC', onPress: () => router.push('/kyc' as Href) },
+        ],
+      });
+      return;
+    }
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    const updated = await acceptJob(job.id);
+    if (updated) setAcceptedJob(updated);
   };
 
 
@@ -189,13 +257,21 @@ export function PartnerRequestsScreen({ variant = 'stack' }: PartnerRequestsScre
     setDeclineTarget({ id, ref });
   };
 
-  const confirmDecline = async () => {
+  const confirmDecline = async (reasonId: DeclineReasonId) => {
     if (!declineTarget) return;
     setDeclining(true);
-    await declineJob(declineTarget.id);
+    const updated = await declineJob(declineTarget.id, reasonId);
     setDeclining(false);
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setDeclineTarget(null);
+    if (updated) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      alert({
+        title: 'Job agle partner ko gayi',
+        message: passedToNextPartnerMessage(updated),
+        variant: 'info',
+        icon: 'swap-horizontal-outline',
+      });
+    }
   };
 
 
@@ -226,24 +302,39 @@ export function PartnerRequestsScreen({ variant = 'stack' }: PartnerRequestsScre
             </Pressable>
           )}
           <View style={styles.headerCopy}>
-            <Text style={styles.headerEyebrow}>JOB INBOX</Text>
-            <Text style={styles.headerTitle}>Requests</Text>
+            <Text style={styles.headerEyebrow}>{manualMode ? 'MANUAL' : 'DISPATCH'}</Text>
+            <Text style={styles.headerTitle}>{manualMode ? 'Job requests' : 'Job offers'}</Text>
             <Text style={styles.headerSub}>
-              {profile?.zone ?? 'Your zone'}
+              {manualMode
+                ? state.isOnline
+                  ? `Accept ya Decline · ${OFFER_WINDOW_LABEL_MINUTES}m window`
+                  : 'Online karo offers ke liye'
+                : state.isOnline
+                  ? 'Slot + zone match'
+                  : 'Go live for offers'}{' '}
+              · {profile?.zone ?? 'Your zone'}
               {nearestKm != null ? ` · ${nearestKm} km nearest` : ''}
             </Text>
           </View>
-          {pending.length > 0 ? (
+          {inboxCount > 0 ? (
             <View style={styles.livePill}>
-              <Text style={styles.liveText}>{pending.length}</Text>
+              <Text style={styles.liveText}>{inboxCount}</Text>
             </View>
+          ) : manualMode ? (
+            <Pressable
+              style={styles.resetHeadBtn}
+              onPress={() => void onResetTest()}
+              disabled={resetting}
+            >
+              <Ionicons name="refresh" size={14} color={colors.white} />
+            </Pressable>
           ) : null}
         </View>
 
         <View style={styles.statBar}>
           <View style={styles.statChip}>
-            <Text style={styles.statNum}>{filtered.length}</Text>
-            <Text style={styles.statLabel}>Open</Text>
+            <Text style={styles.statNum}>{inboxCount}</Text>
+            <Text style={styles.statLabel}>{manualMode ? 'Requests' : 'Offers'}</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statChip}>
@@ -310,13 +401,70 @@ export function PartnerRequestsScreen({ variant = 'stack' }: PartnerRequestsScre
 
                 isOnline={state.isOnline}
 
+                autoAssign={prefs.autoAssignOffers}
+
                 onToggle={(v) => void setOnline(v)}
 
               />
 
+            {!manualMode && lastAssigned ? (
+              <PartnerAutoAssignBanner
+                job={lastAssigned}
+                minimized={bannerMinimized}
+                onMinimize={minimizeBanner}
+                onExpand={expandBanner}
+                onDismiss={dismissAssign}
+              />
+            ) : null}
+
             </Animated.View>
 
+            {manualMode && hasManualTestJobs(manualOffers) ? (
+              <Animated.View entering={FadeInDown.delay(40).duration(300)} style={styles.testBanner}>
+                <Text style={styles.testBannerText}>
+                  1) <Text style={styles.testBold}>MANUAL</Text> → Accept → Schedule{'\n'}
+                  2) <Text style={styles.testBold}>DECLINE TEST</Text> → Decline → alert
+                </Text>
+                <Pressable
+                  style={styles.testResetBtn}
+                  onPress={() => void onResetTest()}
+                  disabled={resetting}
+                >
+                  <Text style={styles.testResetText}>{resetting ? '...' : 'Reset test'}</Text>
+                </Pressable>
+              </Animated.View>
+            ) : null}
 
+            {!manualMode ? (
+              <Animated.View entering={FadeInDown.delay(30).duration(300)} style={styles.autoModeCard}>
+                <Ionicons name="flash" size={20} color={colors.partnerGold} />
+                <View style={styles.autoModeCopy}>
+                  <Text style={styles.autoModeTitle}>Auto-assign ON</Text>
+                  <Text style={styles.autoModeSub}>
+                    Offers yahan nahi aati — Settings se OFF karo ya Schedule tab kholo. Match hote hi
+                    auto-accept.
+                  </Text>
+                </View>
+                <Pressable
+                  style={styles.autoModeBtn}
+                  onPress={() => router.push('/(tabs)/schedule' as Href)}
+                >
+                  <Text style={styles.autoModeBtnText}>Schedule</Text>
+                </Pressable>
+              </Animated.View>
+            ) : null}
+
+            {manualMode ? (
+            <>
+            {bestMatch ? (
+              <Animated.View entering={FadeInDown.delay(20).duration(300)}>
+                <PartnerRequestsBestMatch
+                  job={bestMatch}
+                  onAccept={() => void onAccept(bestMatch)}
+                  onOpen={() => router.push(`/job/${bestMatch.id}` as Href)}
+                />
+              </Animated.View>
+            ) : null}
 
             <View style={styles.filterSection}>
 
@@ -326,7 +474,7 @@ export function PartnerRequestsScreen({ variant = 'stack' }: PartnerRequestsScre
 
                   const on = filter === f.id;
 
-                  const count = filterCount(pending, f.id);
+                  const count = filterCount(dispatchPool, f.id);
 
                   const label = compact ? f.shortLabel : f.label;
 
@@ -400,27 +548,30 @@ export function PartnerRequestsScreen({ variant = 'stack' }: PartnerRequestsScre
 
 
 
-            {filtered.length === 0 ? (
-
+            {filtered.length === 0 && (manualMode ? manualOffers.length === 0 : !primaryOffer) ? (
               <PartnerRequestsEmptyPremium
-
                 isOnline={state.isOnline}
-
                 zone={profile?.zone}
-
                 filterLabel={filter !== 'all' ? activeFilter?.label : undefined}
-
+                slotsMismatch={
+                  state.isOnline &&
+                  pending.length > 0 &&
+                  (manualMode ? manualOffers.length === 0 : offerCount === 0)
+                }
+                onResetDemo={() => void (manualMode ? onResetTest() : onResetDemo())}
               />
-
-            ) : (
+            ) : filtered.length > 0 ? (
 
               <>
 
                 <View style={styles.inboxHead}>
                   <Text style={styles.inboxTitle}>
-                    {filter === 'all' ? 'Inbox' : activeFilter?.label}
+                    {filter === 'all' ? (manualMode ? 'All requests' : 'More offers') : activeFilter?.label}
                   </Text>
-                  <Text style={styles.inboxCount}>{filtered.length} waiting</Text>
+                  <Text style={styles.inboxCount}>
+                    {filtered.length} waiting · {OFFER_WINDOW_LABEL_MINUTES}m demo ·{' '}
+                    {manualMode ? 'Decline → next partner' : 'slot matched'}
+                  </Text>
                 </View>
 
 
@@ -447,14 +598,21 @@ export function PartnerRequestsScreen({ variant = 'stack' }: PartnerRequestsScre
 
                       <View style={styles.groupList}>
 
-                        {group.jobs.map((job) => (
-                            <PartnerRequestCard
-                              key={job.id}
-                              job={job}
-                              onAccept={() => void onAccept(job)}
-                              onDecline={() => onDecline(job.id, job.bookingRef)}
-                            />
-                        ))}
+                        {group.jobs.map((job) => {
+                          const hint = manualMode ? manualTestHint(job) : null;
+                          return (
+                            <View key={job.id}>
+                              {hint ? <Text style={styles.cardHint}>{hint}</Text> : null}
+                              <PartnerRequestCard
+                                job={job}
+                                dense
+                                showOfferTimer={manualMode}
+                                onAccept={() => void onAccept(job)}
+                                onDecline={() => onDecline(job.id, job.bookingRef)}
+                              />
+                            </View>
+                          );
+                        })}
 
                       </View>
 
@@ -473,32 +631,21 @@ export function PartnerRequestsScreen({ variant = 'stack' }: PartnerRequestsScre
 
               </>
 
-            )}
+            ) : null}
+
+            {manualMode && manualOffers.length > 0 ? (
+              <Animated.View entering={FadeInDown.delay(120).duration(320)}>
+                <PartnerRequestsHowItWorks />
+              </Animated.View>
+            ) : null}
+
+            </>
+            ) : null}
 
 
 
             <Animated.View entering={FadeInDown.delay(140).duration(360)}>
-
-              <PartnerRequestsPerformance />
-
-            </Animated.View>
-
-
-
-            <Animated.View entering={FadeInDown.delay(180).duration(360)}>
-
-              <PartnerRequestsActivePreview jobs={active} />
-
-            </Animated.View>
-
-
-
-            <Animated.View entering={FadeInDown.delay(220).duration(360)}>
               <PartnerRequestsHelpStrip />
-            </Animated.View>
-
-            <Animated.View entering={FadeInDown.delay(260).duration(360)}>
-              <PartnerRequestsTrustFooter />
             </Animated.View>
 
           </ScrollView>
@@ -526,7 +673,7 @@ export function PartnerRequestsScreen({ variant = 'stack' }: PartnerRequestsScre
         onClose={() => {
           if (!declining) setDeclineTarget(null);
         }}
-        onConfirm={() => void confirmDecline()}
+        onConfirm={(reasonId) => void confirmDecline(reasonId)}
       />
     </View>
 
@@ -756,7 +903,67 @@ const styles = StyleSheet.create({
 
   groupCountText: { fontFamily: fonts.bold, fontSize: 10, color: colors.partnerGold },
 
-  groupList: { gap: spacing.md },
+  groupList: { gap: spacing.sm },
+
+  resetHeadBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  autoModeCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.white,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    marginBottom: spacing.sm,
+    borderWidth: 1,
+    borderColor: 'rgba(217,119,6,0.2)',
+  },
+  autoModeCopy: { flex: 1, gap: 2 },
+  autoModeTitle: { fontFamily: fonts.bold, fontSize: 13, color: colors.ink },
+  autoModeSub: { fontFamily: fonts.regular, fontSize: 11, color: colors.muted, lineHeight: 15 },
+  autoModeBtn: {
+    backgroundColor: colors.primaryLight,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 8,
+    borderRadius: radius.pill,
+  },
+  autoModeBtnText: { fontFamily: fonts.bold, fontSize: 11, color: colors.primaryDark },
+  testBanner: {
+    backgroundColor: '#FFFBEB',
+    borderRadius: radius.lg,
+    padding: spacing.sm,
+    borderWidth: 1,
+    borderColor: 'rgba(251,191,36,0.35)',
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  testBannerText: {
+    fontFamily: fonts.medium,
+    fontSize: 11,
+    color: colors.inkSecondary,
+    lineHeight: 17,
+  },
+  testBold: { fontFamily: fonts.bold, color: colors.ink },
+  testResetBtn: {
+    alignSelf: 'flex-start',
+    backgroundColor: colors.primaryLight,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: radius.pill,
+  },
+  testResetText: { fontFamily: fonts.bold, fontSize: 11, color: colors.primaryDark },
+  cardHint: {
+    fontFamily: fonts.semiBold,
+    fontSize: 11,
+    color: colors.primaryDark,
+    marginBottom: 4,
+  },
 
 });
 

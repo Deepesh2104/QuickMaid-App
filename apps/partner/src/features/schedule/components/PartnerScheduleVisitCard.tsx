@@ -26,6 +26,7 @@ export function PartnerScheduleVisitCard({ job, compact }: PartnerScheduleVisitC
   const router = useRouter();
   const net = netEarningPaise(job.amountPaise);
   const isLive = job.status === 'in_progress';
+  const isAccepted = job.status === 'accepted';
 
   const openDetail = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -108,8 +109,13 @@ export function PartnerScheduleVisitCard({ job, compact }: PartnerScheduleVisitC
           </Pressable>
           <Pressable style={styles.detailBtn} onPress={openDetail}>
             <LinearGradient colors={['#084F4A', '#0B6E67']} style={styles.detailGrad}>
-              <Text style={styles.detailText}>{isLive ? 'Open job' : 'View job'}</Text>
-              <Ionicons name="arrow-forward" size={13} color={colors.white} />
+              {isAccepted ? (
+                <Ionicons name="play-circle-outline" size={14} color={colors.white} />
+              ) : null}
+              <Text style={styles.detailText}>
+                {isLive ? 'Open job' : isAccepted ? 'Start visit' : 'View job'}
+              </Text>
+              <Ionicons name={isAccepted ? 'chevron-forward' : 'arrow-forward'} size={13} color={colors.white} />
             </LinearGradient>
           </Pressable>
         </View>

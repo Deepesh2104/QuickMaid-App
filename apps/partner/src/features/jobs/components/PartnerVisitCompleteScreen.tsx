@@ -10,11 +10,12 @@ import { PartnerStackShell } from '@/components/ui/PartnerStackShell';
 import { QmButton } from '@/components/ui/QmButton';
 import type { PartnerJob } from '@/constants/demo';
 import { formatRs, netEarningPaise } from '@/features/home/lib/home.greeting';
+import { VISIT_COMPLETE_STEPS } from '@/features/jobs/constants/complete.premium';
 import {
-  VISIT_COMPLETE_STEPS,
+  VISIT_COMPLETE_DEMO_OTP,
   VISIT_COMPLETE_TIPS,
 } from '@/features/jobs/constants/complete.premium';
-import { completePartnerVisitWithOtp } from '@/features/jobs/lib/job.completion';
+import { usePartnerJobs } from '@/features/jobs/hooks/usePartnerJobs';
 import { getPartnerJobById } from '@/features/jobs/lib/jobs.storage';
 import { PartnerRequestsSectionHeader } from '@/features/jobs/components/PartnerRequestsSections';
 import { fonts } from '@/theme/fonts';
@@ -23,6 +24,7 @@ import { radius, spacing } from '@/theme/spacing';
 
 export function PartnerVisitCompleteScreen() {
   const router = useRouter();
+  const { completeVisit } = usePartnerJobs();
   const { id: idParam } = useLocalSearchParams<{ id?: string | string[] }>();
   const jobId = typeof idParam === 'string' ? idParam : '';
 
@@ -64,7 +66,7 @@ export function PartnerVisitCompleteScreen() {
     if (otp.length !== 6 || submitting) return;
     setSubmitting(true);
     setError('');
-    const result = await completePartnerVisitWithOtp(job.id, otp);
+    const result = await completeVisit(job.id, otp);
     setSubmitting(false);
     if (!result.ok) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -95,7 +97,7 @@ export function PartnerVisitCompleteScreen() {
       title={done ? 'Badhai ho!' : 'Finish visit'}
       subtitle={
         done
-          ? `${formatRs(net)} credited — Monday payout batch mein`
+          ? `${formatRs(net)} Monday payout batch mein shamil hogi`
           : 'Customer ka 6-digit completion OTP daalo'
       }
       icon="checkmark-done"
@@ -190,6 +192,7 @@ export function PartnerVisitCompleteScreen() {
                 }}
                 error={error}
               />
+              <Text style={styles.demoOtpHint}>Demo OTP: {VISIT_COMPLETE_DEMO_OTP}</Text>
             </View>
           </Animated.View>
 
@@ -250,6 +253,13 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     borderWidth: 1,
     borderColor: 'rgba(15,20,25,0.06)',
+    gap: spacing.sm,
+  },
+  demoOtpHint: {
+    fontFamily: fonts.semiBold,
+    fontSize: 12,
+    color: colors.primaryDark,
+    textAlign: 'center',
   },
   tips: {
     backgroundColor: colors.white,

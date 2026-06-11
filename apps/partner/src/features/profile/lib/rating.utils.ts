@@ -1,18 +1,13 @@
 import type { PartnerJob } from '@/constants/demo';
 
-import { RATING_OVERVIEW } from '@/features/profile/constants/rating.premium';
+import { computeRatingFromJobs } from '@/features/profile/lib/rating.compute';
 
-export function ratingFromCompletedJobs(completedCount: number): number {
-  const bonus = Math.min(0.09, completedCount * 0.008);
-  return Math.min(5, Math.round((RATING_OVERVIEW.score + bonus) * 10) / 10);
-}
-
-export function ratingPerformanceStats(completedCount: number, weekJobs: number) {
+export function ratingPerformanceStats(completed: PartnerJob[], weekJobs: number) {
+  const overview = computeRatingFromJobs(completed);
   return {
-    score: ratingFromCompletedJobs(completedCount),
-    completedVisits: completedCount,
+    ...overview,
     weekJobs,
-    trendLabel: completedCount >= 3 ? '+0.1 this month' : 'Building score',
+    trendLabel: overview.completedVisits >= 3 ? '+0.1 this month' : 'Building score',
   };
 }
 

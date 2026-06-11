@@ -6,7 +6,14 @@
 
 ## Overview
 
-Primary landing after auth: online toggle, today's earnings hero, active visit banner, pending requests preview, schedule snippet, notification badge, work-address sheet.
+Primary landing after auth: online toggle, today's earnings hero, active visit banner, **auto-assign vs manual dispatch** strip, schedule snippet, notification badge, work-address sheet.
+
+### Dispatch modes (see [FSD 18](./18-DISPATCH.md))
+
+| Auto-assign | Home shows |
+|-------------|------------|
+| **ON** | `PartnerRequestsPreview` (scheduled queue), `PartnerAutoAssignBanner`, `PartnerAutoAssignKycBlock` if KYC pending |
+| **OFF** | `PartnerGoToRequestsStrip` → Requests tab with offer count |
 
 ### User stories
 
@@ -26,7 +33,10 @@ Primary landing after auth: online toggle, today's earnings hero, active visit b
 | `PartnerHomeHeader` | `PartnerHomeHeader.tsx` | Greeting, online switch |
 | `PartnerEarningsHero` | `PartnerEarningsHero.tsx` | Today/week stats from `state` |
 | `PartnerActiveJobBanner` | `PartnerActiveJobBanner.tsx` | In-progress job CTA |
-| `PartnerRequestsPreview` | `PartnerRequestsPreview.tsx` | Top 3 pending cards |
+| `PartnerRequestsPreview` | `PartnerRequestsPreview.tsx` | Auto-assign queue preview |
+| `PartnerGoToRequestsStrip` | `PartnerGoToRequestsStrip.tsx` | Manual mode CTA |
+| `PartnerAutoAssignBanner` | `jobs/.../PartnerAutoAssignBanner.tsx` | Last auto-confirmed visit |
+| `PartnerAutoAssignKycBlock` | `PartnerHomeWidgets.tsx` | KYC blocks auto-assign |
 | `PartnerScheduleVisitCard` | `schedule/...` | Next accepted visit |
 | `PartnerWorkAddressSheet` | `profile/...` | Address picker modal |
 | `PartnerHomeWidgets` | `PartnerHomeWidgets.tsx` | Quick links (KYC, earnings) |

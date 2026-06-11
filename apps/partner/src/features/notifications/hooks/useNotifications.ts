@@ -1,5 +1,7 @@
 import { useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+
+import { subscribeNotificationsChanged } from '@/features/notifications/lib/notifications.events';
 
 import {
   getNotifications,
@@ -26,6 +28,8 @@ export function useNotifications() {
       void refresh();
     }, [refresh]),
   );
+
+  useEffect(() => subscribeNotificationsChanged(() => void refresh()), [refresh]);
 
   const markRead = useCallback(
     async (id: string) => {

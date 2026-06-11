@@ -20,7 +20,7 @@ Read [`README.md`](./README.md) before changing this app. Data shapes: [`docs/PA
 |------|-------|
 | Phone | `9876543210` |
 | OTP | `123456` |
-| Visit OTP | `482916` |
+| Visit OTP | `123456` |
 | PAN | `ABCDE1234F` |
 
 ## Commands

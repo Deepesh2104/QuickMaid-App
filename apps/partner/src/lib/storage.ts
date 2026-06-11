@@ -17,8 +17,8 @@ type RegisteredMap = Record<string, PartnerProfile>;
 
 const DEFAULT_STATE: PartnerRuntimeState = {
   isOnline: false,
-  todayEarningsPaise: 44900,
-  weekJobs: 6,
+  todayEarningsPaise: 0,
+  weekJobs: 0,
 };
 
 const DELETION_GRACE_MS = ACCOUNT_DELETION_GRACE_DAYS * 24 * 60 * 60 * 1000;
@@ -197,6 +197,22 @@ export async function getPartnerState(): Promise<PartnerRuntimeState> {
   } catch {
     return DEFAULT_STATE;
   }
+}
+
+export async function recordCompletedVisitEarning(
+  visitDate: string,
+  netPaise: number,
+): Promise<PartnerRuntimeState> {
+  const state = await getPartnerState();
+  const isToday =
+    visitDate === 'Today' || visitDate.toLowerCase().includes('today');
+  const next: PartnerRuntimeState = {
+    ...state,
+    todayEarningsPaise: isToday ? state.todayEarningsPaise + netPaise : state.todayEarningsPaise,
+    weekJobs: state.weekJobs + 1,
+  };
+  await savePartnerState(next);
+  return next;
 }
 
 export async function savePartnerState(state: PartnerRuntimeState): Promise<void> {

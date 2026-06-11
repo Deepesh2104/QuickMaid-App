@@ -91,7 +91,7 @@ It mirrors admin dispatch (`/admin/dispatch`) and maid CRM (`/admin/maids`) data
 | Phone (verified partner) | `9876543210` |
 | OTP (auth + Aadhaar) | `123456` |
 | Maid ID | `MD-903210` |
-| Visit completion OTP | `482916` (jobs `j2`, `j11`) |
+| Visit completion OTP | `123456` (all demo jobs) |
 | PAN verify | `ABCDE1234F` |
 | Bank | Account `1234567890`, IFSC `SBIN0001234` |
 | UPI | `demo.partner@okaxis` |
@@ -591,7 +591,7 @@ No automated tests. Manual QA via Expo Go.
 4. Home → toggle Online → see request count badge
 5. Requests tab → 12 pending → filter by zone/service
 6. Open job → Accept → Navigate sheet → Start visit
-7. Job j2 in_progress → Finish → OTP 482916 → success
+7. Start visit → Finish → OTP `123456` → success → earnings update
 8. Earnings tab → tap activity → payout detail
 9. Schedule → week view → Maps on visit card
 10. Profile → KYC (reset if needed) → PAN ABCDE1234F → bank/UPI verify

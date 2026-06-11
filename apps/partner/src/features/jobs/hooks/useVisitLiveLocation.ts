@@ -1,6 +1,12 @@
 import * as Location from 'expo-location';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import {
+  appendVisitLocationPing,
+  getVisitLocationPings,
+  subscribeVisitLocationChanged,
+} from '@/features/jobs/lib/visit-location.storage';
+
 export type LiveLocationState = {
   sharing: boolean;
   loading: boolean;
@@ -8,9 +14,14 @@ export type LiveLocationState = {
   lastUpdated: string | null;
   coordsLabel: string | null;
   elapsedSec: number;
+  pingCount: number;
 };
 
-export function useVisitLiveLocation(active: boolean) {
+export function useVisitLiveLocation(
+  jobId: string,
+  active: boolean,
+  meta?: { bookingRef?: string; partnerName?: string },
+) {
   const [state, setState] = useState<LiveLocationState>({
     sharing: false,
     loading: false,
@@ -18,9 +29,20 @@ export function useVisitLiveLocation(active: boolean) {
     lastUpdated: null,
     coordsLabel: null,
     elapsedSec: 0,
+    pingCount: 0,
   });
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const watchRef = useRef<Location.LocationSubscription | null>(null);
+
+  const refreshPingCount = useCallback(async () => {
+    const pings = await getVisitLocationPings(jobId);
+    setState((s) => ({ ...s, pingCount: pings.length }));
+  }, [jobId]);
+
+  useEffect(() => {
+    void refreshPingCount();
+    return subscribeVisitLocationChanged(() => void refreshPingCount());
+  }, [jobId, refreshPingCount]);
 
   const stop = useCallback(() => {
     watchRef.current?.remove();
@@ -29,6 +51,19 @@ export function useVisitLiveLocation(active: boolean) {
     timerRef.current = null;
     setState((s) => ({ ...s, sharing: false, loading: false }));
   }, []);
+
+  const recordPing = useCallback(
+    async (lat: number, lng: number) => {
+      await appendVisitLocationPing(jobId, lat, lng, meta?.bookingRef, meta?.partnerName);
+      const label = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+      setState((s) => ({
+        ...s,
+        lastUpdated: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+        coordsLabel: label,
+      }));
+    },
+    [jobId, meta?.bookingRef, meta?.partnerName],
+  );
 
   const start = useCallback(async () => {
     setState((s) => ({ ...s, loading: true, error: null }));
@@ -43,15 +78,14 @@ export function useVisitLiveLocation(active: boolean) {
     }
 
     const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-    const label = `${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`;
-    setState({
+    await recordPing(pos.coords.latitude, pos.coords.longitude);
+    setState((s) => ({
+      ...s,
       sharing: true,
       loading: false,
       error: null,
-      lastUpdated: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
-      coordsLabel: label,
       elapsedSec: 0,
-    });
+    }));
 
     timerRef.current = setInterval(() => {
       setState((s) => ({ ...s, elapsedSec: s.elapsedSec + 1 }));
@@ -60,14 +94,10 @@ export function useVisitLiveLocation(active: boolean) {
     watchRef.current = await Location.watchPositionAsync(
       { accuracy: Location.Accuracy.Balanced, distanceInterval: 25, timeInterval: 15000 },
       (update) => {
-        setState((s) => ({
-          ...s,
-          lastUpdated: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
-          coordsLabel: `${update.coords.latitude.toFixed(4)}, ${update.coords.longitude.toFixed(4)}`,
-        }));
+        void recordPing(update.coords.latitude, update.coords.longitude);
       },
     );
-  }, []);
+  }, [recordPing]);
 
   useEffect(() => {
     if (!active) stop();
@@ -75,4 +105,4 @@ export function useVisitLiveLocation(active: boolean) {
   }, [active, stop]);
 
   return { ...state, start, stop };
-}
+};

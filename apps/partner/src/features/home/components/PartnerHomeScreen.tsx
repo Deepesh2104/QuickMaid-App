@@ -3,6 +3,7 @@ import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { type Href, useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
+
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
@@ -13,8 +14,11 @@ import { PartnerActiveJobBanner } from '@/features/home/components/PartnerActive
 import { PartnerEarningsHero } from '@/features/home/components/PartnerEarningsHero';
 import { PartnerHomeHeader } from '@/features/home/components/PartnerHomeHeader';
 import { PartnerSectionHeader } from '@/features/home/components/PartnerHomeSections';
+import { PartnerGoToRequestsStrip } from '@/features/home/components/PartnerGoToRequestsStrip';
 import { PartnerRequestsPreview } from '@/features/home/components/PartnerRequestsPreview';
+import { buildManualOffers } from '@/features/jobs/lib/dispatch.utils';
 import {
+  PartnerAutoAssignKycBlock,
   PartnerDualRoleCard,
   PartnerHomeCompletedStrip,
   PartnerKycBannerPressable,
@@ -25,13 +29,18 @@ import {
 } from '@/features/home/components/PartnerHomeWidgets';
 import { HOME_PREMIUM } from '@/features/home/constants/home.premium';
 import { formatRs } from '@/features/home/lib/home.greeting';
+import { PartnerAutoAssignBanner } from '@/features/jobs/components/PartnerAutoAssignBanner';
 import { PartnerRequestsOnlineBanner } from '@/features/jobs/components/PartnerRequestsSections';
+import { useDispatchAssign } from '@/features/jobs/context/DispatchAssignContext';
+import { usePartnerDispatch } from '@/features/jobs/hooks/usePartnerDispatch';
 import { usePartnerJobs } from '@/features/jobs/hooks/usePartnerJobs';
+import { usePartnerPreferences } from '@/features/settings/hooks/usePartnerPreferences';
 import { PartnerScheduleVisitCard } from '@/features/schedule/components/PartnerScheduleVisitCard';
 import { scheduleInProgressCount } from '@/features/schedule/lib/schedule.utils';
 import { useNotifications } from '@/features/notifications/hooks/useNotifications';
 import { useOpenNotifications } from '@/features/notifications/hooks/useOpenNotifications';
 import { useLayoutMetrics } from '@/hooks/useLayoutMetrics';
+import { usePartnerI18n } from '@/i18n/usePartnerI18n';
 import { fonts } from '@/theme/fonts';
 import { colors } from '@/theme/colors';
 import { layout, radius, spacing } from '@/theme/spacing';
@@ -42,7 +51,25 @@ export function PartnerHomeScreen() {
   const { insets, tabScrollPad } = useLayoutMetrics();
   const router = useRouter();
   const { profile, state, setOnline, refresh, loading } = usePartner();
-  const { pending, active, completed, refresh: refreshJobs } = usePartnerJobs();
+  const { pending, active, completed, refresh: refreshJobs, canAcceptJobs } = usePartnerJobs();
+  const { prefs } = usePartnerPreferences();
+  const { offerCount } = usePartnerDispatch(
+    pending,
+    active,
+    profile,
+    state.isOnline,
+  );
+  const manualOfferCount = useMemo(
+    () => buildManualOffers(pending, profile, state.isOnline).length,
+    [pending, profile, state.isOnline],
+  );
+  const {
+    lastAssigned,
+    bannerMinimized,
+    minimizeBanner,
+    expandBanner,
+    dismiss: dismissAssign,
+  } = useDispatchAssign();
   const { unreadCount } = useNotifications();
   const openNotifications = useOpenNotifications();
   const {
@@ -55,10 +82,11 @@ export function PartnerHomeScreen() {
   } = usePartnerWorkAddress();
   const [refreshing, setRefreshing] = useState(false);
   const [addressOpen, setAddressOpen] = useState(false);
+  const { t } = usePartnerI18n();
 
   const todayJobs = useMemo(
-    () => [...pending, ...active].filter((j) => j.visitDate === 'Today'),
-    [pending, active],
+    () => active.filter((j) => j.visitDate === 'Today'),
+    [active],
   );
   const liveJob = useMemo(() => active.find((j) => j.status === 'in_progress') ?? null, [active]);
   const primaryActive = liveJob ?? active[0];
@@ -78,7 +106,14 @@ export function PartnerHomeScreen() {
         unreadCount={unreadCount}
         workTitle={workTitle}
         workLine={workLine}
-        openCount={pending.length}
+        queueCount={
+          state.isOnline
+            ? prefs.autoAssignOffers
+              ? active.length
+              : manualOfferCount
+            : 0
+        }
+        queueLabel={prefs.autoAssignOffers ? t('scheduled') : t('requests')}
         todayCount={todayJobs.length}
         earningsLabel={formatRs(state.todayEarningsPaise)}
         onNotificationsPress={openNotifications}
@@ -109,9 +144,31 @@ export function PartnerHomeScreen() {
           <Animated.View entering={FadeInDown.duration(300)}>
             <PartnerRequestsOnlineBanner
               isOnline={state.isOnline}
+              autoAssign={prefs.autoAssignOffers}
               onToggle={(v) => void setOnline(v)}
             />
           </Animated.View>
+
+          <Animated.View entering={FadeInDown.delay(16).duration(300)}>
+            <PartnerAutoAssignKycBlock
+              autoAssign={prefs.autoAssignOffers}
+              isOnline={state.isOnline}
+              canAccept={canAcceptJobs}
+              pendingCount={pending.length}
+            />
+          </Animated.View>
+
+          {prefs.autoAssignOffers && lastAssigned ? (
+            <Animated.View entering={FadeInDown.delay(20).duration(300)}>
+              <PartnerAutoAssignBanner
+                job={lastAssigned}
+                minimized={bannerMinimized}
+                onMinimize={minimizeBanner}
+                onExpand={expandBanner}
+                onDismiss={dismissAssign}
+              />
+            </Animated.View>
+          ) : null}
 
           <Animated.View entering={FadeInDown.delay(40).duration(320)}>
             <PartnerEarningsHero state={state} />
@@ -128,11 +185,21 @@ export function PartnerHomeScreen() {
           ) : null}
 
           <Animated.View entering={FadeInDown.delay(80).duration(320)}>
-            <PartnerRequestsPreview
-              pending={pending}
-              isOnline={state.isOnline}
-              zone={profile?.zone}
-            />
+            {prefs.autoAssignOffers ? (
+              <PartnerRequestsPreview
+                queueCount={offerCount}
+                scheduledCount={active.length}
+                isOnline={state.isOnline}
+                autoAssign
+                zone={profile?.zone}
+                slotsMismatch={state.isOnline && pending.length > 0 && offerCount === 0}
+              />
+            ) : (
+              <PartnerGoToRequestsStrip
+                offerCount={manualOfferCount}
+                isOnline={state.isOnline}
+              />
+            )}
           </Animated.View>
 
           <Animated.View entering={FadeInDown.delay(100).duration(320)}>

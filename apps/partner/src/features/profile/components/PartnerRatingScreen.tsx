@@ -53,8 +53,8 @@ export function PartnerRatingScreen() {
   const { completed } = usePartnerJobs();
 
   const perf = useMemo(
-    () => ratingPerformanceStats(completed.length, state.weekJobs),
-    [completed.length, state.weekJobs],
+    () => ratingPerformanceStats(completed, state.weekJobs),
+    [completed, state.weekJobs],
   );
   const completedList = useMemo(() => completedJobsForRating(completed), [completed]);
 
@@ -64,7 +64,7 @@ export function PartnerRatingScreen() {
       <Text style={styles.scoreValue}>{perf.score.toFixed(1)}</Text>
       <Stars count={5} size={18} />
       <Text style={styles.scoreMeta}>
-        {RATING_OVERVIEW.totalReviews} reviews · {perf.completedVisits} visits completed
+        {perf.totalReviews} reviews · {perf.completedVisits} visits completed
       </Text>
       <View style={styles.trendPill}>
         <Ionicons name="trending-up" size={12} color={colors.partnerGold} />
@@ -74,9 +74,9 @@ export function PartnerRatingScreen() {
   );
 
   const stats = [
-    { value: `${RATING_OVERVIEW.onTimeRate}%`, label: 'On-time' },
-    { value: `${RATING_OVERVIEW.repeatCustomers}%`, label: 'Repeat' },
-    { value: `${RATING_OVERVIEW.fiveStarPercent}%`, label: '5-star' },
+    { value: `${perf.onTimeRate}%`, label: 'On-time' },
+    { value: `${perf.repeatCustomers}%`, label: 'Repeat' },
+    { value: `${perf.fiveStarPercent}%`, label: '5-star' },
   ];
 
   return (
@@ -90,8 +90,8 @@ export function PartnerRatingScreen() {
     >
       <Animated.View entering={FadeInDown.duration(260)} style={styles.statGrid}>
         {[
-          { label: 'On-time', value: `${RATING_OVERVIEW.onTimeRate}%`, icon: 'time-outline' as const, grad: ['#E6F4F2', '#FFF'] },
-          { label: 'Repeat customers', value: `${RATING_OVERVIEW.repeatCustomers}%`, icon: 'heart-outline' as const, grad: ['#FEF3F2', '#FFF'] },
+          { label: 'On-time', value: `${perf.onTimeRate}%`, icon: 'time-outline' as const, grad: ['#E6F4F2', '#FFF'] },
+          { label: 'Repeat customers', value: `${perf.repeatCustomers}%`, icon: 'heart-outline' as const, grad: ['#FEF3F2', '#FFF'] },
           { label: 'Your visits', value: String(perf.completedVisits), icon: 'checkmark-done-outline' as const, grad: ['#FFFBEB', '#FFF'] },
         ].map((s) => (
           <LinearGradient key={s.label} colors={s.grad as [string, string]} style={styles.statCard}>

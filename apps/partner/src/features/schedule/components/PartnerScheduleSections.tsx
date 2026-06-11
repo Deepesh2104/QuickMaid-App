@@ -11,6 +11,9 @@ import { PartnerSlotToggleCard } from '@/features/slots/components/PartnerSlotTo
 import { resolvePreferredSlotIds, slotsSummaryLabel } from '@/features/slots/lib/slots.utils';
 import { PartnerTrustStrip } from '@/features/home/components/PartnerHomeSections';
 import { PartnerRequestsSectionHeader } from '@/features/jobs/components/PartnerRequestsSections';
+import { usePartnerJobs } from '@/features/jobs/hooks/usePartnerJobs';
+import { resetPartnerJobsToDemo } from '@/features/jobs/lib/jobs.storage';
+import { usePartnerPreferences } from '@/features/settings/hooks/usePartnerPreferences';
 import {
   PREFERRED_SLOTS,
   SCHEDULE_FAQ,
@@ -323,6 +326,15 @@ export function PartnerScheduleFaq() {
 
 export function PartnerScheduleEmpty({ zone }: { zone?: string }) {
   const router = useRouter();
+  const { prefs } = usePartnerPreferences();
+  const { refresh } = usePartnerJobs();
+  const autoAssign = prefs.autoAssignOffers;
+
+  const onReset = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    await resetPartnerJobsToDemo();
+    await refresh();
+  };
 
   return (
     <View style={styles.emptyWrap}>
@@ -331,19 +343,23 @@ export function PartnerScheduleEmpty({ zone }: { zone?: string }) {
       </View>
       <Text style={styles.emptyTitle}>No visits scheduled yet</Text>
       <Text style={styles.emptySub}>
-        Accept requests from your inbox — confirmed jobs appear here grouped by visit day
-        {zone ? ` in ${zone}` : ''}.
+        {autoAssign
+          ? `Jobs tab par online karo — auto-assign har free slot mein ek visit confirm karega${zone ? ` (${zone})` : ''}.`
+          : `Requests tab se Accept karo — confirmed visits yahan dikhengi${zone ? ` (${zone})` : ''}.`}
       </Text>
       <Pressable
         style={styles.emptyBtn}
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-          router.push('/(tabs)/requests' as Href);
+          router.push(autoAssign ? '/(tabs)' : '/(tabs)/requests');
         }}
       >
         <LinearGradient colors={['#084F4A', '#0B6E67']} style={StyleSheet.absoluteFill} />
-        <Ionicons name="mail-open-outline" size={16} color={colors.white} />
-        <Text style={styles.emptyBtnText}>Browse requests</Text>
+        <Ionicons name={autoAssign ? 'flash-outline' : 'mail-open-outline'} size={16} color={colors.white} />
+        <Text style={styles.emptyBtnText}>{autoAssign ? 'Go online on Jobs' : 'Open Requests'}</Text>
+      </Pressable>
+      <Pressable style={styles.emptyResetBtn} onPress={() => void onReset()}>
+        <Text style={styles.emptyResetText}>Reset demo jobs</Text>
       </Pressable>
     </View>
   );
@@ -804,6 +820,8 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   emptyBtnText: { fontFamily: fonts.bold, fontSize: 14, color: colors.white },
+  emptyResetBtn: { marginTop: spacing.xs, paddingVertical: spacing.sm },
+  emptyResetText: { fontFamily: fonts.semiBold, fontSize: 12, color: colors.primary },
 
   earnWrap: {},
   earnCard: { borderRadius: radius.xxl, padding: spacing.lg, overflow: 'hidden', gap: spacing.sm, ...shadow.md },

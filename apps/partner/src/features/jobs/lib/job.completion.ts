@@ -1,7 +1,8 @@
+import { DEMO_OTP } from '@/constants/app';
 import type { PartnerJob } from '@/constants/demo';
 import { getPartnerJobById, updatePartnerJobStatus } from '@/features/jobs/lib/jobs.storage';
 
-export const DEMO_FALLBACK_COMPLETION_OTP = '482916';
+export const DEMO_FALLBACK_COMPLETION_OTP = DEMO_OTP;
 
 export async function completePartnerVisitWithOtp(
   jobId: string,

@@ -76,9 +76,9 @@ export function PartnerWaitingEmpty({ zone = 'Raipur' }: { zone?: string }) {
       <View style={[styles.offlineIcon, styles.waitingIcon]}>
         <Ionicons name="radio-outline" size={28} color={colors.primary} />
       </View>
-      <Text style={styles.offlineTitle}>Listening for jobs</Text>
+      <Text style={styles.offlineTitle}>Waiting for offers</Text>
       <Text style={styles.offlineSub}>
-        You&apos;re online in {zone}. New requests will appear here — stay in your zone for faster matches.
+        You&apos;re live in {zone}. Offers auto-match your active slots — Urban Company style dispatch.
       </Text>
     </View>
   );

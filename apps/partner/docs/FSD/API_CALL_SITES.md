@@ -60,6 +60,13 @@ Single reference: **UI component → function/hook today → REST endpoint**. De
 | **Account** |
 | 42 | `PartnerDeleteAccountScreen` | Delete | `deletePartnerAccount` (soft) | `POST /maids/me/delete-request` |
 | 43 | `otp.tsx` | Returning login | `signInExistingPartner` (auto-restore) | `POST /auth/otp/verify` |
+| **Dispatch (demo)** |
+| 44 | `PartnerSettingsPreferences` | Toggle auto-assign | `settings.storage` `autoAssignOffers` | `PATCH /maids/me/dispatch/mode` |
+| 45 | `useAutoAssignDispatch` | Online + match | `autoAssignPrimaryOffer` | Server auto-assign event |
+| 46 | `offer-expiry.runner` | Timer | `expireStalePendingOffers` | Server TTL |
+| 47 | `booking-partner-bridge` | Bridge ingest | `ingestBookingBridgePayload` | Order webhook → offer |
+| 48 | `PartnerSettingsDemoTools` | Sync bookings | `syncCustomerBookingBridge` | — (demo) |
+| 49 | `visit-location.storage` | Visit ping | AsyncStorage bridge | `POST /jobs/:id/location` |
 
 ## Service module mapping (planned)
 

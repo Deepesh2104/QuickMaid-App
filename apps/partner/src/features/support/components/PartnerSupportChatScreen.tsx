@@ -24,6 +24,7 @@ import {
   createSupportTicket,
   getTicketById,
 } from '@/features/support/lib/support.storage';
+import { supportBotReply } from '@/features/support/lib/support.bot';
 import { normalizeSupportTopic, ticketStatusTheme } from '@/features/support/lib/support.utils';
 import type { SupportChatMessage, SupportTicket } from '@/features/support/types/support.types';
 import { fonts } from '@/theme/fonts';
@@ -112,7 +113,7 @@ export function PartnerSupportChatScreen() {
     setTimeout(async () => {
       const withReply = await appendTicketMessage(
         ticket.id,
-        'Got it. Partner ops is reviewing your message — we typically reply within 30 minutes.',
+        supportBotReply(trimmed, topic),
         'agent',
       );
       if (withReply) setTicket(withReply);

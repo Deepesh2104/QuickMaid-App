@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { type Href, useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, Share, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
@@ -12,10 +12,9 @@ import { usePartner } from '@/context/PartnerContext';
 import { usePartnerAlert } from '@/context/PartnerAlertContext';
 import { formatRs } from '@/features/home/lib/home.greeting';
 import { PartnerRequestsSectionHeader } from '@/features/jobs/components/PartnerRequestsSections';
-import {
-  DEMO_REFERRALS,
-  REFERRAL_STATUS_META,
-} from '@/features/referral/constants/referral.demo';
+import { REFERRAL_STATUS_META } from '@/features/referral/constants/referral.demo';
+import type { ReferralRecord } from '@/features/referral/constants/referral.demo';
+import { getPartnerReferrals } from '@/features/referral/lib/referral.storage';
 import {
   REFERRAL_FAQ,
   REFERRAL_REWARD_PAISE,
@@ -39,8 +38,13 @@ export function PartnerReferralScreen() {
   const { profile } = usePartner();
   const { alert } = usePartnerAlert();
   const [copied, setCopied] = useState(false);
+  const [referrals, setReferrals] = useState<ReferralRecord[]>([]);
   const code = referralCode(profile?.publicId, profile?.phone);
-  const earned = DEMO_REFERRALS.filter((r) => r.status === 'paid').length * REFERRAL_REWARD_PAISE;
+  const earned = referrals.filter((r) => r.status === 'paid').length * REFERRAL_REWARD_PAISE;
+
+  useEffect(() => {
+    void getPartnerReferrals().then(setReferrals);
+  }, []);
 
   const shareMessage =
     `QuickMaid partner bano aur safai ki jobs kamao! Mera referral code: ${code}. Register karte waqt daalna — pehli job complete par bonus. https://quickmaid.in/partner`;
@@ -155,10 +159,10 @@ export function PartnerReferralScreen() {
           compact
         />
         <View style={styles.historyCard}>
-          {DEMO_REFERRALS.map((ref, i) => {
+          {referrals.map((ref, i) => {
             const meta = REFERRAL_STATUS_META[ref.status];
             return (
-              <View key={ref.id} style={[styles.historyRow, i < DEMO_REFERRALS.length - 1 && styles.historyBorder]}>
+              <View key={ref.id} style={[styles.historyRow, i < referrals.length - 1 && styles.historyBorder]}>
                 <View style={[styles.historyIcon, { backgroundColor: meta.bg }]}>
                   <Ionicons name={meta.icon} size={16} color={meta.color} />
                 </View>

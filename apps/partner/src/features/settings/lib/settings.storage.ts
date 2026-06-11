@@ -6,6 +6,7 @@ import type { PartnerAppPreferences } from '../types/settings.types';
 
 export const DEFAULT_PARTNER_PREFERENCES: PartnerAppPreferences = {
   language: 'en',
+  autoAssignOffers: true,
   jobAlerts: true,
   payoutAlerts: true,
   kycAlerts: true,

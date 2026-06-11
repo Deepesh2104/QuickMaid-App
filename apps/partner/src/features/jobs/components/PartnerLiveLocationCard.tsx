@@ -6,6 +6,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { QmButton } from '@/components/ui/QmButton';
 import { useVisitLiveLocation } from '@/features/jobs/hooks/useVisitLiveLocation';
+import { usePartnerI18n } from '@/i18n/usePartnerI18n';
 import { fonts } from '@/theme/fonts';
 import { colors } from '@/theme/colors';
 import { radius, spacing } from '@/theme/spacing';
@@ -16,8 +17,21 @@ function formatElapsed(sec: number): string {
   return `${m}:${String(s).padStart(2, '0')}`;
 }
 
-export function PartnerLiveLocationCard({ active }: { active: boolean }) {
-  const live = useVisitLiveLocation(active);
+interface PartnerLiveLocationCardProps {
+  jobId: string;
+  bookingRef: string;
+  partnerName?: string;
+  active: boolean;
+}
+
+export function PartnerLiveLocationCard({
+  jobId,
+  bookingRef,
+  partnerName,
+  active,
+}: PartnerLiveLocationCardProps) {
+  const { t } = usePartnerI18n();
+  const live = useVisitLiveLocation(jobId, active, { bookingRef, partnerName });
 
   if (!active) return null;
 
@@ -49,7 +63,9 @@ export function PartnerLiveLocationCard({ active }: { active: boolean }) {
               <Text style={styles.liveLabel}>Sharing · {formatElapsed(live.elapsedSec)}</Text>
             </View>
             <Text style={styles.coords}>{live.coordsLabel ?? '—'}</Text>
-            <Text style={styles.updated}>Updated {live.lastUpdated ?? '—'}</Text>
+            <Text style={styles.updated}>
+              Updated {live.lastUpdated ?? '—'} · {live.pingCount} {t('pingsSaved')}
+            </Text>
             <Pressable
               style={styles.stopBtn}
               onPress={() => {

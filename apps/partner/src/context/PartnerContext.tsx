@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
 import type { PartnerProfile, PartnerRuntimeState } from '@/constants/app';
+import { emitDispatchEvent } from '@/features/jobs/lib/dispatch.events';
 import {
   getPartnerProfile,
   getPartnerState,
@@ -44,6 +45,7 @@ export function PartnerProvider({ children }: { children: ReactNode }) {
       const next = { ...state, isOnline: online };
       setState(next);
       await savePartnerState(next);
+      if (online) emitDispatchEvent({ type: 'online_pulse' });
     },
     [state],
   );

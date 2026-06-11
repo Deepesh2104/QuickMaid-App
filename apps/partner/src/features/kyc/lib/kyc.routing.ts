@@ -1,4 +1,19 @@
 import type { KycStatus } from '@/constants/app';
+
+/** Demo: only verified partners can accept jobs (matches Phase 4 403). */
+export function canPartnerAcceptJobs(status?: KycStatus): boolean {
+  return status === 'verified';
+}
+
+export function acceptBlockedMessage(status?: KycStatus): string {
+  if (status === 'under_review') {
+    return 'KYC review chal rahi hai — verify hone ke baad jobs accept kar sakte ho.';
+  }
+  if (status === 'rejected') {
+    return 'KYC reject ho gayi — dubara submit karke accept karo.';
+  }
+  return 'Pehle KYC complete karo — tab hi jobs accept ho sakti hain.';
+}
 import type { KycDraft } from '@/features/kyc/types/kyc.types';
 import { kycChecklist } from '@/features/kyc/lib/kyc.utils';
 

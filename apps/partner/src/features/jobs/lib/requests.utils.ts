@@ -1,5 +1,7 @@
+import type { PartnerProfile } from '@/constants/app';
 import type { PartnerJob } from '@/constants/demo';
 import { netEarningPaise } from '@/features/home/lib/home.greeting';
+import { buildDispatchOffers } from '@/features/jobs/lib/dispatch.utils';
 
 export type RequestFilter = 'all' | 'today' | 'nearby' | 'high_pay';
 
@@ -29,9 +31,16 @@ export function filterPendingJobs(jobs: PartnerJob[], filter: RequestFilter): Pa
   }
 }
 
-export function getBestMatchJob(jobs: PartnerJob[]): PartnerJob | null {
-  const sorted = sortPendingJobs(jobs);
-  return sorted[0] ?? null;
+export function getBestMatchJob(
+  jobs: PartnerJob[],
+  profile?: PartnerProfile | null,
+  isOnline = true,
+  scheduled: PartnerJob[] = [],
+): PartnerJob | null {
+  if (profile != null) {
+    return buildDispatchOffers(jobs, scheduled, profile, isOnline)[0] ?? null;
+  }
+  return sortPendingJobs(jobs)[0] ?? null;
 }
 
 export function groupPendingByVisit(jobs: PartnerJob[]): { label: string; jobs: PartnerJob[] }[] {

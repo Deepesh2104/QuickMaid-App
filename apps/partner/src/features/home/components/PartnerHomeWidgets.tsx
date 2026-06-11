@@ -17,6 +17,7 @@ import {
 } from '@/constants/demo';
 import { earningsWeekNet, mergeEarningsLedger } from '@/features/earnings/lib/earnings.utils';
 import { formatRs } from '@/features/home/lib/home.greeting';
+import { usePartnerI18n } from '@/i18n/usePartnerI18n';
 import { usePartnerJobs } from '@/features/jobs/hooks/usePartnerJobs';
 import { PartnerJobHistoryCard } from '@/features/jobs/components/PartnerJobHistoryCard';
 import { fonts } from '@/theme/fonts';
@@ -39,7 +40,7 @@ export function PartnerZoneStrip({ zone }: { zone?: string }) {
       </View>
       <View style={styles.zoneCopy}>
         <Text style={styles.zoneTitle}>Your zone · {z}</Text>
-        <Text style={styles.zoneSub}>{demand.jobs} open requests nearby today</Text>
+        <Text style={styles.zoneSub}>{demand.jobs} bookings nearby today</Text>
       </View>
       <View style={[styles.demandPill, { backgroundColor: `${demandColor}18` }]}>
         <View style={[styles.demandDot, { backgroundColor: demandColor }]} />
@@ -92,7 +93,7 @@ export function PartnerTodayTimeline({ jobs }: { jobs: PartnerJob[] }) {
         </View>
         <Text style={styles.timelineEmptyTitle}>No visits today</Text>
         <Text style={styles.timelineEmptySub}>
-          Accept a job from Requests — today&apos;s schedule shows up here
+          Confirmed visits aaj yahan dikhengi — Schedule tab check karo
         </Text>
         <Pressable
           style={styles.timelineEmptyBtn}
@@ -230,6 +231,44 @@ export function PartnerDualRoleCard() {
         <Text style={styles.dualSub}>Same phone works as customer — opens QuickMaid app</Text>
       </View>
       <Ionicons name="open-outline" size={18} color={colors.mutedLight} />
+    </Pressable>
+  );
+}
+
+export function PartnerAutoAssignKycBlock({
+  autoAssign,
+  isOnline,
+  canAccept,
+  pendingCount,
+}: {
+  autoAssign: boolean;
+  isOnline: boolean;
+  canAccept: boolean;
+  pendingCount: number;
+}) {
+  const router = useRouter();
+  const { t } = usePartnerI18n();
+  if (!autoAssign || !isOnline || canAccept || pendingCount === 0) return null;
+
+  return (
+    <Pressable
+      style={styles.kyc}
+      onPress={() => {
+        Haptics.selectionAsync();
+        router.push('/kyc' as Href);
+      }}
+    >
+      <LinearGradient colors={['#FEF2F2', '#FFF7ED']} style={StyleSheet.absoluteFill} />
+      <View style={[styles.kycIcon, { backgroundColor: 'rgba(220,38,38,0.12)' }]}>
+        <Ionicons name="shield-outline" size={20} color={colors.error} />
+      </View>
+      <View style={styles.kycCopy}>
+        <Text style={[styles.kycTitle, { color: colors.error }]}>{t('autoAssignKycBlock')}</Text>
+        <Text style={styles.kycSub}>
+          {pendingCount} matched · {t('autoAssignKycSub')}
+        </Text>
+      </View>
+      <Ionicons name="chevron-forward" size={16} color={colors.mutedLight} />
     </Pressable>
   );
 }
